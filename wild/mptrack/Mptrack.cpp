@@ -11,7 +11,9 @@
 #include "snddev.h"
 #include "vstplug.h"
 #include "CreditStatic.h"
+#include "hyperEdit.h"
 #include "bladedll.h"
+#include "commctrl.h";
 
 // rewbs.memLeak
 #define CRTDBG_MAP_ALLOC
@@ -196,10 +198,17 @@ class CMPTCommandLineInfo: public CCommandLineInfo
 //================================================
 {
 public:
-	BOOL m_bNoAcm, m_bNoDls, m_bNoMp3, m_bSafeMode, m_bWavEx, m_bNoPlugins, m_bDebug;
+	BOOL m_bNoAcm, m_bNoDls, m_bNoMp3, m_bSafeMode, m_bWavEx, m_bNoPlugins, m_bDebug,
+		 m_bNoSettingsOnNewVersion;
+
+	CString m_csExtension;
 
 public:
-	CMPTCommandLineInfo() { m_bNoAcm = m_bNoDls = m_bNoMp3 = m_bSafeMode = m_bWavEx = m_bNoPlugins = m_bDebug = FALSE; }
+	CMPTCommandLineInfo() { 
+		m_bNoAcm = m_bNoDls = m_bNoMp3 = m_bSafeMode = m_bWavEx = 
+		m_bNoPlugins = m_bDebug = m_bNoSettingsOnNewVersion = FALSE; 
+		m_csExtension = "";
+	}
 	virtual void ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL bLast);
 };
 
@@ -215,7 +224,19 @@ void CMPTCommandLineInfo::ParseParam(LPCTSTR lpszParam, BOOL bFlag, BOOL bLast)
 		if (!lstrcmpi(lpszParam, "nomp3")) { m_bNoMp3 = TRUE; return; } else
 		if (!lstrcmpi(lpszParam, "wavex")) { m_bWavEx = TRUE; } else
 		if (!lstrcmpi(lpszParam, "noplugs")) { m_bNoPlugins = TRUE; } else
-		if (!lstrcmpi(lpszParam, "debug")) { m_bDebug = TRUE; }
+		if (!lstrcmpi(lpszParam, "debug")) { m_bDebug = TRUE; } else
+		if (!lstrcmpi(lpszParam, "noSettingsOnNewVersion")) { m_bNoSettingsOnNewVersion = TRUE; }
+/*		else {
+
+			CString param = lpszParam;
+			CString resToken;
+			int curPos = 0;
+			resToken = param.Tokenize(":",curPos);
+			if (resToken == "appendToRegistryKey") {
+				m_csExtension = param.Tokenize(":",curPos);
+			}
+		}
+*/		
 	}
 	CCommandLineInfo::ParseParam(lpszParam, bFlag, bLast);
 }
@@ -391,8 +412,8 @@ BOOL CTrackApp::LoadDefaultDLSBanks()
 		}
 		RegCloseKey(key);
 	}
-	if ((bFirstTime) || (CMainFrame::gdwPreviousVersion < MPTRACK_FINALRELEASEVERSION))
-	{
+//	if ((bFirstTime) || (CMainFrame::gdwPreviousVersion < MPTRACK_FINALRELEASEVERSION))
+//	{
 		SaveDefaultDLSBanks(); // This will avoid a crash the next time if we crash while loading the bank
 		szFileName[0] = 0;
 		GetSystemDirectory(szFileName, sizeof(szFileName));
@@ -417,7 +438,7 @@ BOOL CTrackApp::LoadDefaultDLSBanks()
 			}
 		}
 		if (glpMidiLibrary) ImportMidiConfig(szFileName, TRUE);
-	}
+//	}
 	return TRUE;
 }
 
@@ -567,9 +588,23 @@ static DWORD GetDSoundVersion()
 /////////////////////////////////////////////////////////////////////////////
 // CTrackApp initialization
 
+void Terminate_AppThread()
+//----------------------------------------------
+{	
+	//TODO: Why does this not get called.
+	AfxMessageBox("Application thread terminated unexpectedly. Attempting to shut down audio device");
+	CMainFrame* pMainFrame = CMainFrame::GetMainFrame();
+	if (pMainFrame->gpSoundDevice) pMainFrame->gpSoundDevice->Reset();
+	pMainFrame->audioCloseDevice();
+	exit(-1);
+}
+
 BOOL CTrackApp::InitInstance()
 //----------------------------
 {
+
+	set_terminate(Terminate_AppThread);
+
 	// Initialize OLE MFC support
 	AfxOleInit();
 	// Standard initialization
@@ -668,15 +703,15 @@ BOOL CTrackApp::InitInstance()
 		memcpy(&m_MidiCfg.szMidiZXXExt[izxx*32], s, 32);
 	}
 
-	// create main MDI Frame window
-	CMainFrame* pMainFrame = new CMainFrame;
-	if (!pMainFrame->LoadFrame(IDR_MAINFRAME)) return FALSE;
-	m_pMainWnd = pMainFrame;
-
 	// Parse command line for standard shell commands, DDE, file open
 	CMPTCommandLineInfo cmdInfo;
 	if (GetDSoundVersion() >= 0x0700) cmdInfo.m_bWavEx = TRUE;
 	ParseCommandLine(cmdInfo);
+
+	// create main MDI Frame window
+	CMainFrame* pMainFrame = new CMainFrame(/*cmdInfo.m_csExtension*/);
+	if (!pMainFrame->LoadFrame(IDR_MAINFRAME)) return FALSE;
+	m_pMainWnd = pMainFrame;
 
 	if (cmdInfo.m_bShowSplash)
 	{
@@ -712,6 +747,9 @@ BOOL CTrackApp::InitInstance()
 
 	// Initialize CMainFrame
 	pMainFrame->Initialize();
+	InitCommonControls();
+	m_dwLastPluginIdleCall=0;	//rewbs.VSTCompliance
+	pMainFrame->m_InputHandler->UpdateMainMenu();	//rewbs.customKeys
 
 	// Dispatch commands specified on the command line
 	if (!ProcessShellCommand(cmdInfo))
@@ -728,20 +766,16 @@ BOOL CTrackApp::InitInstance()
 	m_bInitialized = TRUE;
 
 	// Check previous version number
-	if (CMainFrame::gdwPreviousVersion < MPTRACK_FINALRELEASEVERSION)
-	{
+	if (!cmdInfo.m_bNoSettingsOnNewVersion && CMainFrame::gdwPreviousVersion < MPTRACK_VERSION) {
 		StopSplashScreen();
 		m_pMainWnd->PostMessage(WM_COMMAND, ID_VIEW_OPTIONS);
 	}
 
-	if (m_bDebugMode)
-	{
-		Log("Modplug Tracker v%X.%02X.%04d started\n", (MPTRACK_VERSION>>24)&0xFF, (MPTRACK_VERSION>>16)&0xFF, (MPTRACK_VERSION & 0xFFFF));
+	if (m_bDebugMode) {
+		Log("OpenMPT v%X.%02X.%04d started\n", (MPTRACK_VERSION>>24)&0xFF, (MPTRACK_VERSION>>16)&0xFF, (MPTRACK_VERSION & 0xFFFF));
 	}
-
-	pMainFrame->m_InputHandler->UpdateMainMenu();	//rewbs.customKeys
+	
 	EndWaitCursor();
-
 	return TRUE;
 }
 
@@ -753,6 +787,11 @@ int CTrackApp::ExitInstance()
 	if (glpMidiLibrary)
 	{
 		if (m_szConfigFileName[0]) ExportMidiConfig(m_szConfigFileName);
+		for (UINT iMidi=0; iMidi<256; iMidi++) {
+			if (glpMidiLibrary->MidiMap[iMidi]) {
+				delete[] glpMidiLibrary->MidiMap[iMidi];
+			}
+		}
 		delete glpMidiLibrary;
 		glpMidiLibrary = NULL;
 	}
@@ -1248,6 +1287,7 @@ class CAboutDlg: public CDialog
 protected:
 	CPaletteBitmap m_bmp;
 	CCreditStatic m_static;
+	CHyperEdit m_heContact;
 
 public:
 	CAboutDlg() {}
@@ -1258,14 +1298,25 @@ protected:
 	virtual BOOL OnInitDialog();
 	virtual void OnOK();
 	virtual void OnCancel();
+	virtual void DoDataExchange(CDataExchange* pDX);
 };
 
 static CAboutDlg *gpAboutDlg = NULL;
+
 
 CAboutDlg::~CAboutDlg()
 //---------------------
 {
 	gpAboutDlg = NULL;
+}
+
+void CAboutDlg::DoDataExchange(CDataExchange* pDX)
+//------------------------------------------------------
+{
+	CDialog::DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CModTypeDlg)
+	DDX_Control(pDX, IDC_EDIT1,			m_heContact);
+	//}}AFX_DATA_MAP
 }
 
 
@@ -1294,18 +1345,18 @@ BOOL CAboutDlg::OnInitDialog()
 	m_bmp.SubclassDlgItem(IDC_BITMAP1, this);
 	m_bmp.LoadBitmap(MAKEINTRESOURCE(IDB_MPTRACK));
 	wsprintf(s, "Build Date: %s", gszBuildDate);
-	SetDlgItemText(IDC_TEXT1, s);
-	wsprintf(s, "%s version %X.%02X.%04da (revision 1.14)",		//remove 'a' when ready for wide usage.
-				MAINFRAME_TITLE,
-				(MPTRACK_VERSION>>24)&0xFF,
-				(MPTRACK_VERSION>>16)&0xFF,
-				(MPTRACK_VERSION & 0xFFFF));
-	SetDlgItemText(IDC_TEXT2, s);
+	SetDlgItemText(IDC_EDIT2, s);
+	SetDlgItemText(IDC_EDIT3, CMainFrame::GetFullVersionString());
 
-	SetDlgItemText(IDC_EDIT1, "Contact:\r\nMPC forums: http://www.modplug.com/forums\r\nEric Chavanon: contact@ericus.org\r\nRobin Fernandes: modplug@soal.org\r\n\r\nGet the latest updates at:\r\n http://sourceforge.net/projects/modplug");
+	m_heContact.SetWindowText(
+"Contact:\r\n\
+MPC forums: http://www.modplug.com/forum\r\n\
+Robin Fernandes: mailto:modplug@soal.org\r\n\r\n\
+Updates:\r\n\
+http://www.modplug.com/forum/showpage.php?p=download");
 
 	char *pArrCredit = { 
-		"Modplug Tracker|"
+		"OpenMPT / Modplug Tracker|"
 		"Copyright © 2004-2005 GPL|"
 		"Copyright © 1997-2003 Olivier Lapicque (olivier@modplug.com)|"
 		"|"
@@ -1317,15 +1368,19 @@ BOOL CAboutDlg::OnInitDialog()
 		"|"
 		"Thanks to:||"
 		"Konstanty for the XMMS-Modplug resampling implementation |"
+		"http://modplug-xmms.sourceforge.net/|"
 		"Stephan M. Bernsee for pitch shifting source code|"
 		"http://www.dspdimension.com|"
 		"Erik de Castro Lopo for his resampling library|"
 		"http://www.mega-nerd.com/SRC/|"
 		"Hermann Seib for his example VST Host implementation|"
-		"Pel K. Txnder for the scrolling credits control :)||"
+		"http://www.hermannseib.com/english/vsthost.htm|"
+		"Pel K. Txnder for the scrolling credits control :)|"
+		"http://tinyurl.com/4yze8||"
 		"...and to the following for ideas, testing and support:|"
-		"LPChip, Ganja, Diamond, Nofold,|"
-		"Goor00, Georg, Squirrel Havoc,|"
+		"LPChip, Ganja, Diamond, Nofold, Goor00,|"
+		"Georg, Skilletaudio, Squirrel Havoc, Snu,|"
+		"Anboi, Sam Zen, BooT-SectoR-ViruZ, 33, Waxhead,|"
 		"all at the MPC forums.|"
 		"||||||" 
 	};
@@ -1397,7 +1452,7 @@ BOOL CSplashScreen::OnInitDialog()
 	
 	CDialog::OnInitDialog();
 	m_Bmp.SubclassDlgItem(IDC_SPLASH, this);
-	m_Bmp.LoadBitmap(MAKEINTRESOURCE(IDB_SPLASHNOFOLD));
+	m_Bmp.LoadBitmap(MAKEINTRESOURCE(IDB_SPLASHNOFOLDFIN));
 	GetWindowRect(&rect);
 	cx = rect.Width();
 	cy = rect.Height();
@@ -1481,11 +1536,21 @@ BOOL CTrackApp::OnIdle(LONG lCount)
 	{
 		if (gpRotoZoom->Animate()) return TRUE;
 	}
-	//if ((m_pPluginManager) && (m_pPluginManager->NeedIdle()))
-	if (m_pPluginManager)	//rewbs.VSTCompliance
+
+	// Call plugins idle routine for open editor
+	DWORD curTime = timeGetTime();
+	// TODO: is it worth the overhead of checking that 10ms have passed,
+	//       or should we just do it on every idle message?
+	if (m_pPluginManager)
 	{
-		m_pPluginManager->OnIdle();
+		//rewbs.vstCompliance: call @ 50Hz
+		if (curTime - m_dwLastPluginIdleCall > 20) //20ms since last call?
+		{
+			m_pPluginManager->OnIdle();
+			m_dwLastPluginIdleCall = curTime;
+		}
 	}
+
 	return b;
 }
 
@@ -2038,23 +2103,19 @@ BOOL CTrackApp::InitializeACM(BOOL bNoAcm)
 	BOOL bOk = FALSE;
 
 	fuErrorMode = SetErrorMode(SEM_NOOPENFILEERRORBOX);
-	__try {
-	m_hBladeEnc = LoadLibrary(TEXT("BLADEENC.DLL"));
-	m_hLameEnc = LoadLibrary(TEXT("LAME_ENC.DLL"));
-	} __except(EXCEPTION_EXECUTE_HANDLER) {}
+	try {
+		m_hBladeEnc = LoadLibrary(TEXT("BLADEENC.DLL"));
+		m_hLameEnc = LoadLibrary(TEXT("LAME_ENC.DLL"));
+	} catch(...) {}
 	if (!bNoAcm)
 	{
-#ifdef TRAP_ACM_FAULTS
-	__try { __try {
-#endif
-		m_hACMInst = LoadLibrary(TEXT("MSACM32.DLL"));
-#ifdef TRAP_ACM_FAULTS
-		} __finally
-		{
-			goto acmok;
-		} } __except(AcmExceptionHandler(), EXCEPTION_EXECUTE_HANDLER) {}
-	acmok:;
-#endif
+	#ifdef TRAP_ACM_FAULTS
+		try {
+	#endif
+			m_hACMInst = LoadLibrary(TEXT("MSACM32.DLL"));
+	#ifdef TRAP_ACM_FAULTS
+		} catch(...) {}
+	#endif
 	}
 	SetErrorMode(fuErrorMode);
 	if (m_hBladeEnc != NULL)
@@ -2089,46 +2150,42 @@ BOOL CTrackApp::InitializeACM(BOOL bNoAcm)
 		return bOk;
 	}
 #ifdef TRAP_ACM_FAULTS
-	__try { __try {
+	try {
 #endif
-	*(FARPROC *)&pfnAcmGetVersion = GetProcAddress(m_hACMInst, "acmGetVersion");
-	dwVersion = 0;
-	if (pfnAcmGetVersion) dwVersion = pfnAcmGetVersion();
-	if (HIWORD(dwVersion) < 0x0200)
-	{
-		FreeLibrary(m_hACMInst);
-		m_hACMInst = NULL;
-		return bOk;
-	}
-	// Load Function Pointers
-	m_pfnAcmFormatEnum = (PFNACMFORMATENUM)GetProcAddress(m_hACMInst, "acmFormatEnumA");
-	// Enumerate formats
-	if (m_pfnAcmFormatEnum)
-	{
-		ACMFORMATDETAILS afd;
-		BYTE wfx[256];
-		WAVEFORMATEX *pwfx = (WAVEFORMATEX *)&wfx;
+		*(FARPROC *)&pfnAcmGetVersion = GetProcAddress(m_hACMInst, "acmGetVersion");
+		dwVersion = 0;
+		if (pfnAcmGetVersion) dwVersion = pfnAcmGetVersion();
+		if (HIWORD(dwVersion) < 0x0200)
+		{
+			FreeLibrary(m_hACMInst);
+			m_hACMInst = NULL;
+			return bOk;
+		}
+		// Load Function Pointers
+		m_pfnAcmFormatEnum = (PFNACMFORMATENUM)GetProcAddress(m_hACMInst, "acmFormatEnumA");
+		// Enumerate formats
+		if (m_pfnAcmFormatEnum)
+		{
+			ACMFORMATDETAILS afd;
+			BYTE wfx[256];
+			WAVEFORMATEX *pwfx = (WAVEFORMATEX *)&wfx;
 
-		memset(&afd, 0, sizeof(afd));
-		memset(pwfx, 0, sizeof(wfx));
-		afd.cbStruct = sizeof(ACMFORMATDETAILS);
-		afd.dwFormatTag = WAVE_FORMAT_PCM;
-		afd.pwfx = pwfx;
-		afd.cbwfx = sizeof(wfx);
-		pwfx->wFormatTag = WAVE_FORMAT_PCM;
-		pwfx->nChannels = 2;
-		pwfx->nSamplesPerSec = 44100;
-		pwfx->wBitsPerSample = 16;
-		pwfx->nBlockAlign = (WORD)((pwfx->nChannels * pwfx->wBitsPerSample) / 8);
-		pwfx->nAvgBytesPerSec = pwfx->nSamplesPerSec * pwfx->nBlockAlign;
-		m_pfnAcmFormatEnum(NULL, &afd, AcmFormatEnumCB, NULL, ACM_FORMATENUMF_CONVERT);
-	}
+			memset(&afd, 0, sizeof(afd));
+			memset(pwfx, 0, sizeof(wfx));
+			afd.cbStruct = sizeof(ACMFORMATDETAILS);
+			afd.dwFormatTag = WAVE_FORMAT_PCM;
+			afd.pwfx = pwfx;
+			afd.cbwfx = sizeof(wfx);
+			pwfx->wFormatTag = WAVE_FORMAT_PCM;
+			pwfx->nChannels = 2;
+			pwfx->nSamplesPerSec = 44100;
+			pwfx->wBitsPerSample = 16;
+			pwfx->nBlockAlign = (WORD)((pwfx->nChannels * pwfx->wBitsPerSample) / 8);
+			pwfx->nAvgBytesPerSec = pwfx->nSamplesPerSec * pwfx->nBlockAlign;
+			m_pfnAcmFormatEnum(NULL, &afd, AcmFormatEnumCB, NULL, ACM_FORMATENUMF_CONVERT);
+		}
 #ifdef TRAP_ACM_FAULTS
-	} __finally
-	{
-		goto acmscrewed;
-	} } __except(AcmExceptionHandler(), EXCEPTION_EXECUTE_HANDLER) {}
-	acmscrewed:;
+	} catch(...){}
 #endif
 	return TRUE;
 }
@@ -2620,21 +2677,22 @@ BOOL CTrackApp::OpenURL(LPCSTR lpszURL)
 void Log(LPCSTR format,...)
 //-------------------------
 {
-	CHAR cBuf[1024];
-	va_list va;
-	va_start(va, format);
-	wvsprintf(cBuf, format, va);
-	OutputDebugString(cBuf);
-	if (theApp.IsDebug())
-	{
-		FILE *f = fopen("c:\\mptrack.log", "a");
-		if (f)
-		{
-			fwrite(cBuf, 1, strlen(cBuf), f);
-			fclose(f);
-		}
-	}
-	va_end(va);
+	#ifdef _DEBUG
+		CHAR cBuf[1024];
+		va_list va;
+		va_start(va, format);
+		wvsprintf(cBuf, format, va);
+		OutputDebugString(cBuf);
+		#ifdef LOG_TO_FILE
+			FILE *f = fopen("c:\\mptrack.log", "a");
+			if (f)
+			{
+				fwrite(cBuf, 1, strlen(cBuf), f);
+				fclose(f);
+			}
+		#endif //LOG_TO_FILE
+		va_end(va);
+	#endif //_DEBUG
 }
 
 
@@ -2676,8 +2734,10 @@ LRESULT CTrackApp::ProcessWndProcException(CException* e, const MSG* pMsg)
 	Log("Unhandled Exception\n");
 	Log("Attempting to close sound device\n");
 	
-	CMainFrame::gpSoundDevice->Reset(); 
-	CMainFrame::gpSoundDevice->Close();
+	if (CMainFrame::gpSoundDevice) {
+		CMainFrame::gpSoundDevice->Reset(); 
+		CMainFrame::gpSoundDevice->Close();
+	}
 
 	return CWinApp::ProcessWndProcException(e, pMsg);
 }

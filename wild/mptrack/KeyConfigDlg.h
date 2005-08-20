@@ -46,7 +46,6 @@ public:
 		{
 			if (separators[p]==c)
                 return true;
-			Log("%d\n", separators[p]);
 		}
 		return false;
 	}
@@ -146,6 +145,7 @@ protected:
 	afx_msg void OnRestoreKeyChoice();
 	afx_msg void OnLoad();
 	afx_msg void OnSave();
+	afx_msg void OnClearLog();
     DECLARE_MESSAGE_MAP();
 public:
 	afx_msg void OnDestroy();

@@ -4,6 +4,8 @@
 class CModDoc;
 class CEditCommand;
 class CEffectVis;	//rewbs.fxvis
+class CPatternGotoDialog;
+class CPatternRandomizer;
 
 // Drag & Drop info
 #define DRAGITEM_MASK			0xFF0000
@@ -26,6 +28,14 @@ class CEffectVis;	//rewbs.fxvis
 #define PATSTATUS_CTRLDRAGSEL			0x1000
 #define PATSTATUS_PLUGNAMESINHEADERS	0x2000 //rewbs.patPlugName
 
+enum {
+	NOTE_COLUMN=0,
+    INST_COLUMN,
+	VOL_COLUMN,
+	EFFECT_COLUMN,
+	PARAM_COLUMN,
+};
+
 
 //////////////////////////////////////////////////////////////////
 // Pattern editing class
@@ -44,8 +54,9 @@ public:
 protected:
 	CFastBitmap m_Dib;
 	CEditCommand *m_pEditWnd;
+	CPatternGotoDialog *m_pGotoWnd;
 	SIZE m_szHeader, m_szCell;
-	UINT m_nPattern, m_nRow, m_nMidRow, m_nPlayPat, m_nPlayRow, m_nSpacing, m_nAccelChar;
+	UINT m_nPattern, m_nRow, m_nMidRow, m_nPlayPat, m_nPlayRow, m_nSpacing, m_nAccelChar, m_nLastPlayedRow;
 
 // -> CODE#0012
 // -> DESC="midi keyboard split"
@@ -73,6 +84,7 @@ protected:
 	UINT m_nMenuOnChan;
 	DWORD m_dwLastNoteEntryTime; //rewbs.customkeys
 	UINT m_nLastPlayedChannel; //rewbs.customkeys
+	bool m_bLastNoteEntryBlocked;
 	
 // -> CODE#0012
 // -> DESC="midi keyboard split"
@@ -85,8 +97,10 @@ protected:
 // -> DESC="route PC keyboard inputs to midi in mechanism"
 	int ignorekey;
 // -! BEHAVIOUR_CHANGE#0018
+	CPatternRandomizer *m_pRandomizer;	//rewbs.fxVis
 public:
 	CEffectVis *m_pEffectVis;	//rewbs.fxVis
+	
 
 	CViewPattern();
 	DECLARE_SERIAL(CViewPattern)
@@ -180,9 +194,6 @@ public:
 
 protected:
 	//{{AFX_MSG(CViewPattern)
-	afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);   
-	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
-	afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);  
 	afx_msg BOOL OnEraseBkgnd(CDC *) { return TRUE; }
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnDestroy();
@@ -199,6 +210,7 @@ protected:
 	afx_msg void OnEditCopy();
 	afx_msg void OnEditPaste();
 	afx_msg void OnEditMixPaste();		//rewbs.mixPaste
+	afx_msg void OnEditMixPasteITStyle();		//rewbs.mixPaste
 	afx_msg void OnClearSelection(bool ITStyle=false); //rewbs.customKeys
 	afx_msg void OnGrowSelection();   //rewbs.customKeys
 	afx_msg void OnShrinkSelection(); //rewbs.customKeys
@@ -206,10 +218,12 @@ protected:
 	afx_msg void OnEditSelectColumn();
 	afx_msg void OnSelectCurrentColumn();
 	afx_msg void OnEditFind();
+	afx_msg void OnEditGoto();
 	afx_msg void OnEditFindNext();
 	afx_msg void OnEditUndo();
 	afx_msg void OnMuteFromClick(); //rewbs.customKeys
 	afx_msg void OnSoloFromClick(); //rewbs.customKeys
+	afx_msg void OnTogglePendingMuteFromClick(); //rewbs.customKeys
 	afx_msg void OnSoloChannel(BOOL current); //rewbs.customKeys
 	afx_msg void OnMuteChannel(BOOL current); //rewbs.customKeys
 	afx_msg void OnUnmuteAll();
@@ -235,7 +249,9 @@ protected:
 	afx_msg void OnPatternRecord()	{ PostCtrlMessage(CTRLMSG_SETRECORD, -1); }
 	afx_msg void OnInterpolateVolume();
 	afx_msg void OnInterpolateEffect();
+	afx_msg void OnInterpolateNote();
 	afx_msg void OnVisualizeEffect();		//rewbs.fxvis
+	afx_msg void OnOpenRandomizer();		//rewbs.fxvis
 	afx_msg void OnTransposeUp();
 	afx_msg void OnTransposeDown();
 	afx_msg void OnTransposeOctUp();
@@ -259,8 +275,43 @@ public:
 private:
 
 	bool HandleSplit(MODCOMMAND* p, int note);
-};
+	bool BuildPluginCtxMenu(HMENU hMenu, UINT nChn, CSoundFile* pSndFile);
+	bool BuildRecordCtxMenu(HMENU hMenu, UINT nChn, CModDoc* pModDoc);
+	bool BuildSoloMuteCtxMenu(HMENU hMenu, CInputHandler* ih, UINT nChn, CSoundFile* pSndFile);
+	bool BuildRowInsDelCtxMenu(HMENU hMenu, CInputHandler* ih);
+	bool BuildSelectionCtxMenu(HMENU hMenu, CInputHandler* ih);
+	bool BuildGrowShrinkCtxMenu(HMENU hMenu, CInputHandler* ih);
+	bool BuildNoteInterpolationCtxMenu(HMENU hMenu, CInputHandler* ih, CSoundFile* pSndFile);
+	bool BuildVolColInterpolationCtxMenu(HMENU hMenu, CInputHandler* ih, CSoundFile* pSndFile);
+	bool BuildEffectInterpolationCtxMenu(HMENU hMenu, CInputHandler* ih, CSoundFile* pSndFile);
+	bool BuildEditCtxMenu(HMENU hMenu, CInputHandler* ih,  CModDoc* pModDoc);
+	bool BuildVisFXCtxMenu(HMENU hMenu, CInputHandler* ih);
+	bool BuildRandomCtxMenu(HMENU hMenu, CInputHandler* ih);
+	bool BuildTransposeCtxMenu(HMENU hMenu, CInputHandler* ih);
+	bool BuildSetInstCtxMenu(HMENU hMenu, CInputHandler* ih);
+	bool BuildAmplifyCtxMenu(HMENU hMenu, CInputHandler* ih);
 
+	UINT GetSelectionStartRow();
+	UINT GetSelectionEndRow();
+	UINT GetSelectionStartChan();
+	UINT GetSelectionEndChan();
+	UINT ListChansWhereColSelected(UINT colType, CArray<UINT,UINT> &chans);
+
+	UINT GetRowFromCursor(DWORD cursor);
+	UINT GetChanFromCursor(DWORD cursor);
+	UINT GetColTypeFromCursor(DWORD cursor);
+
+	bool IsInterpolationPossible(UINT startRow, UINT endRow, UINT chan, UINT colType, CSoundFile* pSndFile);
+	void Interpolate(UINT type);
+
+public:
+	afx_msg void OnRButtonDblClk(UINT nFlags, CPoint point);
+private:
+
+	void TogglePendingMute(UINT nChn);
+public:
+	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
+};
 
 
 #endif

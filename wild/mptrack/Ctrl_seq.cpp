@@ -5,6 +5,7 @@
 #include "globals.h"
 #include "ctrl_pat.h"
 #include "view_pat.h"
+#include ".\ctrl_pat.h"
 
 //////////////////////////////////////////////////////////////
 // CPatEdit
@@ -489,7 +490,9 @@ void COrderList::OnLButtonDown(UINT nFlags, CPoint pt)
 	if (pt.y < rect.bottom)
 	{
 		SetFocus();
-		if (CMainFrame::gnHotKeyMask & HOTKEYF_CONTROL)
+		CInputHandler* ih = (CMainFrame::GetMainFrame())->GetInputHandler();
+
+		if (ih->CtrlPressed())
 		{
 			if (m_pModDoc)
 			{
@@ -497,7 +500,11 @@ void COrderList::OnLButtonDown(UINT nFlags, CPoint pt)
 				int nOrder = m_nXScroll + (pt.x - rect.left) / m_cxFont;
 				if ((nOrder >= 0) && (nOrder < MAX_ORDERS))
 				{
-					pSndFile->m_nSeqOverride = nOrder+1;
+					if (pSndFile->m_nSeqOverride == nOrder+1) {
+						pSndFile->m_nSeqOverride=0;
+					} else {
+						pSndFile->m_nSeqOverride = nOrder+1;
+					}
 					InvalidateRect(NULL, FALSE);
 				}
 			}
@@ -535,6 +542,7 @@ void COrderList::OnLButtonUp(UINT nFlags, CPoint pt)
 				if (m_pModDoc->MoveOrder(m_nDragOrder, m_nDropPos, TRUE, m_bShift))
 				{
 					SetCurSel(((m_nDragOrder < (UINT)m_nDropPos) && (!m_bShift)) ? m_nDropPos-1 : m_nDropPos);
+					m_pModDoc->SetModified();
 				}
 			}
 		}

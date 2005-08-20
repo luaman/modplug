@@ -8,6 +8,7 @@
 #include "vstplug.h"
 #include ".\dlg_misc.h"
 
+
 #pragma warning(disable:4244)
 
 // -> CODE#0010
@@ -110,6 +111,8 @@ void CModTypeDlg::DoDataExchange(CDataExchange* pDX)
 	//{{AFX_DATA_MAP(CModTypeDlg)
 	DDX_Control(pDX, IDC_COMBO1,		m_TypeBox);
 	DDX_Control(pDX, IDC_COMBO2,		m_ChannelsBox);
+	DDX_Control(pDX, IDC_COMBO3,		m_TempoModeBox);
+	DDX_Control(pDX, IDC_COMBO4,		m_PlugMixBox);
 	DDX_Control(pDX, IDC_CHECK1,		m_CheckBox1);
 	DDX_Control(pDX, IDC_CHECK2,		m_CheckBox2);
 	DDX_Control(pDX, IDC_CHECK3,		m_CheckBox3);
@@ -130,6 +133,9 @@ BOOL CModTypeDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 	m_nType = m_pSndFile->m_nType;
 	m_nChannels = m_pSndFile->m_nChannels;
+	SetDlgItemInt(IDC_ROWSPERBEAT, m_pSndFile->m_nRowsPerBeat);
+	SetDlgItemInt(IDC_ROWSPERMEASURE, m_pSndFile->m_nRowsPerMeasure);
+
 	m_TypeBox.SetItemData(m_TypeBox.AddString("ProTracker MOD"), MOD_TYPE_MOD);
 	m_TypeBox.SetItemData(m_TypeBox.AddString("ScreamTracker S3M"), MOD_TYPE_S3M);
 	m_TypeBox.SetItemData(m_TypeBox.AddString("FastTracker XM"), MOD_TYPE_XM);
@@ -159,6 +165,39 @@ BOOL CModTypeDlg::OnInitDialog()
 		m_ChannelsBox.SetItemData(m_ChannelsBox.AddString(s), i);
 	}
 	m_ChannelsBox.SetCurSel(m_nChannels-4);
+
+	m_TempoModeBox.SetItemData(m_TempoModeBox.AddString("Classic"), tempo_mode_classic);
+	m_TempoModeBox.SetItemData(m_TempoModeBox.AddString("Alternative"), tempo_mode_alternative);
+	m_TempoModeBox.SetItemData(m_TempoModeBox.AddString("Modern (accurate)"), tempo_mode_modern);
+	switch(m_pSndFile->m_nTempoMode)
+	{
+		case tempo_mode_alternative:	m_TempoModeBox.SetCurSel(1); break;
+		case tempo_mode_modern:			m_TempoModeBox.SetCurSel(2); break;
+		case tempo_mode_classic:
+		default:						m_TempoModeBox.SetCurSel(0); break;
+	}
+
+	m_PlugMixBox.SetItemData(m_PlugMixBox.AddString("OpenMPT 1.17RC2"),   plugmix_mode_117RC2);
+	m_PlugMixBox.SetItemData(m_PlugMixBox.AddString("OpenMPT 1.17RC1"),   plugmix_mode_117RC1);
+	m_PlugMixBox.SetItemData(m_PlugMixBox.AddString("Original"),		  plugmix_mode_original);
+//	m_PlugMixBox.SetItemData(m_PlugMixBox.AddString("Test"),   plugmix_mode_Test);
+	switch(m_pSndFile->m_nPlugMixMode)
+	{
+		case plugmix_mode_original:	m_PlugMixBox.SetCurSel(2); break;
+		case plugmix_mode_117RC1:	m_PlugMixBox.SetCurSel(1); break;
+//		case plugmix_mode_Test:		m_PlugMixBox.SetCurSel(3); break;
+		case plugmix_mode_117RC2:
+		default:					m_PlugMixBox.SetCurSel(0); break;
+	}
+
+;
+
+	SetDlgItemText(IDC_EDIT5, "Created with:");
+	SetDlgItemText(IDC_EDIT6, "Last saved with:");
+
+	SetDlgItemText(IDC_EDIT1, CMainFrame::GetVersionString(m_pSndFile->m_dwCreatedWithVersion));
+	SetDlgItemText(IDC_EDIT2, CMainFrame::GetVersionString(m_pSndFile->m_dwLastSavedWithVersion));
+
 	UpdateDialog();
 	return TRUE;
 }
@@ -188,6 +227,12 @@ void CModTypeDlg::UpdateDialog()
 // -> DESC="IT project files (.itp)"
 	m_CheckBox6.EnableWindow(m_TypeBox.GetCurSel() == 4 ? TRUE : FALSE);
 // -! NEW_FEATURE#0023
+	
+	m_TempoModeBox.EnableWindow((m_pSndFile->m_nType & (MOD_TYPE_XM|MOD_TYPE_IT)) ? TRUE : FALSE);
+	GetDlgItem(IDC_ROWSPERBEAT)->EnableWindow((m_pSndFile->m_nType & (MOD_TYPE_XM|MOD_TYPE_IT)) ? TRUE : FALSE);
+	GetDlgItem(IDC_ROWSPERMEASURE)->EnableWindow((m_pSndFile->m_nType & (MOD_TYPE_XM|MOD_TYPE_IT)) ? TRUE : FALSE);
+
+	m_PlugMixBox.EnableWindow((m_pSndFile->m_nType & (MOD_TYPE_XM|MOD_TYPE_IT)) ? TRUE : FALSE);
 }
 
 
@@ -252,10 +297,29 @@ void CModTypeDlg::OnCheck6()
 }
 // -! NEW_FEATURE#0023
 
+BOOL CModTypeDlg::VerifyData() 
+//---------------------------------
+{
+
+	int temp_nRPB = GetDlgItemInt(IDC_ROWSPERBEAT);
+	int temp_nRPM = GetDlgItemInt(IDC_ROWSPERMEASURE);
+	if ((temp_nRPB >= temp_nRPM))
+	{
+		::AfxMessageBox("Error: Rows per measure must be greater than rows per beat.", MB_OK|MB_ICONEXCLAMATION);
+		GetDlgItem(IDC_ROWSPERMEASURE)->SetFocus();
+		return FALSE;
+	}
+
+	return TRUE;
+}
 
 void CModTypeDlg::OnOK()
 //----------------------
 {
+	if (!VerifyData()) {
+		return;
+	}
+
 	int sel = m_TypeBox.GetCurSel();
 	if (sel >= 0)
 	{
@@ -275,6 +339,23 @@ void CModTypeDlg::OnOK()
 		m_nChannels = m_ChannelsBox.GetItemData(sel);
 		//if (m_nType & MOD_TYPE_XM) m_nChannels = (m_nChannels+1) & 0xFE;
 	}
+	
+	sel = m_TempoModeBox.GetCurSel();
+	if (sel >= 0) {
+		m_pSndFile->m_nTempoMode = m_TempoModeBox.GetItemData(sel);
+	}
+
+	sel = m_PlugMixBox.GetCurSel();
+	if (sel >= 0) {
+		m_pSndFile->m_nPlugMixMode = m_PlugMixBox.GetItemData(sel);
+		m_pSndFile->m_pConfig->SetPluginMixLevels(m_pSndFile->m_nPlugMixMode);
+		m_pSndFile->RecalculateGainForAllPlugs();
+	}
+
+	m_pSndFile->m_nRowsPerBeat    = GetDlgItemInt(IDC_ROWSPERBEAT);
+	m_pSndFile->m_nRowsPerMeasure = GetDlgItemInt(IDC_ROWSPERMEASURE);
+	
+
 	CDialog::OnOK();
 }
 
@@ -709,6 +790,7 @@ void CPatternPropertiesDlg::OnOK()
 BEGIN_MESSAGE_MAP(CEditCommand, CPropertySheet)
 	ON_WM_ACTIVATE()
 	ON_WM_CLOSE()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -744,6 +826,24 @@ BOOL CEditCommand::SetParent(CWnd *parent, CModDoc *pModDoc)
 	return TRUE;
 }
 
+void CEditCommand::OnDestroy()
+//----------------------------
+{
+	CPropertySheet::OnDestroy();
+
+	if (m_pageNote) {
+		m_pageNote->DestroyWindow();
+		delete m_pageNote;
+	}
+	if (m_pageVolume) {
+		m_pageVolume->DestroyWindow();
+		delete m_pageVolume;
+	}
+	if (m_pageEffect) {
+		m_pageEffect->DestroyWindow();
+		delete m_pageEffect;
+	}
+}
 
 BOOL CEditCommand::PreTranslateMessage(MSG *pMsg)
 //-----------------------------------------------
@@ -1318,8 +1418,10 @@ BEGIN_MESSAGE_MAP(CMidiMacroSetup, CDialog)
 	ON_CBN_SELCHANGE(IDC_MACROPARAM,OnPlugParamChanged)
 	ON_EN_CHANGE(IDC_EDIT1,			OnSFxEditChanged)
 	ON_EN_CHANGE(IDC_EDIT2,			OnZxxEditChanged)
-	ON_COMMAND_RANGE(ID_PLUGSELECT, ID_PLUGSELECT+NMACROS, OnViewAllParams) //rewbs.patPlugName
+	ON_COMMAND_RANGE(ID_PLUGSELECT, ID_PLUGSELECT+NMACROS-1, OnViewAllParams) //rewbs.patPlugName
+	ON_COMMAND_RANGE(ID_PLUGSELECT+NMACROS, ID_PLUGSELECT+NMACROS+NMACROS-1, OnSetSFx) //rewbs.patPlugName
 END_MESSAGE_MAP()
+
 
 CMidiMacroSetup::CMidiMacroSetup(MODMIDICFG *pcfg, BOOL bEmbed, CWnd *parent):CDialog(IDD_MIDIMACRO, parent)
 //----------------------------------------------------------------------------------------------------------
@@ -1367,6 +1469,7 @@ BOOL CMidiMacroSetup::OnInitDialog()
 	m_CbnSFxPreset.AddString("Set Filter Cutoff");
 	m_CbnSFxPreset.AddString("Set Filter Resonance");
 	m_CbnSFxPreset.AddString("Set Filter Mode");
+	m_CbnSFxPreset.AddString("Plugin Dry/Wet Ratio");
 	m_CbnSFxPreset.AddString("Control Plugin Param...");
 	m_CbnSFxPreset.AddString("Custom");
 	OnSFxChanged();
@@ -1391,21 +1494,21 @@ BOOL CMidiMacroSetup::OnInitDialog()
 	
 	for (UINT m=0; m<NMACROS; m++)
 	{
-		m_EditMacro[m].Create(ES_CENTER | ES_READONLY | WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_BORDER, 
-			CRect(offsetx, offsety+m*(separatory+height), offsetx+widthMacro, offsety+m*(separatory+height)+height), this, 1*m);
+		m_EditMacro[m].Create("", BS_FLAT | WS_CHILD | WS_VISIBLE | WS_TABSTOP /*| WS_BORDER*/,
+			CRect(offsetx, offsety+m*(separatory+height), offsetx+widthMacro, offsety+m*(separatory+height)+height), this, ID_PLUGSELECT+NMACROS+m);
 		m_EditMacro[m].SetFont(GetFont());
 		
 		m_EditMacroType[m].Create(ES_READONLY | WS_CHILD| WS_VISIBLE | WS_TABSTOP | WS_BORDER, 
-			CRect(offsetx+separatorx+widthMacro, offsety+m*(separatory+height), offsetx+widthMacro+widthType, offsety+m*(separatory+height)+height), this, 3*m);
+			CRect(offsetx+separatorx+widthMacro, offsety+m*(separatory+height), offsetx+widthMacro+widthType, offsety+m*(separatory+height)+height), this, ID_PLUGSELECT+NMACROS+m);
 		m_EditMacroType[m].SetFont(GetFont());
 
 		m_EditMacroValue[m].Create(ES_CENTER | ES_READONLY | WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_BORDER, 
-			CRect(offsetx+separatorx+widthType+widthMacro, offsety+m*(separatory+height), offsetx+widthMacro+widthType+widthVal, offsety+m*(separatory+height)+height), this, 2*m);
+			CRect(offsetx+separatorx+widthType+widthMacro, offsety+m*(separatory+height), offsetx+widthMacro+widthType+widthVal, offsety+m*(separatory+height)+height), this, ID_PLUGSELECT+NMACROS+m);
 		m_EditMacroValue[m].SetFont(GetFont());
 
-		m_BtnMacro[m].Create("Show All...", WS_CHILD | WS_TABSTOP | WS_VISIBLE,
+		m_BtnMacroShowAll[m].Create("Show All...", WS_CHILD | WS_TABSTOP | WS_VISIBLE,
 			CRect(offsetx+separatorx+widthType+widthMacro+widthVal, offsety+m*(separatory+height), offsetx+widthMacro+widthType+widthVal+widthBtn, offsety+m*(separatory+height)+height), this, ID_PLUGSELECT+m);
-		m_BtnMacro[m].SetFont(GetFont());
+		m_BtnMacroShowAll[m].SetFont(GetFont());
 	}
 	UpdateMacroList();
 
@@ -1435,6 +1538,7 @@ void CMidiMacroSetup::UpdateMacroList(int macro) //-1 for all macros
 
 	CString s, macroText;
 	UINT start, end, macroType;
+	int selectedMacro=m_CbnSFx.GetCurSel();
 
 	if (macro>=0 && macro<16)
 	{
@@ -1456,6 +1560,8 @@ void CMidiMacroSetup::UpdateMacroList(int macro) //-1 for all macros
 		//Macro value:
 		CString macroText = &m_MidiCfg.szMidiSFXExt[m*32];
 		m_EditMacroValue[m].SetWindowText(macroText);
+		m_EditMacroValue[m].SetBackColor(m==selectedMacro?RGB(200,200,225) : RGB(245,245,245) );
+
 
 		//Macro Type:
 		macroType = m_pModDoc->GetMacroType(macroText);
@@ -1465,6 +1571,7 @@ void CMidiMacroSetup::UpdateMacroList(int macro) //-1 for all macros
 			case sfx_cutoff: s = "Set Filter Cutoff"; break;
 			case sfx_reso: s = "Set Filter Resonance"; break;
 			case sfx_mode: s = "Set Filter Mode"; break;
+			case sfx_drywet: s = "Set Plugin dry/wet ratio"; break;
 			case sfx_plug: 
 				s.Format("Control Plugin Param %d", m_pModDoc->MacroToPlugParam(macroText)); 
 				break;
@@ -1472,12 +1579,13 @@ void CMidiMacroSetup::UpdateMacroList(int macro) //-1 for all macros
 			default: s = "Custom";
 		}
 		m_EditMacroType[m].SetWindowText(s);
+		m_EditMacroType[m].SetBackColor(m==selectedMacro?RGB(200,200,225) : RGB(245,245,245) );
 
 		//Param details button:
 		if (macroType == sfx_plug)
-			m_BtnMacro[m].ShowWindow(SW_SHOW);
+			m_BtnMacroShowAll[m].ShowWindow(SW_SHOW);
 		else 
-			m_BtnMacro[m].ShowWindow(SW_HIDE);
+			m_BtnMacroShowAll[m].ShowWindow(SW_HIDE);
 	}
 }
 
@@ -1557,6 +1665,7 @@ void CMidiMacroSetup::OnSFxChanged()
 		memcpy(macroText.GetBuffer(32), &m_MidiCfg.szMidiSFXExt[sfx*32], 32);
 		int preset = m_pModDoc->GetMacroType(macroText);
 		m_CbnSFxPreset.SetCurSel(preset);
+				
 	}
 	UpdateDialog();
 }
@@ -1577,6 +1686,7 @@ void CMidiMacroSetup::OnSFxPresetChanged()
 		case sfx_cutoff:	strcpy(pmacro, "F0F000z"); break;	// cutoff
 		case sfx_reso:		strcpy(pmacro, "F0F001z"); break;   // reso
 		case sfx_mode:		strcpy(pmacro, "F0F002z"); break;   // mode
+		case sfx_drywet:	strcpy(pmacro, "F0F003z"); break;   // mode
 		case sfx_plug:		strcpy(pmacro, "F0F080z"); break;	// plug param - TODO: get value from other menus
 		case sfx_custom:	/*strcpy(pmacro, "z");*/ break;		// custom - leave as is.
 		}
@@ -1678,6 +1788,12 @@ void CMidiMacroSetup::OnZxxEditChanged()
 		s[31] = 0;
 		memcpy(&m_MidiCfg.szMidiZXXExt[zxx*32], s, 32);
 	}
+}
+
+void CMidiMacroSetup::OnSetSFx(UINT id)
+{
+	m_CbnSFx.SetCurSel(id-(ID_PLUGSELECT+NMACROS));
+	OnSFxChanged();
 }
 
 void CMidiMacroSetup::OnViewAllParams(UINT id)
@@ -2001,7 +2117,8 @@ BOOL CChordEditor::OnInitDialog()
 		CMainFrame::GetKeyName(kbdmap[ikey] << 16, stmp, sizeof(stmp)-1);
 		if ((stmp[0] > ' ') && (!stmp[1]))
 		{
-			wsprintf(s, "%s%d: Shift+%c", szNoteNames[ikey % 12], ikey/12, stmp[0]);
+			//wsprintf(s, "%s%d: Shift+%c", szNoteNames[ikey % 12], ikey/12, stmp[0]);
+			wsprintf(s, "%s%d", szNoteNames[ikey % 12], ikey/12);
 			m_CbnShortcut.SetItemData(m_CbnShortcut.AddString(s), ikey);
 		}
 	}
@@ -2395,3 +2512,5 @@ VOID CSampleMapDlg::OnOK()
 	}
 	CDialog::OnCancel();
 }
+
+

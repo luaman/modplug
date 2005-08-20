@@ -8,8 +8,11 @@
 */
 
 #include "stdafx.h"
+#include "../mptrack/mptrack.h"
+#include "../mptrack/mainfrm.h"
 #include "sndfile.h"
 #include "aeffectx.h"
+
 
 #ifndef NO_COPYRIGHT
 #ifndef NO_MMCMP_SUPPORT
@@ -120,21 +123,29 @@ Exemple with "nPanLoopEnd" , "nPitchLoopEnd" & "VolEnv[MAX_ENVPOINTS]" members :
 
 		[EXT]	means external (not related) to INSTRUMENTHEADER content
 
+C...	[EXT]	nChannels
+CS..			nCutSwing
+CWV.	[EXT]	dwCreatedWithVersion
 DCT.			nDCT;
 dF..			dwFlags;
+DGV.	[EXT]	nDefaultGlobalVolume
+DT..	[EXT]	nDefaultTempo;			
 DNA.			nDNA;
 EBIH	[EXT]	embeded instrument header tag (ITP file format)
+FM..			nFilterMode;
 fn[.			filename[12];
 FO..			nFadeOut;
 GV..			nGlobalVol;
 IFC.			nIFC;
 IFR.			nIFR;
 K[.				Keyboard[128];
+LSWV	[EXT]	nPlugMixMode
 MB..			wMidiBank;
 MC..			nMidiChannel;
 MDK.			nMidiDrumKey;
 MiP.			nMixPlug;
 MP..			nMidiProgram;
+MPTS	[EXT]									Extra song info tag
 MPTX	[EXT]									EXTRA INFO tag
 n[..			name[32];
 NNA.			nNNA;
@@ -151,13 +162,20 @@ PiSB			nPitchSustainBegin;
 PiSE			nPitchSustainEnd;
 PLE.			nPanLoopEnd;
 PLS.			nPanLoopStart;
+PMM.	[EXT]	nPlugMixMode;
 PP[.			PanPoints[MAX_ENVPOINTS];
 PPC.			nPPC;
 PPS.			nPPS;
 PS..			nPanSwing;
 PSB.			nPanSustainBegin;
 PSE.			nPanSustainEnd;
+R...			nResampling;
+RPB.	[EXT]	nRowsPerBeat;
+RPM.	[EXT]	nRowsPerMeasure;
+RS..			nResSwing;
 SEP@	[EXT]									chunk SEPARATOR tag
+SPA.	[EXT]	m_nSongPreAmp;
+TM..	[EXT]	nTempoMode;
 VE..			nVolEnv;
 VE[.			VolEnv[MAX_ENVPOINTS];
 VLE.			nVolLoopEnd;
@@ -167,6 +185,7 @@ VR..			nVolRamp;
 VS..			nVolSwing;
 VSB.			nVolSustainBegin;
 VSE.			nVolSustainEnd;
+VSTV	[EXT]	nVSTiVolume;
 -----------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------*/
 
@@ -239,6 +258,10 @@ WRITE_MPTHEADER_array_member(	name				, CHAR			, n[..		, 32				)
 WRITE_MPTHEADER_array_member(	filename			, CHAR			, fn[.		, 12				)
 WRITE_MPTHEADER_sized_member(	nMixPlug			, BYTE			, MiP.							)
 WRITE_MPTHEADER_sized_member(	nVolRamp			, USHORT		, VR..							)
+WRITE_MPTHEADER_sized_member(	nResampling			, USHORT		, R...							)
+WRITE_MPTHEADER_sized_member(	nCutSwing			, BYTE			, CS..							)
+WRITE_MPTHEADER_sized_member(	nResSwing			, BYTE			, RS..							)
+WRITE_MPTHEADER_sized_member(	nFilterMode			, BYTE			, FM..							)
 }
 
 // --------------------------------------------------------------------------------------------
@@ -308,6 +331,10 @@ GET_MPTHEADER_array_member(	name				, CHAR			, n[..		, 32				)
 GET_MPTHEADER_array_member(	filename			, CHAR			, fn[.		, 12				)
 GET_MPTHEADER_sized_member(	nMixPlug			, BYTE			, MiP.							)
 GET_MPTHEADER_sized_member(	nVolRamp			, USHORT		, VR..							)
+GET_MPTHEADER_sized_member(	nResampling			, UINT			, R...							)
+GET_MPTHEADER_sized_member(	nCutSwing			, BYTE			, CS..							)
+GET_MPTHEADER_sized_member(	nResSwing			, BYTE			, RS..							)
+GET_MPTHEADER_sized_member(	nFilterMode			, BYTE			, FM..							)
 }
 
 return pointer;
@@ -336,6 +363,18 @@ CSoundFile::CSoundFile()
 	m_nMaxPeriod = 0x7FFF;
 	m_nRepeatCount = 0;
 	m_nSeqOverride = 0;
+	m_bPatternTransitionOccurred = false;
+	m_nRowsPerBeat = 4;
+	m_nRowsPerMeasure = 16;
+	m_nTempoMode = tempo_mode_classic;
+	m_bIsRendering = false;
+	m_nMaxSample = 0;
+
+	m_pModDoc = NULL;
+	m_dwLastSavedWithVersion=0;
+	m_dwCreatedWithVersion=0;
+	memset(m_bChannelMuteTogglePending, 0, sizeof(m_bChannelMuteTogglePending));
+
 
 // -> CODE#0023
 // -> DESC="IT project files (.itp)"
@@ -356,19 +395,26 @@ CSoundFile::CSoundFile()
 	memset(m_MixPlugins, 0, sizeof(m_MixPlugins));
 	memset(&m_SongEQ, 0, sizeof(m_SongEQ));
 	m_lTotalSampleCount=0;
+
+	m_nPlugMixMode=plugmix_mode_117RC2;
+	m_pConfig = new CSoundFilePlayConfig();
+	
+	BuildDefaultInstrument();
 }
 
 
 CSoundFile::~CSoundFile()
 //-----------------------
 {
+	delete m_pConfig;
 	Destroy();
 }
 
 
-BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
-//----------------------------------------------------------
+BOOL CSoundFile::Create(LPCBYTE lpStream, CModDoc *pModDoc, DWORD dwMemLength)
+//---------------------------------------------------------------------------
 {
+	m_pModDoc=pModDoc;
 	m_nType = MOD_TYPE_NONE;
 	m_dwSongFlags = 0;
 	m_nChannels = 0;
@@ -377,8 +423,8 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
 	m_nInstruments = 0;
 	m_nFreqFactor = m_nTempoFactor = 128;
 	m_nMasterVolume = 128;
-	m_nDefaultGlobalVolume = 256;
-	m_nGlobalVolume = 256;
+	m_nDefaultGlobalVolume = 128;
+	m_nGlobalVolume = 128;
 	m_nOldGlbVolSlide = 0;
 	m_nDefaultSpeed = 6;
 	m_nDefaultTempo = 125;
@@ -393,7 +439,8 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
 	m_nRestartPos = 0;
 	m_nMinPeriod = 16;
 	m_nMaxPeriod = 32767;
-	m_nSongPreAmp = 0x30;
+	m_nSongPreAmp = 100;
+	m_nVSTiVolume = 100;
 	m_nPatternNames = 0;
 	m_nMaxOrderPosition = 0;
 	m_lpszPatternNames = NULL;
@@ -500,6 +547,8 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
 			lpStream = NULL;
 		}
 #endif
+	} else {
+		m_dwCreatedWithVersion = MPTRACK_VERSION;
 	}
 	// Adjust song names
 	for (UINT iSmp=0; iSmp<MAX_SAMPLES; iSmp++)
@@ -558,19 +607,42 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
 	// Check invalid instruments
 	while ((m_nInstruments > 0) && (!Headers[m_nInstruments])) m_nInstruments--;
 	// Set default values
-	if (m_nSongPreAmp < 0x20) m_nSongPreAmp = 0x20;
 	if (m_nDefaultTempo < 32) m_nDefaultTempo = 125;
 	if (!m_nDefaultSpeed) m_nDefaultSpeed = 6;
 	m_nMusicSpeed = m_nDefaultSpeed;
 	m_nMusicTempo = m_nDefaultTempo;
 	m_nGlobalVolume = m_nDefaultGlobalVolume;
+	m_lHighResRampingGlobalVolume = m_nGlobalVolume<<VOLUMERAMPPRECISION;
+	m_nGlobalVolumeDestination = m_nGlobalVolume;
+	m_nSamplesToGlobalVolRampDest=0;
 	m_nNextPattern = 0;
 	m_nCurrentPattern = 0;
 	m_nPattern = 0;
 	m_nBufferCount = 0;
+	m_dBufferDiff = 0;
 	m_nTickCount = m_nMusicSpeed;
 	m_nNextRow = 0;
 	m_nRow = 0;
+
+	switch(m_nTempoMode) {
+		case tempo_mode_alternative: 
+			m_nSamplesPerTick = gdwMixingFreq / m_nMusicTempo; break;
+		case tempo_mode_modern: 
+			m_nSamplesPerTick = gdwMixingFreq * (60/m_nMusicTempo / (m_nMusicSpeed * m_nRowsPerBeat)); break;
+		case tempo_mode_classic: default:
+			m_nSamplesPerTick = (gdwMixingFreq * 5 * m_nTempoFactor) / (m_nMusicTempo << 8);
+	}
+
+/*	if (CMainFrame::m_dwPatternSetup & PATTERN_MODERNSPEED) {
+		m_nSamplesPerTick = gdwMixingFreq * (60/m_nMusicTempo / (m_nMusicSpeed * m_nRowsPerBeat));
+	} 
+	else if (CMainFrame::m_dwPatternSetup & PATTERN_ALTERNTIVEBPMSPEED) {
+		m_nSamplesPerTick = gdwMixingFreq / m_nMusicTempo;
+	}
+	else {
+		m_nSamplesPerTick = (gdwMixingFreq * 5 * m_nTempoFactor) / (m_nMusicTempo << 8);
+	}
+*/
 	if ((m_nRestartPos >= MAX_ORDERS) || (Order[m_nRestartPos] >= MAX_PATTERNS)) m_nRestartPos = 0;
 	// Load plugins
 	if (gpMixPluginCreateProc)
@@ -580,21 +652,27 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
 			if ((m_MixPlugins[iPlug].Info.dwPluginId1)
 			 || (m_MixPlugins[iPlug].Info.dwPluginId2))
 			{
-				gpMixPluginCreateProc(&m_MixPlugins[iPlug]);
+				gpMixPluginCreateProc(&m_MixPlugins[iPlug], pModDoc);
 				if (m_MixPlugins[iPlug].pMixPlugin)
 				{
-					m_MixPlugins[iPlug].pMixPlugin->RestoreAllParameters();
+					m_MixPlugins[iPlug].pMixPlugin->RestoreAllParameters(m_MixPlugins[iPlug].defaultProgram); //rewbs.plugDefaultProgram: added param
 				}
 			}
 		}
 	}
+	m_pConfig->SetPluginMixLevels(m_nPlugMixMode);
+	RecalculateGainForAllPlugs();
+
 	if (m_nType)
 	{
-		UINT maxpreamp = 0x10+(m_nChannels*8);
+/*		UINT maxpreamp = 0x10+(m_nChannels*8);
 		if (maxpreamp > 100) maxpreamp = 100;
 		if (m_nSongPreAmp > maxpreamp) m_nSongPreAmp = maxpreamp;
-		return TRUE;
+*/		return TRUE;
 	}
+
+	
+
 	return FALSE;
 }
 
@@ -672,6 +750,7 @@ MODCOMMAND *CSoundFile::AllocatePattern(UINT rows, UINT nchns)
 void CSoundFile::FreePattern(LPVOID pat)
 //--------------------------------------
 {
+	
 	if (pat) delete pat;
 }
 
@@ -916,6 +995,23 @@ UINT CSoundFile::GetCurrentPos() const
 	return pos + m_nRow; 
 }
 
+double  CSoundFile::GetCurrentBPM() const
+//---------------------------------------
+{
+	double bpm;
+
+	if (m_nTempoMode == tempo_mode_modern) {		// With modern mode, we trust that true bpm 
+		bpm = static_cast<double>(m_nMusicTempo);	// is  be close enough to what user chose.
+	}												// This avoids oscillation due to tick-to-tick corrections.
+
+	else {												//with other modes, we calculate it:
+		double ticksPerBeat = m_nMusicSpeed*m_nRowsPerBeat;		//ticks/beat = ticks/row  * rows/beat
+		double samplesPerBeat = m_nSamplesPerTick*ticksPerBeat;	//samps/beat = samps/tick * ticks/beat
+		bpm =  gdwMixingFreq/samplesPerBeat*60;					//beats/sec  = samps/sec  / samps/beat
+	}															//beats/min  =  beats/sec * 60
+	
+	return bpm;
+}
 
 void CSoundFile::SetCurrentPos(UINT nPos)
 //---------------------------------------
@@ -1018,7 +1114,7 @@ void CSoundFile::SetCurrentPos(UINT nPos)
 	m_nBufferCount = 0;
 	m_nPatternDelay = 0;
 	m_nFrameDelay = 0;
-	m_nSeqOverride = 0;
+	//m_nSeqOverride = 0;
 }
 
 
@@ -1059,7 +1155,6 @@ void CSoundFile::SetCurrentOrder(UINT nPos)
 void CSoundFile::SuspendPlugins()	
 //------------------------------
 {
-	float in[2][SCRATCH_BUFFER_SIZE], out[2][SCRATCH_BUFFER_SIZE]; //temp scratch buffers for final call to process.
 	for (UINT iPlug=0; iPlug<MAX_MIXPLUGINS; iPlug++)
 	{
 		if (!m_MixPlugins[iPlug].pMixPlugin)	
@@ -1068,10 +1163,9 @@ void CSoundFile::SuspendPlugins()
 		IMixPlugin *pPlugin = m_MixPlugins[iPlug].pMixPlugin;
 		if (m_MixPlugins[iPlug].pMixState)
 		{
+			pPlugin->NotifySongPlaying(false);
 			pPlugin->HardAllNotesOff();
-			pPlugin->Process((float*)in, (float*)out, SCRATCH_BUFFER_SIZE); //final process.
-			pPlugin->Dispatch(effStopProcess, 0, 0, NULL, 0.0f);
-			pPlugin->Dispatch(effMainsChanged, 0, 0, NULL, 0.0f); // calls suspend
+			pPlugin->Suspend();
 		}
 	}
 	m_lTotalSampleCount=0;
@@ -1085,15 +1179,11 @@ void CSoundFile::ResumePlugins()
 		if (!m_MixPlugins[iPlug].pMixPlugin)	
 			continue;  //most common branch
 
-		IMixPlugin *pPlugin = m_MixPlugins[iPlug].pMixPlugin;
 		if (m_MixPlugins[iPlug].pMixState)
 		{
-			//reset some stuff
-			pPlugin->Dispatch(effStopProcess, 0, 0, NULL, 0.0f);	
-			pPlugin->Dispatch(effMainsChanged, 0, 0, NULL, 0.0f);	// calls suspend
-			//start off some stuff
-			pPlugin->Dispatch(effMainsChanged, 0, 1, NULL, 0.0f);
-			pPlugin->Dispatch(effStartProcess, 0, 0, NULL, 0.0f);	// calls resume
+            IMixPlugin *pPlugin = m_MixPlugins[iPlug].pMixPlugin;
+			pPlugin->NotifySongPlaying(true);
+			pPlugin->Resume();
 		}
 	}
 	m_lTotalSampleCount=0;   //Already done in suspend.
@@ -1102,15 +1192,14 @@ void CSoundFile::ResumePlugins()
 
 
 void CSoundFile::StopAllVsti()
+//----------------------------
 {
-	for (UINT iPlug=0; iPlug<MAX_MIXPLUGINS; iPlug++)
-	{
+	for (UINT iPlug=0; iPlug<MAX_MIXPLUGINS; iPlug++) {
 		if (!m_MixPlugins[iPlug].pMixPlugin)	
 			continue;  //most common branch
 		
 		IMixPlugin *pPlugin = m_MixPlugins[iPlug].pMixPlugin;
-		if (m_MixPlugins[iPlug].pMixState)
-		{
+		if (m_MixPlugins[iPlug].pMixState) {
 			pPlugin->HardAllNotesOff();
 		}
 	}
@@ -1118,6 +1207,19 @@ void CSoundFile::StopAllVsti()
 }
 
 
+void CSoundFile::RecalculateGainForAllPlugs()
+//------------------------------------------
+{
+	for (UINT iPlug=0; iPlug<MAX_MIXPLUGINS; iPlug++) {
+		if (!m_MixPlugins[iPlug].pMixPlugin)	
+			continue;  //most common branch
+		
+		IMixPlugin *pPlugin = m_MixPlugins[iPlug].pMixPlugin;
+		if (m_MixPlugins[iPlug].pMixState) {
+			pPlugin->RecalculateGain();
+		}
+	}
+}
 
 //end rewbs.VSTCompliance
 
@@ -1149,7 +1251,7 @@ void CSoundFile::LoopPattern(int nPat, int nRow)
 		m_nFrameDelay = 0;
 		m_nBufferCount = 0;
 		m_dwSongFlags |= SONG_PATTERNLOOP;
-		m_nSeqOverride = 0;
+	//	m_nSeqOverride = 0;
 	}
 }
 //rewbs.playSongFromCursor
@@ -1165,23 +1267,26 @@ void CSoundFile::DontLoopPattern(int nPat, int nRow)
 	m_nFrameDelay = 0;
 	m_nBufferCount = 0;
 	m_dwSongFlags &= ~SONG_PATTERNLOOP;
-	m_nSeqOverride = 0;
+	//m_nSeqOverride = 0;
 }
 
-int CSoundFile::FindOrder(BYTE pat)
+int CSoundFile::FindOrder(BYTE pat, UINT startFromOrder)
+//------------------------------------------------------
 {
-	int order = -1;
+	int foundAtOrder = -1;
+	int candidateOrder = 0;
 
 	for (UINT p=0; p<MAX_ORDERS; p++)
 	{
-		if (Order[p] == pat)
+		candidateOrder = (startFromOrder+p)%MAX_ORDERS;		//wrap around MAX_ORDERS
+		if (Order[candidateOrder] == pat)
 		{
-			order = p;
+			foundAtOrder = candidateOrder;
 			break;
 		}
 	}
 
-	return order;
+	return foundAtOrder;
 }
 //end rewbs.playSongFromCursor
 
@@ -2336,5 +2441,30 @@ BOOL CSoundFile::MoveSample(UINT from, UINT to)
 // -! NEW_FEATURE#0020
 #endif // FASTSOUNDLIB
 
+//rewbs.plugDocAware
+/*PSNDMIXPLUGIN CSoundFile::GetSndPlugMixPlug(IMixPlugin *pPlugin) 
+{
+	for (UINT iPlug=0; iPlug<MAX_MIXPLUGINS; iPlug++)
+	{
+		if (m_MixPlugins[iPlug].pMixPlugin == pPlugin)
+			return &(m_MixPlugins[iPlug]);
+	}
+	
+	return NULL;
+}*/
+//end rewbs.plugDocAware
 
 
+void CSoundFile::BuildDefaultInstrument() 
+//---------------------------------------
+{
+// m_defaultInstrument is currently only used to get default values for extented properties. 
+// In the future we can make better use of this.
+	memset(&m_defaultInstrument, 0, sizeof(INSTRUMENTHEADER));
+	m_defaultInstrument.nResampling = SRCMODE_DEFAULT;
+	m_defaultInstrument.nFilterMode = FLTMODE_UNCHANGED;
+	m_defaultInstrument.nPPC = 5*12;
+	m_defaultInstrument.nGlobalVol=128;
+	m_defaultInstrument.nPan = 0x20 << 2;
+	m_defaultInstrument.nIFC = 0xFF;
+}

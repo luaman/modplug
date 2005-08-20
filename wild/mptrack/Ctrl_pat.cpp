@@ -87,7 +87,9 @@ BEGIN_MESSAGE_MAP(CCtrlPatterns, CModControlDlg)
 	ON_EN_CHANGE(IDC_EDIT_SPACING,			OnSpacingChanged)
 	ON_EN_CHANGE(IDC_EDIT_PATTERNNAME,		OnPatternNameChanged)
 	ON_UPDATE_COMMAND_UI(IDC_PATTERN_RECORD,OnUpdateRecord)
+	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTA, 0, 0xFFFF, OnToolTipText)
 	//}}AFX_MSG_MAP
+	ON_WM_MOUSEWHEEL()
 END_MESSAGE_MAP()
 
 void CCtrlPatterns::DoDataExchange(CDataExchange* pDX)
@@ -127,6 +129,7 @@ CCtrlPatterns::CCtrlPatterns()
 BOOL CCtrlPatterns::OnInitDialog()
 //--------------------------------
 {
+	CWnd::EnableToolTips(true);
 	CRect rect, rcOrderList;
 	CMainFrame *pMainFrm = CMainFrame::GetMainFrame();
 	CModControlDlg::OnInitDialog();
@@ -348,7 +351,12 @@ void CCtrlPatterns::UpdateView(DWORD dwHintMask, CObject *pObj)
 		}
 		if (dwHintMask & (HINT_MODTYPE|HINT_PATNAMES))
 		{
-			UINT nPat = SendViewMessage(VIEWMSG_GETCURRENTPATTERN);
+			UINT nPat;
+			if (dwHintMask&HINT_PATNAMES) {
+				nPat=(dwHintMask>>24)&0xFF;
+			} else {
+				nPat = SendViewMessage(VIEWMSG_GETCURRENTPATTERN);
+			}
 			m_pSndFile->GetPatternName(nPat, s, sizeof(s));
 			m_EditPatName.SetWindowText(s);
 			BOOL bXMIT = (m_pSndFile->m_nType & (MOD_TYPE_XM|MOD_TYPE_IT)) ? TRUE : FALSE;
@@ -853,29 +861,8 @@ void CCtrlPatterns::OnPatternPlay()
 {
 	CModDoc *pModDoc = GetDocument();
 	CMainFrame *pMainFrm = CMainFrame::GetMainFrame();
-	if ((pMainFrm) && (pModDoc))
-	{
-		DWORD dwPos = SendViewMessage(VIEWMSG_GETCURRENTPOS);
-		CSoundFile *pSndFile = pModDoc->GetSoundFile();
-		BEGIN_CRITICAL();
-		// Cut instruments/samples
-		for (UINT i=pSndFile->m_nChannels; i<MAX_CHANNELS; i++)
-		{
-			pSndFile->Chn[i].dwFlags |= CHN_NOTEFADE | CHN_KEYOFF;
-		}
-		pSndFile->m_dwSongFlags &= ~(SONG_PAUSED|SONG_STEP);
-		pSndFile->LoopPattern(HIWORD(dwPos));
-		pSndFile->m_nNextRow = LOWORD(dwPos);
-		END_CRITICAL();
-		if (pMainFrm->GetModPlaying() != pModDoc)
-		{
-			pSndFile->ResumePlugins();		//rewbs.VSTcompliance
-			pMainFrm->PlayMod(pModDoc, m_hWndView, MPTNOTIFY_POSITION);
-		}
-		else
-		{
-			pSndFile->StopAllVsti();	//rewbs.VSTCompliance
-		}
+	if ((pMainFrm) && (pModDoc)) {
+		pModDoc->OnPatternPlay();
 	}
 	SwitchToView();
 }
@@ -886,35 +873,8 @@ void CCtrlPatterns::OnPatternPlayNoLoop()
 {
 	CModDoc *pModDoc = GetDocument();
 	CMainFrame *pMainFrm = CMainFrame::GetMainFrame();
-	
-	if ((pMainFrm) && (pModDoc))
-	{
-		DWORD dwPos = SendViewMessage(VIEWMSG_GETCURRENTPOS);
-		CSoundFile *pSndFile = pModDoc->GetSoundFile();
-		int order = pSndFile->FindOrder(HIWORD(dwPos));
-		if  (order < 0)
-			return;			//we can't play song from a pat that's not in the orderlist.
-
-		BEGIN_CRITICAL();
-		// Cut instruments/samples
-		for (UINT i=pSndFile->m_nChannels; i<MAX_CHANNELS; i++)
-		{
-			pSndFile->Chn[i].dwFlags |= CHN_NOTEFADE | CHN_KEYOFF;
-		}
-		pSndFile->m_dwSongFlags &= ~(SONG_PAUSED|SONG_STEP);
-		pSndFile->SetCurrentOrder(order);
-		pSndFile->DontLoopPattern(order, LOWORD(dwPos));
-		pSndFile->m_nNextRow = LOWORD(dwPos);
-		END_CRITICAL();
-		if (pMainFrm->GetModPlaying() != pModDoc)
-		{
-			pSndFile->ResumePlugins();
-			pMainFrm->PlayMod(pModDoc, m_hWndView, MPTNOTIFY_POSITION);
-		}
-		else
-		{
-			pSndFile->StopAllVsti();	//rewbs.VSTCompliance
-		}
+	if ((pMainFrm) && (pModDoc)) {
+		pModDoc->OnPatternPlayNoLoop();
 	}
 	SwitchToView();
 }
@@ -925,37 +885,8 @@ void CCtrlPatterns::OnPatternPlayFromStart()
 {
 	CModDoc *pModDoc = GetDocument();
 	CMainFrame *pMainFrm = CMainFrame::GetMainFrame();
-	if ((pMainFrm) && (pModDoc))
-	{
-		DWORD dwPos = SendViewMessage(VIEWMSG_GETCURRENTPOS);
-		CSoundFile *pSndFile = pModDoc->GetSoundFile();
-		BEGIN_CRITICAL();
-		// Cut instruments/samples
-		for (UINT i=0; i<MAX_CHANNELS; i++)
-		{
-			pSndFile->Chn[i].nPatternLoopCount = 0;
-			pSndFile->Chn[i].nPatternLoop = 0;
-			pSndFile->Chn[i].nFadeOutVol = 0;
-			pSndFile->Chn[i].dwFlags |= CHN_NOTEFADE | CHN_KEYOFF;
-		}
-		UINT nPat = HIWORD(dwPos);
-		UINT nOrd = m_OrderList.GetCurSel();
-		if ((nOrd < MAX_PATTERNS) && (pSndFile->Order[nOrd] == nPat)) pSndFile->m_nCurrentPattern = pSndFile->m_nNextPattern = nOrd;
-		pSndFile->m_dwSongFlags &= ~(SONG_PAUSED|SONG_STEP);
-		pSndFile->LoopPattern(nPat);
-		pSndFile->m_nNextRow = 0;
-		pSndFile->ResetTotalTickCount();
-		END_CRITICAL();
-		pMainFrm->ResetElapsedTime();
-		if (pMainFrm->GetModPlaying() != pModDoc)
-		{
-			pSndFile->ResumePlugins();	//rewbs.VSTcompliance
-			pMainFrm->PlayMod(pModDoc, m_hWndView, MPTNOTIFY_POSITION);
-		}
-		else
-		{
-			pSndFile->StopAllVsti();	//rewbs.VSTCompliance
-		}
+	if ((pMainFrm) && (pModDoc)) {
+		pModDoc->OnPatternRestart();
 	}
 	SwitchToView();
 }
@@ -1242,6 +1173,7 @@ BEGIN_MESSAGE_MAP(CChannelManagerDlg, CDialog)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_RBUTTONUP()
 	ON_WM_RBUTTONDOWN()
+	ON_WM_CLOSE()
 	//{{AFX_MSG_MAP(CRemoveChannelsDlg)
 	ON_MESSAGE(WM_MOUSELEAVE, OnMouseLeave)
 	ON_MESSAGE(WM_MOUSEHOVER, OnMouseHover)
@@ -1255,6 +1187,8 @@ BEGIN_MESSAGE_MAP(CChannelManagerDlg, CDialog)
 	ON_COMMAND(IDC_BUTTON8,	OnRestore)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_TAB1,	OnTabSelchange)
 	//}}AFX_MSG_MAP
+	ON_WM_LBUTTONDBLCLK()
+	ON_WM_RBUTTONDBLCLK()
 END_MESSAGE_MAP()
 
 CChannelManagerDlg * CChannelManagerDlg::sharedInstance_ = NULL;
@@ -1483,7 +1417,7 @@ void CChannelManagerDlg::OnApply()
 	// Update document & player
 	pModDoc->SetModified();
 	pModDoc->UpdateAllViews(NULL,0xff,NULL);
-	pMainFrm->PlayMod(pActiveMod, followSong, MPTNOTIFY_POSITION);
+	pMainFrm->PlayMod(pActiveMod, followSong, MPTNOTIFY_POSITION|MPTNOTIFY_VUMETERS); //rewbs.fix2977
 
 	// Redraw channel manager window
 	InvalidateRect(NULL,TRUE);
@@ -1924,6 +1858,7 @@ void CChannelManagerDlg::OnPaint()
 		return;
 	}
 
+	CHAR s[256];
 	UINT i,ii,c=0,l=0;
 	UINT nColns = CM_NB_COLS;
 	UINT nChannels = m_pSndFile->m_nChannels;
@@ -1952,7 +1887,25 @@ void CChannelManagerDlg::OnPaint()
 		::BitBlt(pDC.hdc,client.left,client.top,client.Width(),client.Height(),bdc,0,0,SRCCOPY);
 		::SelectObject(bdc,(HBITMAP)NULL);
 		::DeleteDC(bdc);
-
+/*
+		UINT n;
+		POINT p;
+		CRect r;
+		p.x = mx;
+		p.y = my;
+		BOOL hit = ButtonHit(p,&n,&r);
+		if(hit && !select[n]){
+			r.top += 3;
+			r.left += 3;
+			FrameRect(pDC.hdc,&r,CMainFrame::brushBlack);
+			r.top += 3;
+			r.left += 3;
+			r.bottom -= 3;
+			r.right = r.left + chnSizeX / 7 - 6;
+			FillRect(pDC.hdc,&r,CMainFrame::brushWhite);
+			FrameRect(pDC.hdc,&r,CMainFrame::brushBlack);
+		}
+*/
 		for(i = 0 ; i < nChannels ; i++){
 			ii = pattern[i];
 			if(select[ii]){
@@ -1986,8 +1939,6 @@ void CChannelManagerDlg::OnPaint()
 
 	HBRUSH red = CreateSolidBrush(RGB(192,96,96));
 	HBRUSH green = CreateSolidBrush(RGB(96,192,96));
-
-	CHAR s[256];
 
 	for(i = 0 ; i < nChannels ; i++){
 
@@ -2393,3 +2344,47 @@ void CChannelManagerDlg::MouseEvent(UINT nFlags,CPoint point,BYTE button)
 }
 
 // -! NEW_FEATURE#0015
+
+BOOL CCtrlPatterns::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+//--------------------------------------------------------------------
+{
+	// TODO: Add your message handler code here and/or call default
+
+	if (nFlags==0) {
+		PostViewMessage(VIEWMSG_DOSCROLL, zDelta);
+	}
+	return CModControlDlg::OnMouseWheel(nFlags, zDelta, pt);
+}
+
+BOOL CCtrlPatterns::OnToolTip(UINT id, NMHDR *pNMHDR, LRESULT *pResult) 
+//---------------------------------------------------------------------
+{
+    TOOLTIPTEXT *pTTT = (TOOLTIPTEXT *)pNMHDR;
+    UINT nID =pNMHDR->idFrom;
+    if (pTTT->uFlags & TTF_IDISHWND)
+    {
+        // idFrom is actually the HWND of the tool
+        nID = ::GetDlgCtrlID((HWND)nID);
+        if(nID)
+        {
+            pTTT->lpszText = MAKEINTRESOURCE(nID);
+            pTTT->hinst = AfxGetResourceHandle();
+            return(TRUE);
+        }
+    }
+
+	return FALSE;
+}
+void CChannelManagerDlg::OnLButtonDblClk(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+	OnLButtonDown(nFlags, point);
+	CDialog::OnLButtonDblClk(nFlags, point);
+}
+
+void CChannelManagerDlg::OnRButtonDblClk(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+	OnRButtonDown(nFlags, point);
+	CDialog::OnRButtonDblClk(nFlags, point);
+}

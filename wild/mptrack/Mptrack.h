@@ -33,7 +33,6 @@ typedef MMRESULT (ACMAPI *PFNACMDRIVERDETAILS)(HACMDRIVERID, LPACMDRIVERDETAILS,
 
 
 /////////////////////////////////////////////////////////////////////////////
-
 // 16-colors DIB
 typedef struct MODPLUGDIB
 {
@@ -55,7 +54,7 @@ typedef struct MIDILIBSTRUCT
 /////////////////////////////////////////////////////////////////////////////
 // DLS Sound Banks
 
-#define MAX_DLS_BANKS	10
+#define MAX_DLS_BANKS	100 //rewbs.increaseMaxDLSBanks
 
 class CDLSBank;
 
@@ -121,7 +120,7 @@ protected:
 	CMultiDocTemplate *m_pModTemplate;
 	CVstPluginManager *m_pPluginManager;
 	BOOL m_bInitialized, m_bLayer3Present, m_bExWaveSupport, m_bDebugMode;
-	DWORD m_dwTimeStarted;
+	DWORD m_dwTimeStarted, m_dwLastPluginIdleCall;
 	HANDLE m_hAlternateResourceHandle;
 	// Default macro configuration
 	MODMIDICFG m_MidiCfg;

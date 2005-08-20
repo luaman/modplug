@@ -6,6 +6,7 @@
  *
  * Authors: Olivier Lapicque <olivierl@jps.net>
 */
+#include "../mptrack/SoundFilePlayConfig.h"
 
 #ifndef __SNDFILE_H
 #define __SNDFILE_H
@@ -189,6 +190,7 @@ typedef const BYTE * LPCBYTE;
 // -! NEW_FEATURE#0010
 
 // Filter Modes
+#define FLTMODE_UNCHANGED		0xFF
 #define FLTMODE_LOWPASS			0
 #define FLTMODE_HIGHPASS		1
 #define FLTMODE_BANDPASS		2
@@ -332,9 +334,11 @@ typedef const BYTE * LPCBYTE;
 #define SNDMIX_DIRECTTODISK		0x10000
 #define SNDMIX_ENABLEMMX		0x20000
 #define SNDMIX_NOBACKWARDJUMPS	0x40000
-#define SNDMIX_MAXDEFAULTPAN	0x80000	// Used by the MOD loader
-#define SNDMIX_MUTECHNMODE		0x100000	// Notes are not played on muted channels
+#define SNDMIX_MAXDEFAULTPAN	0x80000	 // Used by the MOD loader
+#define SNDMIX_MUTECHNMODE		0x100000 // Notes are not played on muted channels
+#define SNDMIX_EMULATE_MIX_BUGS 0x200000 // rewbs.emulateMixBugs
 
+#define MAX_GLOBAL_VOLUME 256
 
 // Resampling modes
 enum {
@@ -343,9 +347,98 @@ enum {
 	SRCMODE_SPLINE,
 	SRCMODE_POLYPHASE,
 	SRCMODE_FIRFILTER, //rewbs.resamplerConf
+	SRCMODE_DEFAULT,
 	NUM_SRC_MODES
 };
 
+// Midi Continuous Controller Codes
+// http://www.borg.com/~jglatt/tech/midispec/ctllist.htm
+enum {
+	MIDICC_BankSelect_Coarse = 0,
+	MIDICC_ModulationWheel_Coarse = 1,
+	MIDICC_Breathcontroller_Coarse = 2,
+	MIDICC_FootPedal_Coarse = 4,
+	MIDICC_PortamentoTime_Coarse = 5,
+	MIDICC_DataEntry_Coarse = 6,
+	MIDICC_Volume_Coarse = 7,
+	MIDICC_Balance_Coarse = 8,
+	MIDICC_Panposition_Coarse = 10,
+	MIDICC_Expression_Coarse = 11,
+	MIDICC_EffectControl1_Coarse = 12,
+	MIDICC_EffectControl2_Coarse = 13,
+	MIDICC_GeneralPurposeSlider1 = 16,
+	MIDICC_GeneralPurposeSlider2 = 17,
+	MIDICC_GeneralPurposeSlider3 = 18,
+	MIDICC_GeneralPurposeSlider4 = 19,
+	MIDICC_BankSelect_Fine = 32,
+	MIDICC_ModulationWheel_Fine = 33,
+	MIDICC_Breathcontroller_Fine = 34,
+	MIDICC_FootPedal_Fine = 36,
+	MIDICC_PortamentoTime_Fine = 37,
+	MIDICC_DataEntry_Fine = 38,
+	MIDICC_Volume_Fine = 39,
+	MIDICC_Balance_Fine = 40,
+	MIDICC_Panposition_Fine = 42,
+	MIDICC_Expression_Fine = 43,
+	MIDICC_EffectControl1_Fine = 44,
+	MIDICC_EffectControl2_Fine = 45,
+	MIDICC_HoldPedal_OnOff = 64,
+	MIDICC_Portamento_OnOff = 65,
+	MIDICC_SustenutoPedal_OnOff = 66,
+	MIDICC_SoftPedal_OnOff = 67,
+	MIDICC_LegatoPedal_OnOff = 68,
+	MIDICC_Hold2Pedal_OnOff = 69,
+	MIDICC_SoundVariation = 70,
+	MIDICC_SoundTimbre = 71,
+	MIDICC_SoundReleaseTime = 72,
+	MIDICC_SoundAttackTime = 73,
+	MIDICC_SoundBrightness = 74,
+	MIDICC_SoundControl6 = 75,
+	MIDICC_SoundControl7 = 76,
+	MIDICC_SoundControl8 = 77,
+	MIDICC_SoundControl9 = 78,
+	MIDICC_SoundControl10 = 79,
+	MIDICC_GeneralPurposeButton1_OnOff = 80,
+	MIDICC_GeneralPurposeButton2_OnOff = 81,
+	MIDICC_GeneralPurposeButton3_OnOff = 82,
+	MIDICC_GeneralPurposeButton4_OnOff = 83,
+	MIDICC_EffectsLevel = 91,
+	MIDICC_TremuloLevel = 92,
+	MIDICC_ChorusLevel = 93,
+	MIDICC_CelesteLevel = 94,
+	MIDICC_PhaserLevel = 95,
+	MIDICC_DataButtonincrement = 96,
+	MIDICC_DataButtondecrement = 97,
+	MIDICC_NonRegisteredParameter_Fine = 98,
+	MIDICC_NonRegisteredParameter_Coarse = 99,
+	MIDICC_RegisteredParameter_Fine = 100,
+	MIDICC_RegisteredParameter_Coarse = 101,
+	MIDICC_AllSoundOff = 120,
+	MIDICC_AllControllersOff = 121,
+	MIDICC_LocalKeyboard_OnOff = 122,
+	MIDICC_AllNotesOff = 123,
+	MIDICC_OmniModeOff = 124,
+	MIDICC_OmniModeOn = 125,
+	MIDICC_MonoOperation = 126,
+	MIDICC_PolyOperation = 127,
+};
+
+enum {
+	CHANNEL_ONLY		  = 0,
+	INSTRUMENT_ONLY       = 1,
+	PRIORITISE_INSTRUMENT = 2,
+	PRIORITISE_CHANNEL    = 3,
+	EVEN_IF_MUTED         = false,
+	RESPECT_MUTES         = true,
+};
+
+// filtermodes
+/*enum {
+	INST_FILTERMODE_DEFAULT=0,
+	INST_FILTERMODE_HIGHPASS,
+	INST_FILTERMODE_LOWPASS,
+	INST_NUMFILTERMODES
+};*/
 
 // Sample Struct
 typedef struct _MODINSTRUMENT
@@ -429,6 +522,10 @@ typedef struct _INSTRUMENTHEADER
 // -> DESC="per-instrument volume ramping setup (refered as attack)"
 	USHORT nVolRamp;
 // -! NEW_FEATURE#0027
+	UINT nResampling;
+	BYTE nCutSwing;
+	BYTE nResSwing;
+	BYTE nFilterMode;
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // WHEN adding new members here, ALSO update Sndfile.cpp (instructions near the top of this file)!
@@ -486,6 +583,7 @@ typedef struct _MODCHANNEL
 	LONG nPortamentoSlide, nAutoVibDepth;
 	UINT nAutoVibPos, nVibratoPos, nTremoloPos, nPanbrelloPos;
 	LONG nVolSwing, nPanSwing;
+	LONG nCutSwing, nResSwing;
 	// 8-bit members
 	BYTE nNote, nNNA;
 	BYTE nNewNote, nNewIns, nCommand, nArpeggio;
@@ -508,7 +606,7 @@ typedef struct _MODCHANNEL
 	BYTE nActiveMacro, nFilterMode;
 
 	float m_nPlugParamValueStep;  //rewbs.smoothVST 
-	int m_nPlugInitialParamValue; //rewbs.smoothVST
+	float m_nPlugInitialParamValue; //rewbs.smoothVST
 } MODCHANNEL;
 
 
@@ -542,17 +640,28 @@ public:
 	virtual int AddRef() = 0;
 	virtual int Release() = 0;
 	virtual void SaveAllParameters() = 0;
-	virtual void RestoreAllParameters() = 0;
+	virtual void RestoreAllParameters(long nProg=-1) = 0; //rewbs.plugDefaultProgram: added param
 	virtual void Process(float *pOutL, float *pOutR, unsigned long nSamples) = 0;
 	virtual void Init(unsigned long nFreq, int bReset) = 0;
 	virtual bool MidiSend(DWORD dwMidiCode) = 0;
+	virtual void MidiCC(UINT nMidiCh, UINT nController, UINT nParam, UINT trackChannel) = 0;
+	virtual void MidiPitchBend(UINT nMidiCh, int nParam, UINT trackChannel) = 0;
 	virtual void MidiCommand(UINT nMidiCh, UINT nMidiProg, WORD wMidiBank, UINT note, UINT vol, UINT trackChan) = 0;
 	virtual void HardAllNotesOff() = 0;		//rewbs.VSTCompliance
+	virtual void RecalculateGain() = 0;		
 	virtual bool isPlaying(UINT note, UINT midiChn, UINT trackerChn) = 0; //rewbs.VSTiNNA
 	virtual bool MoveNote(UINT note, UINT midiChn, UINT sourceTrackerChn, UINT destTrackerChn) = 0; //rewbs.VSTiNNA
 	virtual void SetZxxParameter(UINT nParam, UINT nValue) = 0;
 	virtual UINT GetZxxParameter(UINT nParam) = 0; //rewbs.smoothVST 
 	virtual long Dispatch(long opCode, long index, long value, void *ptr, float opt) =0; //rewbs.VSTCompliance
+	virtual void NotifySongPlaying(bool)=0;	//rewbs.VSTCompliance
+	virtual bool IsSongPlaying()=0;
+	virtual bool IsResumed()=0;
+	virtual void Resume()=0;
+	virtual void Suspend()=0;
+	virtual BOOL isInstrument()=0;
+	virtual BOOL CanRecieveMidiEvents()=0;
+
 };
 
 
@@ -597,9 +706,12 @@ typedef struct _SNDMIXPLUGIN
 	PVOID pPluginData;
 	SNDMIXPLUGININFO Info;
 	float fDryRatio;		    // rewbs.dryRatio [20040123]
+	long defaultProgram;		// rewbs.plugDefaultProgram
 } SNDMIXPLUGIN, *PSNDMIXPLUGIN; // rewbs.dryRatio: Hopefully this doesn't need to be a fixed size.
 
-typedef	BOOL (__cdecl *PMIXPLUGINCREATEPROC)(PSNDMIXPLUGIN);
+//class CSoundFile;
+class CModDoc;
+typedef	BOOL (__cdecl *PMIXPLUGINCREATEPROC)(PSNDMIXPLUGIN, CModDoc*);
 
 typedef struct _SNDMIXSONGEQ
 {
@@ -658,13 +770,13 @@ typedef struct MODMIDICFG
 typedef VOID (__cdecl * LPSNDMIXHOOKPROC)(int *, unsigned long, unsigned long); // buffer, samples, channels
 
 
-
 //==============
 class CSoundFile
 //==============
 {
 public:	// Static Members
 	static UINT m_nXBassDepth, m_nXBassRange;
+	static float m_nMaxSample;
 	static UINT m_nReverbDepth, gnReverbType;
 	static UINT m_nProLogicDepth, m_nProLogicDelay;
 	static UINT m_nStereoSeparation;
@@ -676,16 +788,27 @@ public:	// Static Members
 	static PMIXPLUGINCREATEPROC gpMixPluginCreateProc;
 
 public:	// for Editing
+	CModDoc* m_pModDoc;
 	UINT m_nType, m_nChannels, m_nSamples, m_nInstruments;
 	UINT m_nDefaultSpeed, m_nDefaultTempo, m_nDefaultGlobalVolume;
 	DWORD m_dwSongFlags;							// Song flags SONG_XXXX
+	bool m_bIsRendering;
 	UINT m_nMixChannels, m_nMixStat, m_nBufferCount;
+	double m_dBufferDiff;
 	UINT m_nTickCount, m_nTotalCount, m_nPatternDelay, m_nFrameDelay;
 	ULONG m_lTotalSampleCount;	// rewbs.VSTTimeInfo
-	UINT m_nMusicSpeed, m_nMusicTempo;
+	UINT m_nSamplesPerTick;	// rewbs.betterBPM
+	UINT m_nRowsPerBeat;	// rewbs.betterBPM
+	UINT m_nRowsPerMeasure;	// rewbs.betterBPM
+	BYTE m_nTempoMode;		// rewbs.betterBPM
+	BYTE m_nPlugMixMode;
+    UINT m_nMusicSpeed, m_nMusicTempo;
 	UINT m_nNextRow, m_nRow;
 	UINT m_nPattern,m_nCurrentPattern,m_nNextPattern,m_nRestartPos, m_nSeqOverride;
-	UINT m_nMasterVolume, m_nGlobalVolume, m_nSongPreAmp;
+	bool m_bPatternTransitionOccurred;
+	UINT m_nMasterVolume, m_nGlobalVolume, m_nSamplesToGlobalVolRampDest,
+		 m_nGlobalVolumeDestination, m_nSongPreAmp, m_nVSTiVolume;
+	long m_lHighResRampingGlobalVolume;
 	UINT m_nFreqFactor, m_nTempoFactor, m_nOldGlbVolSlide;
 	LONG m_nMinPeriod, m_nMaxPeriod, m_nRepeatCount;
 	DWORD m_nGlobalFadeSamples, m_nGlobalFadeMaxSamples;
@@ -699,11 +822,17 @@ public:	// for Editing
 	BYTE Order[MAX_ORDERS];							// Pattern Orders
 	MODINSTRUMENT Ins[MAX_SAMPLES];					// Instruments
 	INSTRUMENTHEADER *Headers[MAX_INSTRUMENTS];		// Instrument Headers
+	INSTRUMENTHEADER m_defaultInstrument;			// Currently only used to get default values for extented properties. 
 	CHAR m_szNames[MAX_SAMPLES][32];				// Song and sample names
 	MODMIDICFG m_MidiCfg;							// Midi macro config table
 	SNDMIXPLUGIN m_MixPlugins[MAX_MIXPLUGINS];		// Mix plugins
 	SNDMIXSONGEQ m_SongEQ;							// Default song EQ preset
 	CHAR CompressionTable[16];
+	bool m_bChannelMuteTogglePending[MAX_CHANNELS];
+
+	CSoundFilePlayConfig* m_pConfig;
+	DWORD m_dwCreatedWithVersion;
+	DWORD m_dwLastSavedWithVersion;
 
 // -> CODE#0023
 // -> DESC="IT project files (.itp)"
@@ -716,7 +845,7 @@ public:
 	~CSoundFile();
 
 public:
-	BOOL Create(LPCBYTE lpStream, DWORD dwMemLength=0);
+	BOOL Create(LPCBYTE lpStream, CModDoc *pModDoc, DWORD dwMemLength=0);
 	BOOL Destroy();
 	UINT GetType() const { return m_nType; }
 	UINT GetNumChannels() const;
@@ -732,8 +861,9 @@ public:
 	UINT GetSongComments(LPSTR s, UINT cbsize, UINT linesize=32);
 	UINT GetRawSongComments(LPSTR s, UINT cbsize, UINT linesize=32);
 	UINT GetMaxPosition() const;
-	int FindOrder(BYTE pat);					//rewbs.playSongFromCursor
-	void DontLoopPattern(int nPat, int nRow=0); //rewbs.playSongFromCursor
+	double GetCurrentBPM() const;
+	int FindOrder(BYTE pat, UINT startFromOrder=0);	//rewbs.playSongFromCursor
+	void DontLoopPattern(int nPat, int nRow=0);		//rewbs.playSongFromCursor
 	void SetCurrentPos(UINT nPos);
 	void SetCurrentOrder(UINT nOrder);
 	void GetTitle(LPSTR s) const { lstrcpyn(s,m_szNames[0],32); }
@@ -793,6 +923,10 @@ public:
 	BOOL SaveITProject(LPCSTR lpszFileName);
 // -! NEW_FEATURE#0023
 	UINT SaveMixPlugins(FILE *f=NULL, BOOL bUpdate=TRUE);
+	void WriteInstrumentPropertyForAllInstruments(__int32 code,  __int16 size, FILE* f, INSTRUMENTHEADER* instruments[], UINT nInstruments);
+	void SaveExtendedInstrumentProperties(INSTRUMENTHEADER *instruments[], UINT nInstruments, FILE* f);
+	void SaveExtendedSongProperties(FILE* f);
+
 #endif // MODPLUG_NO_FILESAVE
 	// MOD Convert function
 	UINT GetBestSaveFormat() const;
@@ -807,10 +941,12 @@ public:
 	VOID SuspendPlugins(); //rewbs.VSTCompliance
 	VOID ResumePlugins();  //rewbs.VSTCompliance
 	VOID StopAllVsti();    //rewbs.VSTCompliance
+	VOID RecalculateGainForAllPlugs();
 	VOID ResetChannels();
 	UINT Read(LPVOID lpBuffer, UINT cbBuffer);
 	UINT ReadMix(LPVOID lpBuffer, UINT cbBuffer, CSoundFile *, DWORD *, LPBYTE ps=NULL);
 	UINT CreateStereoMix(int count);
+	UINT GetResamplingFlag(const MODCHANNEL *pChannel);
 	BOOL FadeSong(UINT msec);
 	BOOL GlobalFadeSong(UINT msec);
 	UINT GetTotalTickCount() const { return m_nTotalCount; }
@@ -848,18 +984,18 @@ public:
 	// EQ
 	static void InitializeEQ(BOOL bReset=TRUE);
 	static void SetEQGains(const UINT *pGains, UINT nBands, const UINT *pFreqs=NULL, BOOL bReset=FALSE);	// 0=-12dB, 32=+12dB
-	static void EQStereo(int *pbuffer, UINT nCount);
-	static void EQMono(int *pbuffer, UINT nCount);
+	/*static*/ void EQStereo(int *pbuffer, UINT nCount);
+	/*static*/ void EQMono(int *pbuffer, UINT nCount);
 #endif
 	// Analyzer Functions
 	static UINT WaveConvert(LPBYTE lpSrc, signed char *lpDest, UINT nSamples);
 	static UINT WaveStereoConvert(LPBYTE lpSrc, signed char *lpDest, UINT nSamples);
 	static LONG SpectrumAnalyzer(signed char *pBuffer, UINT nSamples, UINT nInc, UINT nChannels);
 	// Float <-> Int conversion routines
-	static VOID StereoMixToFloat(const int *pSrc, float *pOut1, float *pOut2, UINT nCount);
-	static VOID FloatToStereoMix(const float *pIn1, const float *pIn2, int *pOut, UINT nCount);
-	static VOID MonoMixToFloat(const int *pSrc, float *pOut, UINT nCount);
-	static VOID FloatToMonoMix(const float *pIn, int *pOut, UINT nCount);
+	/*static */VOID StereoMixToFloat(const int *pSrc, float *pOut1, float *pOut2, UINT nCount);
+	/*static */VOID FloatToStereoMix(const float *pIn1, const float *pIn2, int *pOut, UINT nCount);
+	/*static */VOID MonoMixToFloat(const int *pSrc, float *pOut, UINT nCount);
+	/*static */VOID FloatToMonoMix(const float *pIn, int *pOut, UINT nCount);
 
 public:
 	BOOL ReadNote();
@@ -872,6 +1008,7 @@ public:
 	// Channel Effects
 	void PortamentoUp(MODCHANNEL *pChn, UINT param);
 	void PortamentoDown(MODCHANNEL *pChn, UINT param);
+	void MidiPortamento(MODCHANNEL *pChn, int param);
 	void FinePortamentoUp(MODCHANNEL *pChn, UINT param);
 	void FinePortamentoDown(MODCHANNEL *pChn, UINT param);
 	void ExtraFinePortamentoUp(MODCHANNEL *pChn, UINT param);
@@ -966,12 +1103,14 @@ public:
 	UINT MapMidiInstrument(DWORD dwProgram, UINT nChannel, UINT nNote);
 	long ITInstrToMPT(const void *p, INSTRUMENTHEADER *penv, UINT trkvers); //change from BOOL for rewbs.modularInstData
 	UINT LoadMixPlugins(const void *pData, UINT nLen);
+//	PSNDMIXPLUGIN GetSndPlugMixPlug(IMixPlugin *pPlugin); //rewbs.plugDocAware
 #ifndef NO_FILTER
 	DWORD CutOffToFrequency(UINT nCutOff, int flt_modifier=256) const; // [0-255] => [1-10KHz]
 #endif
 #ifdef MODPLUG_TRACKER
 	VOID ProcessMidiOut(UINT nChn, MODCHANNEL *pChn);		//rewbs.VSTdelay : added arg.
 #endif
+	VOID ApplyGlobalVolume(int SoundBuffer[], long lTotalSampleCount);
 
 	// Static helper functions
 public:
@@ -986,6 +1125,13 @@ public:
 	static void FreePattern(LPVOID pat);
 	static void FreeSample(LPVOID p);
 	static UINT Normalize24BitBuffer(LPBYTE pbuffer, UINT cbsizebytes, DWORD lmax24, DWORD dwByteInc);
+	UINT GetBestPlugin(UINT nChn, UINT priority, bool respectMutes);
+private:
+	UINT  __cdecl GetChannelPlugin(UINT nChan, bool respectMutes);
+	UINT  __cdecl GetActiveInstrumentPlugin(UINT nChan, bool respectMutes);
+
+	void HandlePatternTransitionEvents();
+	void BuildDefaultInstrument();
 };
 
 
@@ -1128,11 +1274,9 @@ typedef struct WAVEEXTRAHEADER
 // Low-level Mixing functions
 
 #define MIXBUFFERSIZE		512
-#define SCRATCH_BUFFER_SIZE 16 //Used for plug's final processing (cleanup)
+#define SCRATCH_BUFFER_SIZE 64 //Used for plug's final processing (cleanup)
 #define MIXING_ATTENUATION	4
-#define MIXING_CLIPMIN		(-0x08000000)
-#define MIXING_CLIPMAX		(0x07FFFFFF)
-#define VOLUMERAMPPRECISION	12				//rewbs.soundq exp (was 12)
+#define VOLUMERAMPPRECISION	12	
 #define FADESONGDELAY		100
 #define EQ_BUFFERSIZE		(MIXBUFFERSIZE)
 #define AGC_PRECISION		10

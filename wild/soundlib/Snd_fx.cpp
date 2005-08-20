@@ -281,16 +281,33 @@ DWORD CSoundFile::GetLength(BOOL bAdjust, BOOL bTotal)
 				break;
 			}
 		}
+	nSpeedCount += nMusicSpeed;
+	switch(m_nTempoMode) {
+		case tempo_mode_alternative: 
+			dwElapsedTime +=  60000.0 / (1.65625 * (double)(nMusicSpeed * nMusicTempo)); break;
+		case tempo_mode_modern: 
+			dwElapsedTime += 60000.0/(double)nMusicTempo / (double)m_nRowsPerBeat;; break;
+		case tempo_mode_classic: default:
+			dwElapsedTime += (2500.0 * (double)nSpeedCount) / (double)nMusicTempo;
+	}
+	
+
 // -> CODE#0022
 // -> DESC="alternative BPM/Speed interpretation method"
 //		nSpeedCount += nMusicSpeed;
 //		dwElapsedTime += (2500 * nSpeedCount) / nMusicTempo;
-		if(CMainFrame::m_dwPatternSetup & PATTERN_ALTERNTIVEBPMSPEED)
+/*		if(CMainFrame::m_dwPatternSetup & PATTERN_MODERNSPEED) {
+			dwElapsedTime += 60000.0/(double)nMusicTempo / (double)m_nRowsPerBeat;;
+		}
+		else if(CMainFrame::m_dwPatternSetup & PATTERN_ALTERNTIVEBPMSPEED) {
+			nSpeedCount += nMusicSpeed;
 			dwElapsedTime +=  60000.0 / (1.65625 * (double)(nMusicSpeed * nMusicTempo)); // update#01
-		else{
+		} 
+		else {
 			nSpeedCount += nMusicSpeed;
 			dwElapsedTime += (2500.0 * (double)nSpeedCount) / (double)nMusicTempo;
 		}
+*/
 // -! NEW_FEATURE#0022
 	}
 EndMod:
@@ -313,10 +330,12 @@ EndMod:
 // -> CODE#0022
 // -> DESC="alternative BPM/Speed interpretation method"
 //	return (UINT)((dwElapsedTime+500.0) / 1000.0);
-	if(CMainFrame::m_dwPatternSetup & PATTERN_ALTERNTIVEBPMSPEED)
+//	if(CMainFrame::m_dwPatternSetup & PATTERN_ALTERNTIVEBPMSPEED) {
+	if 	(m_nTempoMode == tempo_mode_alternative) {
 		return (UINT)((dwElapsedTime + 1000.0) / 1000.0);
-	else
+	} else {
 		return (UINT)((dwElapsedTime + 500.0) / 1000.0);
+	}
 // -! NEW_FEATURE#0022
 }
 
@@ -436,6 +455,7 @@ void CSoundFile::InstrumentChange(MODCHANNEL *pChn, UINT instr, BOOL bPorta, BOO
 			if (penv->nIFR & 0x80) pChn->nResonance = penv->nIFR & 0x7F;
 		}
 		pChn->nVolSwing = pChn->nPanSwing = 0;
+		pChn->nResSwing = pChn->nCutSwing = 0;
 	}
 	pChn->pInstrument = psmp;
 	pChn->nLength = psmp->nLength;
@@ -483,20 +503,23 @@ void CSoundFile::NoteChange(UINT nChn, int note, BOOL bPorta, BOOL bResetEnv, BO
 		}
 		return;
 	}
-	if (note < 1) note = 1;			//rewbs.VSTiDCT: moved to before return
-	if (note > 132) note = 132;		//
-	pChn->nNote = note;				//
 
-	if (!pins) return;
-	if ((!bPorta) && (m_nType & (MOD_TYPE_XM|MOD_TYPE_MED|MOD_TYPE_MT2)))
-	{
-		pChn->nTranspose = pins->RelativeTone;
-		pChn->nFineTune = pins->nFineTune;
+	if ((!bPorta) && (m_nType & (MOD_TYPE_XM|MOD_TYPE_MED|MOD_TYPE_MT2))) {
+		if (pins) {
+			pChn->nTranspose = pins->RelativeTone;
+			pChn->nFineTune = pins->nFineTune;
+		}
 	}
-	if (m_nType & (MOD_TYPE_XM|MOD_TYPE_MT2|MOD_TYPE_MED)) note += pChn->nTranspose;
-	//rewbs.VSTiDCT	[moved from here]
+
+	if (m_nType & (MOD_TYPE_XM|MOD_TYPE_MT2|MOD_TYPE_MED)) note += pChn->nTranspose; 
+	if (note < 1) note = 1;
+	if (note > 132) note = 132;
+	pChn->nNote = note;
+
 	if ((!bPorta) || (m_nType & (MOD_TYPE_S3M|MOD_TYPE_IT))) pChn->nNewIns = 0;
 	UINT period = GetPeriodFromNote(note, pChn->nFineTune, pChn->nC4Speed);
+
+	if (!pins) return;
 	if (period)
 	{
 		if ((!bPorta) || (!pChn->nPeriod)) pChn->nPeriod = period;
@@ -567,6 +590,7 @@ void CSoundFile::NoteChange(UINT nChn, int note, BOOL bPorta, BOOL bResetEnv, BO
 		if (bResetEnv)
 		{
 			pChn->nVolSwing = pChn->nPanSwing = 0;
+			pChn->nResSwing = pChn->nCutSwing = 0;
 			if (penv)
 			{
 				if (!(penv->dwFlags & ENV_VOLCARRY)) pChn->nVolEnvPosition = 0;
@@ -586,6 +610,18 @@ void CSoundFile::NoteChange(UINT nChn, int note, BOOL bPorta, BOOL bResetEnv, BO
 						int d = ((LONG)penv->nPanSwing*(LONG)((rand() & 0xFF) - 0x7F)) / 128;
 						pChn->nPanSwing = (signed short)d;
 					}
+					// Cutoff Swing
+					if (penv->nCutSwing)
+					{
+						int d = ((LONG)penv->nCutSwing*(LONG)((rand() & 0xFF) - 0x7F)) / 128;
+						pChn->nCutSwing = (signed short)((d * pChn->nCutOff + 1)/128);
+					}
+					// Resonance Swing
+					if (penv->nResSwing)
+					{
+						int d = ((LONG)penv->nResSwing*(LONG)((rand() & 0xFF) - 0x7F)) / 128;
+						pChn->nResSwing = (signed short)((d * pChn->nResonance + 1)/128);d;
+					}
 				}
 			}
 			pChn->nAutoVibDepth = 0;
@@ -598,9 +634,13 @@ void CSoundFile::NoteChange(UINT nChn, int note, BOOL bPorta, BOOL bResetEnv, BO
 		{
 			if (penv->nIFR & 0x80) { pChn->nResonance = penv->nIFR & 0x7F; bFlt = TRUE; }
 			if (penv->nIFC & 0x80) { pChn->nCutOff = penv->nIFC & 0x7F; bFlt = TRUE; }
+			if (bFlt && (penv->nFilterMode != FLTMODE_UNCHANGED)) {
+				pChn->nFilterMode = penv->nFilterMode;
+			}
 		} else
 		{
 			pChn->nVolSwing = pChn->nPanSwing = 0;
+			pChn->nCutSwing = pChn->nResSwing = 0;
 		}
 #ifndef NO_FILTER
 		if ((pChn->nCutOff < 0x7F) && (bFlt)) SetupChannelFilter(pChn, TRUE);
@@ -698,8 +738,8 @@ void CSoundFile::CheckNNA(UINT nChn, UINT instr, int note, BOOL bForceCut)
 			}
 		} else pSample = NULL;
 	}
-	if (!penv) return;
 	MODCHANNEL *p = pChn;
+	//if (!penv) return;
 	if (pChn->dwFlags & CHN_MUTE) return;
 
 	bool applyDNAtoPlug;	//rewbs.VSTiNNA
@@ -790,16 +830,19 @@ void CSoundFile::CheckNNA(UINT nChn, UINT instr, int note, BOOL bForceCut)
 	IMixPlugin *pPlugin = NULL;
 	if (pChn->pHeader && pChn->pHeader->nMidiChannel > 0 && pChn->pHeader->nMidiChannel < 17 && pChn->nNote>0 && pChn->nNote<128) // instro sends to a midi chan
 	{
+		UINT nPlugin = GetBestPlugin(nChn, PRIORITISE_INSTRUMENT, RESPECT_MUTES);
+		/*
 		UINT nPlugin = 0;
 		nPlugin = pChn->pHeader->nMixPlug;  		   // first try intrument VST
 		if ((!nPlugin) || (nPlugin > MAX_MIXPLUGINS))  // Then try Channel VST
 			nPlugin = ChnSettings[nChn].nMixPlugin;			
+		*/
 		if ((nPlugin) && (nPlugin <= MAX_MIXPLUGINS))
 		{ 
 			pPlugin =  m_MixPlugins[nPlugin-1].pMixPlugin;
 			if (pPlugin) 
 			{
-				// applyNAtoPlug iff this plug is currently playing a note on this tracking chan)
+				// apply NNA to this Plug iff this plug is currently playing a note on this tracking chan
 				// (and if it is playing a note, we know that would be the last note played on this chan).
 				applyNNAtoPlug = pPlugin->isPlaying(pChn->nNote, pChn->pHeader->nMidiChannel, nChn);
 			}
@@ -818,6 +861,11 @@ void CSoundFile::CheckNNA(UINT nChn, UINT instr, int note, BOOL bForceCut)
 			// Copy Channel
 			*p = *pChn;
 			p->dwFlags &= ~(CHN_VIBRATO|CHN_TREMOLO|CHN_PANBRELLO|CHN_MUTE|CHN_PORTAMENTO);
+			
+			//rewbs: Copy mute and FX status from master chan.
+			//I'd like to copy other flags too, but this would change playback behaviour.
+			p->dwFlags |= (pChn->dwFlags & CHN_MUTE) | (pChn->dwFlags & CHN_NOFX);
+
 			p->nMasterChn = nChn+1;
 			p->nCommand = 0;
 			//rewbs.VSTiNNA	
@@ -958,7 +1006,7 @@ BOOL CSoundFile::ProcessEffects()
 
 		//rewbs.VSTnoteDelay
 		#ifdef MODPLUG_TRACKER
-			if (m_nInstruments) ProcessMidiOut(nChn, pChn); 
+//			if (m_nInstruments) ProcessMidiOut(nChn, pChn); 
 		#endif // MODPLUG_TRACKER
 		//end rewbs.VSTnoteDelay
 
@@ -1007,7 +1055,13 @@ BOOL CSoundFile::ProcessEffects()
 				pChn->nPan = vol << 2;
 				pChn->dwFlags |= CHN_FASTVOLRAMP;
 			}
+
+		//rewbs.VSTnoteDelay
+		#ifdef MODPLUG_TRACKER
+			if (m_nInstruments) ProcessMidiOut(nChn, pChn); 
+		#endif // MODPLUG_TRACKER
 		}
+
 
 		// Volume Column Effect (except volume & panning)
 		if ((volcmd > VOLCMD_PANNING) && (m_nTickCount >= nStartTick))
@@ -1154,8 +1208,15 @@ BOOL CSoundFile::ProcessEffects()
 // -> CODE#0010
 // -> DESC="add extended parameter mechanism to pattern effects"
 				m = NULL;
-				if(m_nRow < PatternSize[m_nPattern]-1) m = Patterns[m_nPattern] + (m_nRow+1) * m_nChannels;
-				if(m && m->command == CMD_XPARAM) param = (param<<8) + m->param;
+				if (m_nRow < PatternSize[m_nPattern]-1) {
+					m = Patterns[m_nPattern] + (m_nRow+1) * m_nChannels + nChn;
+				}
+				if (m && m->command == CMD_XPARAM) { 
+					if (m_nType & MOD_TYPE_XM) {
+                        param -= 0x20; //with XM, 0x20 is the lowest tempo. Anything below changes ticks per row.
+					}
+					param = (param<<8) + m->param;
+				}
 // -! NEW_FEATURE#0010
 				if (m_nType & (MOD_TYPE_S3M|MOD_TYPE_IT))
 				{
@@ -1361,7 +1422,7 @@ BOOL CSoundFile::ProcessEffects()
 // -> CODE#0010
 // -> DESC="add extended parameter mechanism to pattern effects"
 			m = NULL;
-			if(m_nRow < PatternSize[m_nPattern]-1) m = Patterns[m_nPattern] + (m_nRow+1) * m_nChannels;
+			if(m_nRow < PatternSize[m_nPattern]-1) m = Patterns[m_nPattern] + (m_nRow+1) * m_nChannels + nChn;
 
 			if(m && m->command == CMD_XPARAM)
 				nBreakRow = (param<<8) + m->param;
@@ -1441,7 +1502,12 @@ BOOL CSoundFile::ProcessEffects()
 				}
 			}
 		#endif	// FASTSOUNDLIB
-			if (((!bNoLoop) && (nPosJump < MAX_ORDERS))
+			//rewbs.fix 
+			//if (((!bNoLoop) && (nPosJump < MAX_ORDERS))
+			if (nPosJump>MAX_ORDERS) 
+				nPosJump = 0;
+			if ((!bNoLoop)
+			//end rewbs.fix 
 			 && ((nPosJump != (int)m_nCurrentPattern) || (nBreakRow != (int)m_nRow)))
 			{
 				if (nPosJump != (int)m_nCurrentPattern)
@@ -1450,6 +1516,7 @@ BOOL CSoundFile::ProcessEffects()
 				}
 				m_nNextPattern = nPosJump;
 				m_nNextRow = (UINT)nBreakRow;
+				m_bPatternTransitionOccurred=true;
 			}
 		}
 	}
@@ -1463,6 +1530,8 @@ BOOL CSoundFile::ProcessEffects()
 void CSoundFile::PortamentoUp(MODCHANNEL *pChn, UINT param)
 //---------------------------------------------------------
 {
+	MidiPortamento(pChn, param); //Send midi pitch bend event if there's a plugin
+
 	if (param) pChn->nOldPortaUpDown = param; else param = pChn->nOldPortaUpDown;
 	if ((m_nType & (MOD_TYPE_S3M|MOD_TYPE_IT|MOD_TYPE_STM)) && ((param & 0xF0) >= 0xE0))
 	{
@@ -1484,12 +1553,16 @@ void CSoundFile::PortamentoUp(MODCHANNEL *pChn, UINT param)
 	{
 		DoFreqSlide(pChn, -(int)(param * 4));
 	}
+
+
 }
 
 
 void CSoundFile::PortamentoDown(MODCHANNEL *pChn, UINT param)
 //-----------------------------------------------------------
 {
+	MidiPortamento(pChn, -param); //Send midi pitch bend event if there's a plugin
+
 	if (param) pChn->nOldPortaUpDown = param; else param = pChn->nOldPortaUpDown;
 	if ((m_nType & (MOD_TYPE_S3M|MOD_TYPE_IT|MOD_TYPE_STM)) && ((param & 0xF0) >= 0xE0))
 	{
@@ -1506,10 +1579,25 @@ void CSoundFile::PortamentoDown(MODCHANNEL *pChn, UINT param)
 		}
 		return;
 	}
-	if (!(m_dwSongFlags & SONG_FIRSTTICK)  || (m_nMusicSpeed == 1))   //rewbs.PortaA01fix
+	if (!(m_dwSongFlags & SONG_FIRSTTICK)  || (m_nMusicSpeed == 1)) {  //rewbs.PortaA01fix
 		DoFreqSlide(pChn, (int)(param << 2));
+	}
+
 }
 
+void CSoundFile::MidiPortamento(MODCHANNEL *pChn, int param)
+//----------------------------------------------------------
+{
+	//Send midi pitch bend event if there's a plugin:
+	INSTRUMENTHEADER *pHeader = pChn->pHeader;
+	if (pHeader && pHeader->nMidiChannel>0 && pHeader->nMidiChannel<17) { // instro sends to a midi chan
+		UINT nPlug = pHeader->nMixPlug;
+		if ((nPlug) && (nPlug <= MAX_MIXPLUGINS)) {
+			IMixPlugin *pPlug = (IMixPlugin*)m_MixPlugins[nPlug-1].pMixPlugin;
+			pPlug->MidiPitchBend(pHeader->nMidiChannel, param, 0);
+		}
+	}
+}
 
 void CSoundFile::FinePortamentoUp(MODCHANNEL *pChn, UINT param)
 //-------------------------------------------------------------
@@ -1622,6 +1710,8 @@ void CSoundFile::TonePortamento(MODCHANNEL *pChn, UINT param)
 			{
 				UINT n = pChn->nPortamentoSlide >> 2;
 				if (n > 255) n = 255;
+				// Return (a*b+c/2)/c - no divide error
+				// Table is 65536*2(n/192)
 				delta = _muldivr(pChn->nPeriod, LinearSlideUpTable[n], 65536) - pChn->nPeriod;
 				if (delta < 1) delta = 1;
 			}
@@ -2039,13 +2129,15 @@ void CSoundFile::ProcessMidiMacro(UINT nChn, LPCSTR pszMidiMacro, UINT param)
 			if ((cData >= 'a') && (cData <= 'f')) { dwByteCode = (dwByteCode<<4) | (cData-'a'+10); nNib++; } else
 			if ((cData == 'z') || (cData == 'Z')) { dwByteCode = param & 0x7f; nNib = 2; } else
 			if ((cData == 'x') || (cData == 'X')) { dwByteCode = param & 0x70; nNib = 2; } else
-			if ((cData == 'y') || (cData == 'Y')) { dwByteCode = (param & 0x0f)<<3; nNib = 2; } else
+			if ((cData == 'y') || (cData == 'Y')) { dwByteCode = (param & 0x0f)<<3; nNib = 2; }
+
 			if (nNib >= 2)
 			{
 				nNib = 0;
 				dwMidiCode |= dwByteCode << (nBytes*8);
 				dwByteCode = 0;
 				nBytes++;
+
 				if (nBytes >= 3)
 				{
 					UINT nMasterCh = (nChn < m_nChannels) ? nChn+1 : pChn->nMasterChn;
@@ -2133,22 +2225,30 @@ void CSoundFile::ProcessMidiMacro(UINT nChn, LPCSTR pszMidiMacro, UINT param)
 			#endif // NO_FILTER
 			}
 			break;
-		// F0.F0.{80|n}.xx: Set VST effect parameter n to xx
 
+	// F0.F0.03.xx: Set plug dry/wet
+		case 0x03:
+			{
+				UINT nPlug = GetBestPlugin(nChn, PRIORITISE_CHANNEL, EVEN_IF_MUTED);
+				if ((nPlug) && (nPlug <= MAX_MIXPLUGINS))	{
+					if (dwParam < 0x80)
+						m_MixPlugins[nPlug-1].fDryRatio = 1.0-(static_cast<float>(dwParam)/127.0f);
+				}
+			}
+			break;
+
+
+		// F0.F0.{80|n}.xx: Set VST effect parameter n to xx
 		default:
 			if (nInternalCode & 0x80)
 			{
-				UINT nMasterCh = (nChn < m_nChannels) ? nChn+1 : pChn->nMasterChn;
-				if ((nMasterCh) && (nMasterCh <= m_nChannels))
+				UINT nPlug = GetBestPlugin(nChn, PRIORITISE_CHANNEL, EVEN_IF_MUTED);
+				if ((nPlug) && (nPlug <= MAX_MIXPLUGINS))
 				{
-					UINT nPlug = ChnSettings[nMasterCh-1].nMixPlugin;
-					if ((nPlug) && (nPlug <= MAX_MIXPLUGINS))
+					IMixPlugin *pPlugin = m_MixPlugins[nPlug-1].pMixPlugin;
+					if ((pPlugin) && (m_MixPlugins[nPlug-1].pMixState))
 					{
-						IMixPlugin *pPlugin = m_MixPlugins[nPlug-1].pMixPlugin;
-						if ((pPlugin) && (m_MixPlugins[nPlug-1].pMixState))
-						{
-							pPlugin->SetZxxParameter(nInternalCode & 0x7F, dwParam & 0x7F);
-						}
+						pPlugin->SetZxxParameter(nInternalCode & 0x7F, dwParam & 0x7F);
 					}
 				}
 			}
@@ -2255,32 +2355,52 @@ void CSoundFile::ProcessSmoothMidiMacro(UINT nChn, LPCSTR pszMidiMacro, UINT par
 			#endif // NO_FILTER
 			}
 			break;
-		// F0.F0.{80|n}.xx: Set VST effect parameter n to xx
 
+	// F0.F0.03.xx: Set plug dry/wet
+		case 0x03:
+			{
+				UINT nPlug = GetBestPlugin(nChn, PRIORITISE_CHANNEL, EVEN_IF_MUTED);
+				if ((nPlug) && (nPlug <= MAX_MIXPLUGINS))	{
+					// on the fist tick only, calculate step 
+					if (m_dwSongFlags & SONG_FIRSTTICK)
+					{
+						pChn->m_nPlugInitialParamValue = m_MixPlugins[nPlug-1].fDryRatio;
+						// (dwParam & 0x7F) extracts the actual value that we're going to pass
+						pChn->m_nPlugParamValueStep =  ((1-((float)(dwParam)/127.0f))-pChn->m_nPlugInitialParamValue)/(float)m_nMusicSpeed;
+					}
+					//update param on all ticks
+					IMixPlugin *pPlugin = m_MixPlugins[nPlug-1].pMixPlugin;
+					if ((pPlugin) && (m_MixPlugins[nPlug-1].pMixState)) 	{
+						m_MixPlugins[nPlug-1].fDryRatio = pChn->m_nPlugInitialParamValue+(float)(m_nTickCount+1)*pChn->m_nPlugParamValueStep;
+					}
+					
+				}
+			}
+			break;
+		
+
+		// F0.F0.{80|n}.xx: Set VST effect parameter n to xx
 		default:
 			if (nInternalCode & 0x80)
 			{
-				UINT nMasterCh = (nChn < m_nChannels) ? nChn+1 : pChn->nMasterChn;
-				if ((nMasterCh) && (nMasterCh <= m_nChannels))
+				UINT nPlug = GetBestPlugin(nChn, PRIORITISE_CHANNEL, EVEN_IF_MUTED);
+				if ((nPlug) && (nPlug <= MAX_MIXPLUGINS))
 				{
-					UINT nPlug = ChnSettings[nMasterCh-1].nMixPlugin;
-					if ((nPlug) && (nPlug <= MAX_MIXPLUGINS))
+					IMixPlugin *pPlugin = m_MixPlugins[nPlug-1].pMixPlugin;
+					if ((pPlugin) && (m_MixPlugins[nPlug-1].pMixState))
 					{
-						IMixPlugin *pPlugin = m_MixPlugins[nPlug-1].pMixPlugin;
-						if ((pPlugin) && (m_MixPlugins[nPlug-1].pMixState))
+						// on the fist tick only, calculate step 
+						if (m_dwSongFlags & SONG_FIRSTTICK)
 						{
-							// on the fist tick only, calculate step 
-							if (m_dwSongFlags & SONG_FIRSTTICK)
-							{
-								pChn->m_nPlugInitialParamValue = pPlugin->GetZxxParameter(nInternalCode & 0x7F);
-								// (dwParam & 0x7F) extracts the actual value that we're going to pass
-								pChn->m_nPlugParamValueStep = ((int)(dwParam & 0x7F)-pChn->m_nPlugInitialParamValue)/(float)m_nMusicSpeed;
-							}
-							//update param on all ticks
-							pPlugin->SetZxxParameter(nInternalCode & 0x7F, (UINT) (pChn->m_nPlugInitialParamValue + (m_nTickCount+1)*pChn->m_nPlugParamValueStep + 0.5));
+							pChn->m_nPlugInitialParamValue = pPlugin->GetZxxParameter(nInternalCode & 0x7F);
+							// (dwParam & 0x7F) extracts the actual value that we're going to pass
+							pChn->m_nPlugParamValueStep = ((int)(dwParam & 0x7F)-pChn->m_nPlugInitialParamValue)/(float)m_nMusicSpeed;
 						}
+						//update param on all ticks
+						pPlugin->SetZxxParameter(nInternalCode & 0x7F, (UINT) (pChn->m_nPlugInitialParamValue + (m_nTickCount+1)*pChn->m_nPlugParamValueStep + 0.5));
 					}
 				}
+
 			} 
 	} // end switch
 
@@ -2302,12 +2422,12 @@ void CSoundFile::SampleOffset(UINT nChn, UINT param, bool bPorta)
 			MODCOMMAND *m;
 			m = NULL;
 
-			if(m_nRow < PatternSize[m_nPattern]-1) m = Patterns[m_nPattern] + (m_nRow+1) * m_nChannels;
+			if(m_nRow < PatternSize[m_nPattern]-1) m = Patterns[m_nPattern] + (m_nRow+1) * m_nChannels + nChn;
 
 			if(m && m->command == CMD_XPARAM){
 				UINT tmp = m->param;
 				m = NULL;
-				if(m_nRow < PatternSize[m_nPattern]-2) m = Patterns[m_nPattern] + (m_nRow+2) * m_nChannels;
+				if(m_nRow < PatternSize[m_nPattern]-2) m = Patterns[m_nPattern] + (m_nRow+2) * m_nChannels  + nChn;
 
 				if(m && m->command == CMD_XPARAM) param = (param<<16) + (tmp<<8) + m->param;
 				else param = (param<<8) + tmp;
@@ -2400,6 +2520,9 @@ void CSoundFile::RetrigNote(UINT nChn, UINT param, UINT offset)	//rewbs.VolOffse
 			if (param < 0x100) bResetEnv = TRUE;
 		}
 		NoteChange(nChn, nNote, FALSE, bResetEnv);
+		if (m_nInstruments) {
+			ProcessMidiOut(nChn, pChn);	//Send retrig to Midi
+		}
 		if ((m_nType & MOD_TYPE_IT) && (!pChn->nRowNote) && (nOldPeriod)) pChn->nPeriod = nOldPeriod;
 		if (!(m_nType & (MOD_TYPE_S3M|MOD_TYPE_IT))) nRetrigCount = 0;
 
@@ -2773,6 +2896,7 @@ UINT CSoundFile::GetPeriodFromNote(UINT note, int nFineTune, UINT nC4Speed) cons
 		} else
 		{
 			if (!nC4Speed) nC4Speed = 8363;
+			//(a*b)/c
 			return _muldiv(8363, (FreqS3MTable[note % 12] << 5), nC4Speed << (note / 12));
 		}
 	} else
@@ -2847,5 +2971,114 @@ UINT CSoundFile::GetFreqFromPeriod(UINT period, UINT nC4Speed, int nPeriodFrac) 
 		}
 	}
 }
+
+
+UINT  CSoundFile::GetBestPlugin(UINT nChn, UINT priority, bool respectMutes)
+//-------------------------------------------------------------------------
+{
+	if (nChn > MAX_CHANNELS) {		//Check valid channel number
+		return 0;
+	}
+
+	//Function pointers to the methods we will use to try to find the plugin
+	//UINT (*pFirstTry)(UINT, bool) = NULL;
+	//UINT (*pSecondTry)(UINT, bool) = NULL;
+	
+	//Define search source order
+	UINT nPlugin=0;
+	switch (priority) {
+		case CHANNEL_ONLY:						
+			nPlugin = GetChannelPlugin(nChn, respectMutes);
+			break;
+		case INSTRUMENT_ONLY:						
+			nPlugin  = GetActiveInstrumentPlugin(nChn, respectMutes);
+			break;
+		case PRIORITISE_INSTRUMENT:						
+			nPlugin  = GetActiveInstrumentPlugin(nChn, respectMutes);
+			if ((!nPlugin) || (nPlugin>MAX_MIXPLUGINS)) {
+				nPlugin = GetChannelPlugin(nChn, respectMutes);
+			}
+			break;
+		case PRIORITISE_CHANNEL:										
+			nPlugin  = GetChannelPlugin(nChn, respectMutes);
+			if ((!nPlugin) || (nPlugin>MAX_MIXPLUGINS)) {
+				nPlugin = GetActiveInstrumentPlugin(nChn, respectMutes);
+			}
+			break;
+	}
+
+	//Do search
+	/*UINT nPlugin = (*pFirstTry)(nChn, respectMutes); // Try from first source.
+	if ((!nPlugin) || (nPlugin>MAX_MIXPLUGINS)) {	 // If first source couldn't find a valid plug...
+		nPlugin = (*pSecondTry)(nChn, respectMutes); // try from second source.
+	}*/
+
+	return nPlugin; // 0 Means no plugin found.
+}
+
+UINT __cdecl CSoundFile::GetChannelPlugin(UINT nChn, bool respectMutes)
+//--------------------------------------------------------------
+{
+	MODCHANNEL *pChn= &Chn[nChn];
+
+	// If it looks like this is an NNA channel, we need to find the master channel.
+	// This ensures we pick up the right ChnSettings. 
+	// NB: nMasterChn==0 means no master channel, so we need to -1 to get correct index.
+	if (nChn>=m_nChannels && pChn && pChn->nMasterChn>0) { 
+		nChn = pChn->nMasterChn-1;				  
+	}
+
+	UINT nPlugin;
+	if ( (respectMutes && (pChn->dwFlags & CHN_MUTE)) || 
+	 (pChn->dwFlags&CHN_NOFX) ) {
+		nPlugin = 0;
+	} else {
+		nPlugin = ChnSettings[nChn].nMixPlugin;
+	}
+	return nPlugin;
+}
+
+UINT CSoundFile::GetActiveInstrumentPlugin(UINT nChn, bool respectMutes)
+//-----------------------------------------------------------------------
+{
+	MODCHANNEL *pChn = &Chn[nChn];
+	// Unlike channel settings, pHeader is copied from the original chan to the NNA chan,
+	// so we don't nee to worry about finding the master chan.
+
+	UINT nPlugin=0;
+	if (pChn && pChn->pHeader && pChn->pInstrument) {
+		if (respectMutes && (pChn->pInstrument->uFlags&ENV_MUTE)) { 
+			nPlugin = 0;
+		} else {
+			nPlugin = pChn->pHeader->nMixPlug;
+		}
+	}
+	return nPlugin;
+}
+
+void CSoundFile::HandlePatternTransitionEvents()
+{
+	if (m_bPatternTransitionOccurred) {
+		// MPT sequence override
+		if ((m_nSeqOverride > 0) && (m_nSeqOverride <= MAX_ORDERS))
+		{
+			if (m_dwSongFlags & SONG_PATTERNLOOP) {
+				m_nPattern = Order[m_nSeqOverride-1];
+			}
+			m_nNextPattern = m_nSeqOverride - 1;
+			m_nSeqOverride = 0;
+		}
+
+		// Channel mutes
+		for (int chan=0; chan<m_nChannels; chan++) {
+			if (m_bChannelMuteTogglePending[chan]) {
+				m_pModDoc->MuteChannel(chan, !m_pModDoc->IsChannelMuted(chan));
+				m_bChannelMuteTogglePending[chan]=false;
+			}
+		}
+		m_bPatternTransitionOccurred=false;
+	}
+}
+
 
 
