@@ -33,6 +33,7 @@
     <ClInclude Include="..\mod_specifications.h" />
     <ClInclude Include="..\pattern.h" />
     <ClInclude Include="..\PlaybackEventer.h" />
+    <ClInclude Include="..\precompiled.h" />
     <ClInclude Include="..\RowVisitor.h" />
     <ClInclude Include="..\SampleFormatConverters.h" />
     <ClInclude Include="..\SampleIO.h" />
@@ -46,13 +47,11 @@
     <ClInclude Include="..\WAVTools.h" />
     <ClInclude Include="..\WindowedFIR.h" />
     <ClInclude Include="..\XMTools.h" />
-    <ClInclude Include="Stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\common\misc_util.cpp" />
     <ClCompile Include="..\..\mptrack\serialization_utils.cpp" />
     <ClCompile Include="..\..\mptrack\SoundFilePlayConfig.cpp" />
-    <ClCompile Include="..\..\mptrack\STDAFX.CPP" />
     <ClCompile Include="..\..\mptrack\tuningRatioMapWnd.cpp" />
     <ClCompile Include="..\dlsbank.cpp" />
     <ClCompile Include="..\Fastmix.cpp" />
