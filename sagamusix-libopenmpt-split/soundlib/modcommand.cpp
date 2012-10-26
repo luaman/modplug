@@ -8,7 +8,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "Sndfile.h"
 
 extern BYTE ImpulseTrackerPortaVolCmd[16];

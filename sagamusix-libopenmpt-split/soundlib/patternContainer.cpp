@@ -8,7 +8,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "patternContainer.h"
 #include "sndfile.h"
 #include "../mptrack/mainfrm.h"

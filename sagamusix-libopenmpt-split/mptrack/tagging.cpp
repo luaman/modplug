@@ -12,7 +12,7 @@
 #include "mptrack.h"
 #include "tagging.h"
 #include "version.h"
-#include "sndfile.h"
+#include "../soundlib/Sndfile.h"
 
 ///////////////////////////////////////////////////
 // CFileTagging - helper class for writing tags

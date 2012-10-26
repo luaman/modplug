@@ -13,7 +13,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "../mptrack/mptrack.h"
 #include "../mptrack/version.h"
 #include "Loaders.h"

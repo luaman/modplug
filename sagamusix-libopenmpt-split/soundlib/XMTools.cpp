@@ -8,7 +8,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "Loaders.h"
 #include "XMTools.h"
 #include "Sndfile.h"

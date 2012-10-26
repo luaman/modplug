@@ -12,7 +12,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "sndfile.h"
 #ifdef _DEBUG
 #include <math.h>

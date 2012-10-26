@@ -10,7 +10,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "Loaders.h"
 
 #define DBM_FILE_MAGIC	0x304d4244

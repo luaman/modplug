@@ -11,7 +11,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "Loaders.h"
 #include "ChunkReader.h"
 #ifndef ZLIB_WINAPI

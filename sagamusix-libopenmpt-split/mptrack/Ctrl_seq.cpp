@@ -1150,10 +1150,10 @@ void COrderList::OnRButtonDown(UINT nFlags, CPoint pt)
 			for(SEQUENCEINDEX i = 0; i < numSequences; i++)
 			{
 				CString str;
-				if(pSndFile->Order.GetSequence(i).m_sName.IsEmpty())
+				if(pSndFile->Order.GetSequence(i).m_sName.empty())
 					str.Format(TEXT("Sequence %u"), i);
 				else
-					str.Format(TEXT("%u: %s"), i, (LPCTSTR)pSndFile->Order.GetSequence(i).m_sName);
+					str.Format(TEXT("%u: %s"), i, pSndFile->Order.GetSequence(i).m_sName.c_str());
 				const UINT flags = (pSndFile->Order.GetCurrentSequenceIndex() == i) ? MF_STRING|MF_CHECKED : MF_STRING;
 				AppendMenu(menuSequence, flags, ID_SEQUENCE_ITEM + i, str);
 			}
@@ -1500,7 +1500,7 @@ void COrderList::SelectSequence(const SEQUENCEINDEX nSeq)
 	CSoundFile& rSf = *m_pModDoc->GetSoundFile();
 	if(nSeq == MAX_SEQUENCES + 2)
 	{
-		CString strParam; strParam.Format(TEXT("%u: %s"), rSf.Order.GetCurrentSequenceIndex(), (LPCTSTR)rSf.Order.m_sName);
+		CString strParam; strParam.Format(TEXT("%u: %s"), rSf.Order.GetCurrentSequenceIndex(), rSf.Order.m_sName.c_str());
 		CString str;
 		AfxFormatString1(str, IDS_CONFIRM_SEQUENCE_DELETE, strParam);
 		if (Reporting::Confirm(str) == cnfYes)

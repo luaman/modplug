@@ -11,7 +11,7 @@
 #pragma once
 
 #include <deque>
-#include "Sndfile.h"
+#include "../soundlib/Sndfile.h"
 #include "PatternCursor.h"
 
 //===========================

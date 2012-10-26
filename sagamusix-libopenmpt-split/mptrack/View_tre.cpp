@@ -762,12 +762,12 @@ void CModTree::UpdateView(ModTreeDocInfo *pInfo, DWORD lHint)
 		// Adjust caption of the "Sequence" node (if only one sequence exists, it should be labeled with the sequence name)
 		if(((hintFlagPart == HINT_SEQNAMES) && pSndFile->Order.GetNumSequences() == 1) || adjustParentNode)
 		{
-			CString sSeqName = pSndFile->Order.GetSequence(0).m_sName;
-			if(sSeqName.IsEmpty() || pSndFile->Order.GetNumSequences() > 1)
+			std::string sSeqName = pSndFile->Order.GetSequence(0).m_sName;
+			if(sSeqName.empty() || pSndFile->Order.GetNumSequences() > 1)
 				sSeqName = "Sequence";
 			else
 				sSeqName = "Sequence: " + sSeqName;
-			SetItem(pInfo->hOrders, TVIF_TEXT, sSeqName, 0, 0, 0, 0, 0);
+			SetItem(pInfo->hOrders, TVIF_TEXT, sSeqName.c_str(), 0, 0, 0, 0, 0);
 		}
 
 		// go through all sequences
@@ -777,10 +777,10 @@ void CModTree::UpdateView(ModTreeDocInfo *pInfo, DWORD lHint)
 			{
 				// more than one sequence -> add folder
 				CString sSeqName;
-				if(pSndFile->Order.GetSequence(nSeq).m_sName.IsEmpty())
+				if(pSndFile->Order.GetSequence(nSeq).m_sName.empty())
 					sSeqName.Format("Sequence %d", nSeq);
 				else
-					sSeqName.Format("%d: %s", nSeq, (LPCTSTR)pSndFile->Order.GetSequence(nSeq).m_sName);
+					sSeqName.Format("%d: %s", nSeq, pSndFile->Order.GetSequence(nSeq).m_sName.c_str());
 
 				UINT state = (nSeq == pSndFile->Order.GetCurrentSequenceIndex()) ? TVIS_BOLD : 0;
 
@@ -986,10 +986,10 @@ void CModTree::UpdateView(ModTreeDocInfo *pInfo, DWORD lHint)
 					// path info for ITP instruments
 					const bool pathOk = pSndFile->m_szInstrumentPath[nIns - 1][0] != '\0';
 					const bool instMod = pDoc->m_bsInstrumentModified.test(nIns - 1);
-					wsprintf(s, pathOk ? (instMod ? "%3d: * %s" : "%3d: %s") : "%3d: ? %s", nIns, (LPCTSTR)pSndFile->GetInstrumentName(nIns));
+					wsprintf(s, pathOk ? (instMod ? "%3d: * %s" : "%3d: %s") : "%3d: ? %s", nIns, pSndFile->GetInstrumentName(nIns).c_str());
 				} else
 				{
-					wsprintf(s, "%3d: %s", nIns, (LPCTSTR)pSndFile->GetInstrumentName(nIns));
+					wsprintf(s, "%3d: %s", nIns, pSndFile->GetInstrumentName(nIns).c_str());
 				}
 
 				int nImage = IMAGE_INSTRUMENTS;

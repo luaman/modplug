@@ -8,7 +8,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "Loaders.h"
 #include "ITTools.h"
 #include "../common/StringFixer.h"

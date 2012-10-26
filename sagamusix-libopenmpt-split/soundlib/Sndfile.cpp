@@ -9,7 +9,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #ifdef MODPLUG_TRACKER
 #include "../mptrack/mainfrm.h"
 #include "../mptrack/moddoc.h"
@@ -1290,20 +1290,14 @@ LPCTSTR CSoundFile::GetSampleName(UINT nSample) const
 }
 
 
-CString CSoundFile::GetInstrumentName(UINT nInstr) const
-//------------------------------------------------------
+std::string CSoundFile::GetInstrumentName(UINT nInstr) const
+//----------------------------------------------------------
 {
 	if ((nInstr >= MAX_INSTRUMENTS) || (!Instruments[nInstr]))
 		return TEXT("");
 
 	ASSERT(nInstr <= GetNumInstruments());
-	const size_t nSize = CountOf(Instruments[nInstr]->name);
-	CString str;
-	LPTSTR p = str.GetBuffer(nSize + 1);
-	ArrayCopy(p, Instruments[nInstr]->name, nSize);
-	p[nSize] = 0;
-	str.ReleaseBuffer();
-	return str;
+	return std::string(Instruments[nInstr]->name, strnlen(Instruments[nInstr]->name, MAX_INSTRUMENTNAME));
 }
 
 

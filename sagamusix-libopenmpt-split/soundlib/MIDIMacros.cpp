@@ -8,7 +8,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "../soundlib/MIDIEvents.h"
 #include "MIDIMacros.h"
 #include "../common/StringFixer.h"

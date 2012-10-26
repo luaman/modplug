@@ -13,7 +13,7 @@
 #include "stdafx.h"
 #include "mptrack.h"
 #include "mainfrm.h"
-#include "sndfile.h"
+#include "../soundlib/Sndfile.h"
 #include "moddoc.h"
 #include "AutoSaver.h"
 #include "moptions.h"

@@ -9,7 +9,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "WindowedFIR.h"
 #ifdef _DEBUG
 #include <math.h>

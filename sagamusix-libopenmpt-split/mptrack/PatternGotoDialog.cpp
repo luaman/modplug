@@ -12,7 +12,7 @@
 #include "mptrack.h"
 #include "PatternGotoDialog.h"
 #include ".\patterngotodialog.h"
-#include "sndfile.h"
+#include "../soundlib/Sndfile.h"
 
 
 // CPatternGotoDialog dialog
@@ -51,7 +51,7 @@ END_MESSAGE_MAP()
 
 // CPatternGotoDialog message handlers
 
-void CPatternGotoDialog::UpdatePos(UINT row, UINT chan, UINT pat, UINT ord, CSoundFile* pSndFile)
+void CPatternGotoDialog::UpdatePos(ROWINDEX row, CHANNELINDEX chan, PATTERNINDEX pat, ORDERINDEX ord, const CSoundFile *pSndFile)
 {
 	m_nRow = row;
 	m_nChannel = chan;

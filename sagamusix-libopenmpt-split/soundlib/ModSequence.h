@@ -11,6 +11,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 #include "Loaders.h"
 
 class CSoundFile;
@@ -64,7 +65,7 @@ public:
 	void resize(ORDERINDEX nNewSize, PATTERNINDEX nFill);
 	
 	// Replaces all occurences of nOld with nNew.
-	void Replace(PATTERNINDEX nOld, PATTERNINDEX nNew) {if (nOld != nNew) std::replace(begin(), end(), nOld, nNew);}
+	void Replace(PATTERNINDEX nOld, PATTERNINDEX nNew);
 
 	void AdjustToNewModType(const MODTYPE oldtype);
 
@@ -122,7 +123,7 @@ protected:
 	const_iterator end() const {return m_pArray + m_nSize;}
 
 public:
-	CString m_sName;				// Sequence name.
+	std::string m_sName;				// Sequence name.
 
 protected:
 	PATTERNINDEX* m_pArray;			// Pointer to sequence array.

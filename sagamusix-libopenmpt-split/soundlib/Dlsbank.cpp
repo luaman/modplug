@@ -9,7 +9,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "sndfile.h"
 #include "../mptrack/mptrack.h"
 #include "dlsbank.h"

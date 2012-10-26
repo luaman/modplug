@@ -13,7 +13,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "Loaders.h"
 
 #pragma pack(push, 1)

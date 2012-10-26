@@ -8,7 +8,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #define TUNINGBASE_CPP
 #include "tuningbase.h"
 #include "../mptrack/serialization_utils.h"

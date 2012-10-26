@@ -20,7 +20,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "Sndfile.h"
 #include "RowVisitor.h"
 

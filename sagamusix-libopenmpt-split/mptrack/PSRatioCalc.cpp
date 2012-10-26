@@ -13,7 +13,7 @@
 #include "mainfrm.h"
 #include "PSRatioCalc.h"
 #include ".\psratiocalc.h"
-#include "sndfile.h"		//for tempo mode enum
+#include "../soundlib/Sndfile.h"		//for tempo mode enum
 
 // CPSRatioCalc dialog
 
@@ -131,7 +131,7 @@ void CPSRatioCalc::OnEnChangeratio()
 		CalcSamples();
 		CalcMs();
 		CalcRows();
-    	UpdateData(FALSE);
+		UpdateData(FALSE);
 	}
 }
 

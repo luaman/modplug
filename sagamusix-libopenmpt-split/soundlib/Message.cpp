@@ -13,7 +13,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "Sndfile.h"
 
 // Allocate memory for song message.

@@ -20,7 +20,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "sndfile.h"
 #include "../common/Reporting.h"
 

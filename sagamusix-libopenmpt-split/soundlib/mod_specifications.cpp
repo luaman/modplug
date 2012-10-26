@@ -8,7 +8,7 @@
  */
 
 
-#include <stdafx.h>
+#include "precompiled.h"
 #include "mod_specifications.h"
 #include "../common/misc_util.h"
 

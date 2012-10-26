@@ -1,0 +1,348 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Tuning">
+      <UniqueIdentifier>{cdb5c70f-9c55-4d2b-8e79-f5fca142c522}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Tuning">
+      <UniqueIdentifier>{758b15c9-2ac8-4d4a-b938-ec082b8e577d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="File I/O">
+      <UniqueIdentifier>{2b0538ee-1596-46aa-8196-76799c3870ef}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Endianness.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\MIDIEvents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\MIDIMacros.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\misc_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mod_specifications.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modcommand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ModChannel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ModInstrument.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ModSample.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ModSequence.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\pattern.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PlaybackEventer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mptrack\serialization_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\RowVisitor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Snd_defs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Sndfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mptrack\SoundFilePlayConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\StringFixer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\typedefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Wav.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\wavConverter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WindowedFIR.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tuning.h">
+      <Filter>Header Files\Tuning</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tuningbase.h">
+      <Filter>Header Files\Tuning</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tuningcollection.h">
+      <Filter>Header Files\Tuning</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mptrack\tuningRatioMapWnd.h">
+      <Filter>Header Files\Tuning</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ITTools.h">
+      <Filter>File I/O</Filter>
+    </ClInclude>
+    <ClInclude Include="..\XMTools.h">
+      <Filter>File I/O</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Loaders.h">
+      <Filter>File I/O</Filter>
+    </ClInclude>
+    <ClInclude Include="Stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ChunkReader.h">
+      <Filter>File I/O</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SampleFormatConverters.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SampleIO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WAVTools.h">
+      <Filter>File I/O</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\common\FlagSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FileReader.h">
+      <Filter>File I/O</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\ITTools.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\XMTools.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_669.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\load_amf.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_ams.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\load_dbm.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\load_dmf.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_dsm.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_far.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_gdm.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_imf.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_it.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_itp.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\load_j2b.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_mdl.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_med.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\load_mid.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_mo3.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_mod.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\load_mt2.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_mtm.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_okt.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\load_psm.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\load_ptm.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_s3m.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_stm.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_ult.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_umx.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_wav.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Load_xm.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tuning.cpp">
+      <Filter>Source Files\Tuning</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tuningbase.cpp">
+      <Filter>Source Files\Tuning</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tuningCollection.cpp">
+      <Filter>Source Files\Tuning</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mptrack\tuningRatioMapWnd.cpp">
+      <Filter>Source Files\Tuning</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlsbank.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Fastmix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Message.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\MIDIEvents.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\MIDIMacros.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\common\misc_util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mmcmp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Mmx_mix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ModChannel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mod_specifications.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modcommand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ModInstrument.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ModSample.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ModSequence.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\pattern.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\patternContainer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PlaybackEventer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RowVisitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mptrack\serialization_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\snd_dsp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\snd_eq.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\snd_flt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Snd_fx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Snd_rvb.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Sndfile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mptrack\SoundFilePlayConfig.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Tables.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Waveform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WindowedFIR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mptrack\STDAFX.CPP">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\SampleFormats.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\SampleIO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Sndmix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\snddev.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WAVTools.cpp">
+      <Filter>File I/O</Filter>
+    </ClCompile>
+    <ClCompile Include="..\precompiled.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

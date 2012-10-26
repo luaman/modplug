@@ -11,7 +11,7 @@
 #pragma once
 
 #include "tuningratiomapwnd.h"
-#include "tuningcollection.h"
+#include "../soundlib/tuningcollection.h"
 #include <vector>
 #include <string>
 #include "afxcmn.h"

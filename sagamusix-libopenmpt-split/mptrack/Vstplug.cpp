@@ -17,7 +17,7 @@
 #include "vstplug.h"
 #include <pluginterfaces/vst2.x/vstfxstore.h>	// VST Presets
 #include "moddoc.h"
-#include "sndfile.h"
+#include "../soundlib/Sndfile.h"
 #include "fxp.h"					//rewbs.VSTpresets
 #include "AbstractVstEditor.h"		//rewbs.defaultPlugGUI
 #include "VstEditor.h"				//rewbs.defaultPlugGUI
