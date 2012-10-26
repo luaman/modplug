@@ -111,9 +111,6 @@
     <ClInclude Include="..\Loaders.h">
       <Filter>File I/O</Filter>
     </ClInclude>
-    <ClInclude Include="Stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\ChunkReader.h">
       <Filter>File I/O</Filter>
     </ClInclude>
@@ -131,6 +128,9 @@
     </ClInclude>
     <ClInclude Include="..\FileReader.h">
       <Filter>File I/O</Filter>
+    </ClInclude>
+    <ClInclude Include="..\precompiled.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -321,9 +321,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\WindowedFIR.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\mptrack\STDAFX.CPP">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\SampleFormats.cpp">
