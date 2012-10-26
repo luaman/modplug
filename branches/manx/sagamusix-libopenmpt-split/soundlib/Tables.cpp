@@ -9,7 +9,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include <math.h>
 #include "sndfile.h"
 

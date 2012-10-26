@@ -9,7 +9,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 
 #include "../mptrack/MainFrm.h"	// TODO: Mix Settings shouldn't require CMainFrame
 #include "sndfile.h"

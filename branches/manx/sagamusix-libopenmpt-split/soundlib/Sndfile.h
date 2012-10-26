@@ -15,6 +15,7 @@
 #include "../common/misc_util.h"
 #include "mod_specifications.h"
 #include <vector>
+#include <string>
 #include <bitset>
 #include <set>
 #include "Snd_defs.h"
@@ -23,6 +24,8 @@
 #ifdef MODPLUG_TRACKER
 #include "../mptrack/MIDIMapping.h"
 #endif // MODPLUG_TRACKER
+
+class CSoundFile;
 
 #include "ModSample.h"
 #include "ModInstrument.h"
@@ -356,7 +359,7 @@ public:
 	void SetCurrentOrder(ORDERINDEX nOrder);
 	LPCSTR GetTitle() const { return m_szNames[0]; }
 	LPCTSTR GetSampleName(UINT nSample) const;
-	CString GetInstrumentName(UINT nInstr) const;
+	std::string GetInstrumentName(UINT nInstr) const;
 	UINT GetMusicSpeed() const { return m_nMusicSpeed; }
 	UINT GetMusicTempo() const { return m_nMusicTempo; }
 

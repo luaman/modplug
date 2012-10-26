@@ -14,7 +14,7 @@
 #pragma once
 #endif // _MSC_VER >= 1000
 
-#include "sndfile.h"
+#include "../soundlib/Sndfile.h"
 #include "../common/misc_util.h"
 #include "Undo.h"
 #include <time.h>

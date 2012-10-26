@@ -6,7 +6,7 @@
 #include "instrumentnode.h"
 #include "effectnode.h"
 #include "finalnode.h"
-#include "sndfile.h"
+#include "../soundlib/Sndfile.h"
 #include ".\graph.h"
 
 CGraph::CGraph()

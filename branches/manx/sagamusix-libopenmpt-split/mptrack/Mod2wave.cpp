@@ -10,7 +10,7 @@
 
 #include "stdafx.h"
 #include "mptrack.h"
-#include "sndfile.h"
+#include "../soundlib/Sndfile.h"
 #include "dlsbank.h"
 #include "mainfrm.h"
 #include "mpdlgs.h"

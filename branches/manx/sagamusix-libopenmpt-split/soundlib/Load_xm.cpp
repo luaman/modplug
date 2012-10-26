@@ -10,7 +10,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "Loaders.h"
 #include "../mptrack/version.h"
 #include "../common/misc_util.h"

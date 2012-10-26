@@ -8,7 +8,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "PlaybackEventer.h"
 #include "sndfile.h"
 

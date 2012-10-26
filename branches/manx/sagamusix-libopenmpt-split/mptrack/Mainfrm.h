@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "sndfile.h"
+#include "../soundlib/Sndfile.h"
 #include "CommandSet.h"
 #include "inputhandler.h"
 #include "mptrack.h"

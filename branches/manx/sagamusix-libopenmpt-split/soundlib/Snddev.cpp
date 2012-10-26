@@ -9,7 +9,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 
 #include "snddev.h"
 #include "snddevx.h"

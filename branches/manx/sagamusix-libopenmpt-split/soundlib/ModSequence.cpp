@@ -8,7 +8,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "sndfile.h"
 #include "ModSequence.h"
 #ifdef MODPLUG_TRACKER
@@ -18,6 +18,8 @@
 #include "../mptrack/serialization_utils.h"
 #include "../common/Reporting.h"
 #include <functional>
+#include <algorithm>
+
 
 #define str_SequenceTruncationNote (GetStrI18N((_TEXT("Module has sequence of length %u; it will be truncated to maximum supported length, %u."))))
 
@@ -261,6 +263,16 @@ void ModSequence::clear()
 //-----------------------
 {
 	m_nSize = 0;
+}
+
+
+void ModSequence::Replace(PATTERNINDEX nOld, PATTERNINDEX nNew)
+//-------------------------------------------------------------
+{
+	if(nOld != nNew)
+	{
+		std::replace(begin(), end(), nOld, nNew);
+	}
 }
 
 
@@ -780,7 +792,7 @@ void WriteModSequence(std::ostream& oStrm, const ModSequence& seq)
 {
 	srlztn::Ssb ssb(oStrm);
 	ssb.BeginWrite(FileIdSequence, MptVersion::num);
-	ssb.WriteItem((LPCSTR)seq.m_sName, "n");
+	ssb.WriteItem(seq.m_sName.c_str(), "n");
 	const uint16 nLength = seq.GetLengthTailTrimmed();
 	ssb.WriteItem<uint16>(nLength, "l");
 	ssb.WriteItem(seq.m_pArray, "a", 1, srlztn::ArrayWriter<uint16>(nLength));

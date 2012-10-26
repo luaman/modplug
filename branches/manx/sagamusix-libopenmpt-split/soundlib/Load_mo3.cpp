@@ -8,7 +8,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "Loaders.h"
 #ifdef MODPLUG_TRACKER
 #include "../mptrack/moddoc.h"

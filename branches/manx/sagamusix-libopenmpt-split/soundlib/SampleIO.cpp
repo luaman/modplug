@@ -10,7 +10,7 @@
  */
 
 
-#include "stdafx.h"
+#include "precompiled.h"
 #include "Loaders.h"
 #include "SampleIO.h"
 #include "SampleFormatConverters.h"

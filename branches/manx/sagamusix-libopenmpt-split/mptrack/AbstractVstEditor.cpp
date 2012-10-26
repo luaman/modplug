@@ -12,7 +12,7 @@
 #include "mptrack.h"
 #include "moddoc.h"
 #include "mainfrm.h"
-#include "sndfile.h"
+#include "../soundlib/Sndfile.h"
 #include "vstplug.h"
 #include "fxp.h"
 #include "dlg_misc.h"
@@ -508,7 +508,7 @@ void CAbstractVstEditor::UpdateInputMenu()
 		{ 
 			m_pInputMenu->AppendMenu(MF_SEPARATOR);
 		}
-		name.Format("Ins%02d: %s", inputInstruments[nIns], (LPCTSTR)pSndFile->GetInstrumentName(inputInstruments[nIns]));
+		name.Format("Ins%02d: %s", inputInstruments[nIns], pSndFile->GetInstrumentName(inputInstruments[nIns]).c_str());
 		if (inputInstruments[nIns] == (UINT)m_nInstrument)	checked = true;
 		m_pInputMenu->AppendMenu(MF_STRING|(checked?MF_CHECKED:0), ID_SELECTINST+inputInstruments[nIns], name);
 	}
