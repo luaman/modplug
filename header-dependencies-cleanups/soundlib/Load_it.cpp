@@ -13,7 +13,7 @@
 #include "Loaders.h"
 #include "tuningcollection.h"
 #include "../mptrack/moddoc.h"
-#include "../mptrack/serialization_utils.h"
+#include "../common/serialization_utils.h"
 #include <fstream>
 #include <strstream>
 #include <list>

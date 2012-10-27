@@ -12,7 +12,7 @@
 #include "patternContainer.h"
 #include "sndfile.h"
 #include "../mptrack/mainfrm.h"
-#include "../mptrack/serialization_utils.h"
+#include "../common/serialization_utils.h"
 #include "../mptrack/version.h"
 
 

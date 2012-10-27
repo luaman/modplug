@@ -28,7 +28,7 @@
 #include "../../soundlib/MIDIMacros.h"
 #include "../../common/misc_util.h"
 #include "../../common/StringFixer.h"
-#include "../serialization_utils.h"
+#include "../../common/serialization_utils.h"
 #include "../../soundlib/SampleFormatConverters.h"
 #include <limits>
 #include <fstream>
