@@ -14,7 +14,7 @@
 #include "../mptrack/mainfrm.h"
 #include "../mptrack/moddoc.h"
 #endif // MODPLUG_TRACKER
-#include "../mptrack/version.h"
+#include "../common/version.h"
 #include "../common/serialization_utils.h"
 #include "sndfile.h"
 #include "tuningcollection.h"

@@ -405,7 +405,7 @@
     <ClInclude Include="TrackerSettings.h" />
     <ClInclude Include="Undo.h" />
     <ClInclude Include="UpdateCheck.h" />
-    <ClInclude Include="version.h" />
+    <ClInclude Include="..\common\version.h" />
     <ClInclude Include="view_com.h" />
     <ClInclude Include="view_gen.h" />
     <ClInclude Include="view_ins.h" />

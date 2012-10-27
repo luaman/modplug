@@ -17,7 +17,7 @@
 #include <fstream>
 #include <strstream>
 #include <list>
-#include "../mptrack/version.h"
+#include "../common/version.h"
 #include "ITTools.h"
 
 #define str_tooMuchPatternData	(GetStrI18N((_TEXT("Warning: File format limit was reached. Some pattern data may not get written to file."))))
