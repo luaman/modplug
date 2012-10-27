@@ -13,7 +13,7 @@
 #include "sndfile.h"
 #include "../mptrack/mainfrm.h"
 #include "../common/serialization_utils.h"
-#include "../mptrack/version.h"
+#include "../common/version.h"
 
 
 void CPatternContainer::ClearPatterns()
