@@ -23,7 +23,7 @@
 #include "../mptrack.h"
 #include "../moddoc.h"
 #include "../MainFrm.h"
-#include "../version.h"
+#include "../../common/version.h"
 #include "../../soundlib/MIDIEvents.h"
 #include "../../soundlib/MIDIMacros.h"
 #include "../../common/misc_util.h"
