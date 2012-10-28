@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include "../soundlib/MixerSettings.h"
+
 /////////////////////////////////////////////////////////////////////////
 // Default directories
 
@@ -81,11 +83,8 @@ public:
 	TCHAR m_szKbdFile[_MAX_PATH];
 	COLORREF rgbCustomColors[MAX_MODCOLORS];
 
-	//rewbs.resamplerConf
-	double gdWFIRCutoff;
-	BYTE gbWFIRType;
-	long glVolumeRampUpSamples, glVolumeRampDownSamples;
-	//end rewbs.resamplerConf
+	MixerSettings m_MixerSettings;
+
 	UINT gnAutoChordWaitTime;
 
 	uint32 gnMsgBoxVisiblityFlags;

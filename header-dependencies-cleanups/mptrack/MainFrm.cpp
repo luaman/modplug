@@ -1160,7 +1160,11 @@ void CMainFrame::UpdateAudioParameters(BOOL bReset)
 	CSoundFile::UPDATEDSPEFFECTS();
 	CSoundFile::SetAGC(GetSettings().m_dwQuality & QUALITY_AGC);
 	CSoundFile::SetEQGains(	GetSettings().m_EqSettings.Gains, MAX_EQ_BANDS, GetSettings().m_EqSettings.Freqs, bReset );
-	if (bReset) CSoundFile::InitPlayer(TRUE);
+	if (bReset)
+	{
+		CSoundFile::SetMixerSettings(GetSettings().m_MixerSettings);
+		CSoundFile::InitPlayer(TRUE);
+	}
 }
 
 
@@ -1358,6 +1362,7 @@ BOOL CMainFrame::PlayMod(CModDoc *pModDoc, HWND hPat, DWORD dwNotifyType)
 	pSndFile->SetRepeatCount((GetSettings().gbLoopSong) ? -1 : 0);
 
 	m_pSndFile->SetMasterVolume(GetSettings().m_nPreAmp, true);
+	m_pSndFile->SetMixerSettings(GetSettings().m_MixerSettings);
 	m_pSndFile->InitPlayer(TRUE);
 	MemsetZero(NotifyBuffer);
 	m_dwStatus |= MODSTATUS_PLAYING;
@@ -1456,6 +1461,7 @@ BOOL CMainFrame::PlaySoundFile(CSoundFile *pSndFile)
 	}
 	gsdwTotalSamples = 0;
 	m_pSndFile->SetMasterVolume(GetSettings().m_nPreAmp, true);
+	m_pSndFile->SetMixerSettings(GetSettings().m_MixerSettings);
 	m_pSndFile->InitPlayer(TRUE);
 	m_dwStatus |= MODSTATUS_PLAYING;
 	if (gpSoundDevice) gpSoundDevice->Start();
@@ -1700,6 +1706,7 @@ BOOL CMainFrame::SetupPlayer(DWORD q, DWORD srcmode, BOOL bForceUpdate)
 		GetSettings().m_dwQuality = q;
 		{
 			CriticalSection cs;
+			CSoundFile::SetMixerSettings(GetSettings().m_MixerSettings);
 			CSoundFile::SetResamplingMode(GetSettings().m_nSrcMode);
 			CSoundFile::UPDATEDSPEFFECTS();
 			CSoundFile::SetAGC(GetSettings().m_dwQuality & QUALITY_AGC);
