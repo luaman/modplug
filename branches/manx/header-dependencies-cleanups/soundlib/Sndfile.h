@@ -396,7 +396,7 @@ public:
 	bool ReadIT(FileReader &file);
 	bool ReadITProject(FileReader &file);
 	bool Read669(FileReader &file);
-	bool ReadUlt(const LPCBYTE lpStream, const DWORD dwMemLength);
+	bool ReadUlt(FileReader &file);
 	bool ReadWav(FileReader &file);
 	bool ReadDSM(const LPCBYTE lpStream, const DWORD dwMemLength);
 	bool ReadFAR(FileReader &file);
@@ -573,7 +573,7 @@ protected:
 	void Vibrato(ModChannel *pChn, UINT param);
 	void FineVibrato(ModChannel *pChn, UINT param);
 	void VolumeSlide(ModChannel *pChn, UINT param);
-	void PanningSlide(ModChannel *pChn, UINT param);
+	void PanningSlide(ModChannel *pChn, UINT param, bool memory = true);
 	void ChannelVolSlide(ModChannel *pChn, UINT param);
 	void FineVolumeUp(ModChannel *pChn, UINT param);
 	void FineVolumeDown(ModChannel *pChn, UINT param);

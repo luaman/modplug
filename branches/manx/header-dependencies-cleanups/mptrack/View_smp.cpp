@@ -1490,7 +1490,7 @@ void CViewSample::OnRButtonDown(UINT, CPoint pt)
 		{
 			if (m_dwEndSel >= m_dwBeginSel + 4)
 			{
-				::AppendMenu(hMenu, MF_STRING | (CanZoomSelection() ? 0 : MF_GRAYED), ID_SAMPLE_ZOOMONSEL, "Zoom");
+				::AppendMenu(hMenu, MF_STRING | (CanZoomSelection() ? 0 : MF_GRAYED), ID_SAMPLE_ZOOMONSEL, "Zoom\t" + ih->GetKeyTextFromCommand(kcSampleZoomSelection));
 				::AppendMenu(hMenu, MF_STRING, ID_SAMPLE_SETLOOP, "Set As Loop");
 				if (pSndFile->GetType() & (MOD_TYPE_IT|MOD_TYPE_MPT))
 					::AppendMenu(hMenu, MF_STRING, ID_SAMPLE_SETSUSTAINLOOP, "Set As Sustain Loop");
@@ -1503,10 +1503,10 @@ void CViewSample::OnRButtonDown(UINT, CPoint pt)
 				{
 					//Set loop points
 					wsprintf(s, "Set Loop Start to:\t%d", dwPos);
-					::AppendMenu(hMenu, MF_STRING | (dwPos + 4 <= sample.nLoopEnd ? 0 : MF_GRAYED), 
+					::AppendMenu(hMenu, MF_STRING | (dwPos + 4 <= sample.nLoopEnd ? 0 : MF_GRAYED),
 						ID_SAMPLE_SETLOOPSTART, s);
 					wsprintf(s, "Set Loop End to:\t%d", dwPos);
-					::AppendMenu(hMenu, MF_STRING | (dwPos >= sample.nLoopStart + 4 ? 0 : MF_GRAYED), 
+					::AppendMenu(hMenu, MF_STRING | (dwPos >= sample.nLoopStart + 4 ? 0 : MF_GRAYED),
 						ID_SAMPLE_SETLOOPEND, s);
 						
 					if (pSndFile->GetType() & (MOD_TYPE_IT|MOD_TYPE_MPT))
@@ -1514,10 +1514,10 @@ void CViewSample::OnRButtonDown(UINT, CPoint pt)
 						//Set sustain loop points
 						::AppendMenu(hMenu, MF_SEPARATOR, 0, "");
 						wsprintf(s, "Set Sustain Start to:\t%d", dwPos);
-						::AppendMenu(hMenu, MF_STRING | (dwPos + 4 <= sample.nSustainEnd ? 0 : MF_GRAYED), 
-	  						 ID_SAMPLE_SETSUSTAINSTART, s);
+						::AppendMenu(hMenu, MF_STRING | (dwPos + 4 <= sample.nSustainEnd ? 0 : MF_GRAYED),
+							ID_SAMPLE_SETSUSTAINSTART, s);
 						wsprintf(s, "Set Sustain End to:\t%d", dwPos);
-						::AppendMenu(hMenu, MF_STRING | (dwPos >= sample.nSustainStart + 4 ? 0 : MF_GRAYED), 
+						::AppendMenu(hMenu, MF_STRING | (dwPos >= sample.nSustainStart + 4 ? 0 : MF_GRAYED),
 							ID_SAMPLE_SETSUSTAINEND, s);
 					}
 					::AppendMenu(hMenu, MF_SEPARATOR, 0, "");
@@ -1525,7 +1525,7 @@ void CViewSample::OnRButtonDown(UINT, CPoint pt)
 				}
 			}
 
-			if (m_dwBeginSel >= m_dwEndSel)
+			if(m_dwBeginSel >= m_dwEndSel)
 			{
 				if (sample.uFlags & CHN_16BIT) ::AppendMenu(hMenu, MF_STRING, ID_SAMPLE_8BITCONVERT, "Convert to 8-bit");
 				if (sample.uFlags & CHN_STEREO) ::AppendMenu(hMenu, MF_STRING, ID_SAMPLE_MONOCONVERT, "Convert to mono");
@@ -2068,11 +2068,11 @@ void CViewSample::OnMonoConvert()
 {
 	CModDoc *pModDoc = GetDocument();
 	BeginWaitCursor();
-	if ((pModDoc) && (m_nSample <= pModDoc->GetNumSamples()))
+	if(pModDoc != nullptr && (m_nSample <= pModDoc->GetNumSamples()))
 	{
 		CSoundFile *pSndFile = pModDoc->GetSoundFile();
 		ModSample &sample = pSndFile->GetSample(m_nSample);
-		if ((sample.uFlags & CHN_STEREO) && (sample.pSample) && (sample.nLength))
+		if(sample.GetNumChannels() > 1&& sample.pSample != nullptr && sample.nLength != 0)
 		{
 			pModDoc->GetSampleUndo().PrepareUndo(m_nSample, sundo_replace);
 			if(ctrlSmp::ConvertToMono(sample, pSndFile))
@@ -2188,7 +2188,14 @@ void CViewSample::PlayNote(UINT note, const uint32 nStartPos)
 
 			m_dwStatus |= SMPSTATUS_KEYDOWN;
 			s[0] = 0;
-			if ((note) && (note <= NOTE_MAX)) wsprintf(s, "%s%d", szNoteNames[(note-1)%12], (note-1)/12);
+			if(ModCommand::IsNote(note))
+			{
+				CSoundFile *pSndFile = pModDoc->GetSoundFile();
+				ModSample &sample = pSndFile->GetSample(m_nSample);
+				uint32 freq = pSndFile->GetFreqFromPeriod(pSndFile->GetPeriodFromNote(note + sample.RelativeTone, sample.nFineTune, sample.nC5Speed), sample.nC5Speed, 0);
+
+				wsprintf(s, "%s%d (%d Hz)", szNoteNames[(note - 1) % 12], (note - 1) / 12, freq);
+			}
 			pMainFrm->SetInfoText(s);
 		}
 	}
@@ -2678,6 +2685,7 @@ LRESULT CViewSample::OnCustomKeyMsg(WPARAM wParam, LPARAM /*lParam*/)
 		case kcSampleTrim:		OnSampleTrim() ; return wParam;
 		case kcSampleZoomUp:	OnZoomUp(); return wParam;
 		case kcSampleZoomDown:	OnZoomDown(); return wParam;
+		case kcSampleZoomSelection: OnZoomOnSel(); return wParam;
 		case kcPrevInstrument:	OnPrevInstrument(); return wParam;
 		case kcNextInstrument:	OnNextInstrument(); return wParam;
 		case kcEditSelectAll:	OnEditSelectAll(); return wParam;
