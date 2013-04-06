@@ -196,7 +196,7 @@ CMainFrame::CMainFrame()
 	m_hWndMidi = NULL;
 	m_pSndFile = nullptr;
 	m_dwTimeSec = 0;
-	m_notifyItem = 0;
+	m_dwNotifyType = 0;
 	m_nTimer = 0;
 	m_nAvgMixChn = m_nMixChn = 0;
 	m_szUserText[0] = 0;
@@ -662,14 +662,11 @@ void CMainFrame::OnUpdateFrameTitle(BOOL bAddToTitle)
 
 // Notify thread
 DWORD WINAPI CMainFrame::NotifyThreadWrapper(LPVOID)
-//--------------------------------------------------
 {
 	return ((CMainFrame*)theApp.m_pMainWnd)->NotifyThread();
 }
-
-
 DWORD CMainFrame::NotifyThread()
-//------------------------------
+//-------------------------------------------
 {
 	// initialize thread message queue
 	MSG msg;
@@ -693,7 +690,7 @@ DWORD CMainFrame::NotifyThread()
 			break;
 			case WAIT_OBJECT_0:
 				{
-					const Notification * pnotify = nullptr;
+					const MPTNOTIFICATION * pnotify = nullptr;
 					{
 						int64 currenttotalsamples = 0;
 						Util::lock_guard<Util::mutex> lock(m_NotificationBufferMutex);
@@ -705,11 +702,11 @@ DWORD CMainFrame::NotifyThread()
 							currenttotalsamples = m_TotalSamplesRendered; 
 						}
 						// advance to the newest notification, drop the obsolete ones
-						const Notification * p = m_NotifyBuffer.peek_p();
-						if(p && currenttotalsamples >= p->timestampSamples)
+						const MPTNOTIFICATION * p = m_NotifyBuffer.peek_p();
+						if(p && currenttotalsamples >= p->TimestampSamples)
 						{
 							pnotify = p;
-							while(m_NotifyBuffer.peek_next_p() && currenttotalsamples >= m_NotifyBuffer.peek_next_p()->timestampSamples)
+							while(m_NotifyBuffer.peek_next_p() && currenttotalsamples >= m_NotifyBuffer.peek_next_p()->TimestampSamples)
 							{
 								m_NotifyBuffer.pop();
 								p = m_NotifyBuffer.peek_p();
@@ -777,16 +774,18 @@ void CMainFrame::FillAudioBufferLocked(IFillAudioBuffer &callback)
 ULONG CMainFrame::AudioRead(PVOID pvData, ULONG MaxSamples)
 //---------------------------------------------------------
 {
-	return m_pSndFile->Read(pvData, MaxSamples);
+		DWORD dwSamplesRead = m_pSndFile->Read(pvData, MaxSamples);
+		//m_dTotalCPU = m_pPerfCounter->StartStop()/(static_cast<double>(dwSamplesRead)/m_dwRate);
+		return dwSamplesRead;
 }
 
 
-void CMainFrame::AudioDone(ULONG SamplesWritten, ULONG SamplesLatency, bool endOfStream)
-//--------------------------------------------------------------------------------------
+void CMainFrame::AudioDone(ULONG SamplesWritten, ULONG SamplesLatency, bool end_of_stream)
+//----------------------------------------------------------------------------------------
 {
-	if(SamplesWritten > 0)
+	if (SamplesWritten > 0)
 	{
-		DoNotification(SamplesWritten, SamplesLatency, endOfStream);
+		DoNotification(SamplesWritten, SamplesLatency, end_of_stream);
 	}
 }
 
@@ -936,8 +935,8 @@ void CMainFrame::CalcStereoVuMeters(int *pMix, unsigned long nSamples, unsigned 
 }
 
 
-BOOL CMainFrame::DoNotification(DWORD dwSamplesRead, DWORD SamplesLatency, bool endOfStream)
-//------------------------------------------------------------------------------------------
+BOOL CMainFrame::DoNotification(DWORD dwSamplesRead, DWORD SamplesLatency, bool end_of_stream)
+//-------------------------------------------------------------------
 {
 	int64 notificationtimestamp = 0;
 	{
@@ -951,10 +950,10 @@ BOOL CMainFrame::DoNotification(DWORD dwSamplesRead, DWORD SamplesLatency, bool 
 			notificationtimestamp = m_TotalSamplesRendered + SamplesLatency;
 		}
 	}
-	if(!m_pSndFile) return FALSE;
-	if(m_nMixChn < m_pSndFile->m_nMixStat) m_nMixChn++;
-	if(m_nMixChn > m_pSndFile->m_nMixStat) m_nMixChn--;
-	if(m_notifyType == Notification::None) return FALSE;
+	if (!m_pSndFile) return FALSE;
+	if (m_nMixChn < m_pSndFile->m_nMixStat) m_nMixChn++;
+	if (m_nMixChn > m_pSndFile->m_nMixStat) m_nMixChn--;
+	if (!(m_dwNotifyType & MPTNOTIFY_TYPEMASK)) return FALSE;
 	// Notify Client
 	//if(m_NotifyBuffer.read_size() > 0)
 	{
@@ -962,95 +961,86 @@ BOOL CMainFrame::DoNotification(DWORD dwSamplesRead, DWORD SamplesLatency, bool 
 	}
 	// Add an entry to the notification history
 
-	Notification notification;
-	Notification *p = &notification;
+	MPTNOTIFICATION notification;
+	MemsetZero(notification);
+	MPTNOTIFICATION *p = &notification;
 
-	p->type = m_notifyType;
-	p->item = m_notifyItem;
-	if(endOfStream) p->type.set(Notification::EOS);
-	p->timestampSamples = notificationtimestamp;
-
-	p->row = m_pSndFile->m_nRow;
-	p->tick = m_pSndFile->m_nTickCount;
-	p->order = m_pSndFile->m_nCurrentOrder;
-	p->pattern = m_pSndFile->m_nPattern;
-
-	if(m_notifyType[Notification::Sample])
-	{
-		// Sample positions
-		SAMPLEINDEX smp = m_notifyItem;
-		for(CHANNELINDEX k = 0; k < MAX_CHANNELS; k++)
-		{
-			const ModChannel &chn = m_pSndFile->Chn[k];
-			if(smp && smp <= m_pSndFile->GetNumSamples() && chn.nLength && chn.pSample	// There is a sample and it's playing
-				&& chn.pSample == m_pSndFile->GetSample(smp).pSample					// And it's the correct sample
-				&& (!chn.dwFlags[CHN_NOTEFADE] || chn.nFadeOutVol))						// And it hasn't completely faded out yet, so it's still playing
+			p->dwType = m_dwNotifyType | (end_of_stream ? MPTNOTIFY_EOS : 0);
+			p->TimestampSamples = notificationtimestamp;
+			p->nOrder = m_pSndFile->m_nCurrentOrder;
+			p->nRow = m_pSndFile->m_nRow;
+			p->nPattern = m_pSndFile->m_nPattern;
+			p->nTick = m_pSndFile->m_nTickCount;
+			if (m_dwNotifyType & MPTNOTIFY_SAMPLE)
 			{
-				p->pos[k] = chn.nPos;
-			} else
-			{
-				p->pos[k] = Notification::PosInvalid;
-			}
-		}
-	} else if(m_notifyType[Notification::VolEnv | Notification::PanEnv | Notification::PitchEnv])
-	{
-		// Instrument envelopes
-		INSTRUMENTINDEX ins = m_notifyItem;
-		for(CHANNELINDEX k = 0; k < MAX_CHANNELS; k++)
-		{
-			const ModChannel &chn = m_pSndFile->Chn[k];
-			if(ins != 0 && ins <= m_pSndFile->GetNumInstruments()								// There is an instrument
-				&& chn.pModInstrument && chn.pModInstrument == m_pSndFile->Instruments[ins]		// And it's the correct instrument
-				&& (chn.nLength || chn.pModInstrument->HasValidMIDIChannel())					// And it's playing something (sample or instrument)
-				&& (!chn.dwFlags[CHN_NOTEFADE] || chn.nFadeOutVol))								// And it hasn't completely faded out yet, so it's still playing
-			{
-				enmEnvelopeTypes notifyEnv = ENV_VOLUME;
-				if(m_notifyType[Notification::PitchEnv])
-					notifyEnv = ENV_PITCH;
-				else if(m_notifyType[Notification::PanEnv])
-					notifyEnv = ENV_PANNING;
-
-				const ModChannel::EnvInfo &chnEnv = chn.GetEnvelope(notifyEnv);
-				if(chnEnv.flags[ENV_ENABLED])
+				SAMPLEINDEX nSmp = m_dwNotifyType & 0xFFFF;
+				for (CHANNELINDEX k = 0; k < MAX_CHANNELS; k++)
 				{
-					uint32 pos = chnEnv.nEnvPosition;
-					if(m_pSndFile->IsCompatibleMode(TRK_IMPULSETRACKER))
+					ModChannel *pChn = &m_pSndFile->Chn[k];
+					p->dwPos[k] = 0;
+					if ((nSmp) && (nSmp <= m_pSndFile->GetNumSamples()) && (pChn->nLength)
+					 && (pChn->pSample) && (pChn->pSample == m_pSndFile->GetSample(nSmp).pSample)
+					 && ((!(pChn->dwFlags & CHN_NOTEFADE)) || (pChn->nFadeOutVol)))
 					{
-						// Impulse Tracker envelope handling (see e.g. CSoundFile::IncrementEnvelopePosition in SndMix.cpp for details)
-						if(pos > 0)
-							pos--;
-						else
-							continue;
+						p->dwPos[k] = MPTNOTIFY_POSVALID | (DWORD)(pChn->nPos);
 					}
-					p->pos[k] = pos;
 				}
-			} else
+			} else if (m_dwNotifyType & (MPTNOTIFY_VOLENV|MPTNOTIFY_PANENV|MPTNOTIFY_PITCHENV))
 			{
-				p->pos[k] = Notification::PosInvalid;
+				UINT nIns = m_dwNotifyType & 0xFFFF;
+				for (CHANNELINDEX k = 0; k < MAX_CHANNELS; k++)
+				{
+					ModChannel *pChn = &m_pSndFile->Chn[k];
+					p->dwPos[k] = 0;
+					if(nIns != 0 && nIns <= m_pSndFile->GetNumInstruments()									// There is an instrument
+						&& pChn->pModInstrument && pChn->pModInstrument == m_pSndFile->Instruments[nIns]	// And it's the correct instrument
+						&& (pChn->nLength || pChn->pModInstrument->HasValidMIDIChannel())					// And it's playing something (sample or instrument)
+						&& (!pChn->dwFlags[CHN_NOTEFADE] || pChn->nFadeOutVol))								// And it hasn't completely faded out yet, so it's still playing
+					{
+						enmEnvelopeTypes notifyEnv = ENV_VOLUME;
+						if (m_dwNotifyType & MPTNOTIFY_PITCHENV)
+							notifyEnv = ENV_PITCH;
+						else if (m_dwNotifyType & MPTNOTIFY_PANENV)
+							notifyEnv = ENV_PANNING;
+
+						const ModChannel::EnvInfo &chnEnv = pChn->GetEnvelope(notifyEnv);
+
+						if(chnEnv.flags[ENV_ENABLED])
+						{
+							uint32 pos = chnEnv.nEnvPosition;
+							if(m_pSndFile->IsCompatibleMode(TRK_IMPULSETRACKER))
+							{
+								// Impulse Tracker envelope handling (see e.g. CSoundFile::IncrementEnvelopePosition in SndMix.cpp for details)
+								if(pos > 0)
+									pos--;
+								else
+									continue;
+							}
+							p->dwPos[k] = MPTNOTIFY_POSVALID | pos;
+						}
+					}
+				}
+			} else if (m_dwNotifyType & (MPTNOTIFY_VUMETERS))
+			{
+				for (UINT k=0; k<MAX_CHANNELS; k++)
+				{
+					ModChannel *pChn = &m_pSndFile->Chn[k];
+					UINT vul = pChn->nLeftVU;
+					UINT vur = pChn->nRightVU;
+					p->dwPos[k] = (vul << 8) | (vur);
+				}
 			}
-		}
-	} else if(m_notifyType[Notification::VUMeters])
-	{
-		// Pattern channel VU meters
-		for(CHANNELINDEX k = 0; k < m_pSndFile->GetNumChannels(); k++)
-		{
-			uint32 vul = m_pSndFile->Chn[k].nLeftVU;
-			uint32 vur = m_pSndFile->Chn[k].nRightVU;
-			p->pos[k] = (vul << 8) | (vur);
-		}
-	}
-	{
-		// Master VU meter
-		uint32 lVu = (gnLVuMeter >> 11);
-		uint32 rVu = (gnRVuMeter >> 11);
-		if(lVu > 0x10000) lVu = 0x10000;
-		if(rVu > 0x10000) rVu = 0x10000;
-		p->masterVu[0] = lVu;
-		p->masterVu[1] = rVu;
-		uint32 dwVuDecay = Util::muldiv(dwSamplesRead, 120000, TrackerSettings::Instance().m_dwRate) + 1;
-		if (lVu >= dwVuDecay) gnLVuMeter = (lVu - dwVuDecay) << 11; else gnLVuMeter = 0;
-		if (rVu >= dwVuDecay) gnRVuMeter = (rVu - dwVuDecay) << 11; else gnRVuMeter = 0;
-	}
+			{
+				DWORD lVu = (gnLVuMeter >> 11);
+				DWORD rVu = (gnRVuMeter >> 11);
+				if (lVu > 0x10000) lVu = 0x10000;
+				if (rVu > 0x10000) rVu = 0x10000;
+				p->MasterVuLeft = lVu;
+				p->MasterVuRight = rVu;
+				DWORD dwVuDecay = Util::muldiv(dwSamplesRead, 120000, TrackerSettings::Instance().m_dwRate) + 1;
+				if (lVu >= dwVuDecay) gnLVuMeter = (lVu - dwVuDecay) << 11; else gnLVuMeter = 0;
+				if (rVu >= dwVuDecay) gnRVuMeter = (rVu - dwVuDecay) << 11; else gnRVuMeter = 0;
+			}
 
 	{
 		Util::lock_guard<Util::mutex> lock(m_NotificationBufferMutex);
@@ -1316,8 +1306,9 @@ bool CMainFrame::PausePlayback()
 void CMainFrame::GenerateStopNotification()
 //-----------------------------------------
 {
-	Notification mn;
-	mn.type = Notification::Stop;
+	MPTNOTIFICATION mn;
+	MemsetZero(mn);
+	mn.dwType = MPTNOTIFY_STOP;
 	SendMessage(WM_MOD_UPDATEPOSITION, 0, (LPARAM)&mn);
 }
 
@@ -1332,7 +1323,7 @@ void CMainFrame::UnsetPlaybackSoundFile()
 		m_nAvgMixChn = 0;
 		if(m_pSndFile->GetpModDoc())
 		{
-			m_wndTree.UpdatePlayPos(m_pSndFile->GetpModDoc(), nullptr);
+			m_wndTree.UpdatePlayPos(m_pSndFile->GetpModDoc(), NULL);
 		}
 		m_pSndFile->m_SongFlags.reset(SONG_PAUSED);
 		if(m_pSndFile == &m_WaveFile)
@@ -1361,18 +1352,17 @@ void CMainFrame::UnsetPlaybackSoundFile()
 }
 
 
-void CMainFrame::SetPlaybackSoundFile(CSoundFile *pSndFile, HWND hPat, Notification::Type notifyType, Notification::Item notifyItem)
-//----------------------------------------------------------------------------------------------------------------------------------
+void CMainFrame::SetPlaybackSoundFile(CSoundFile *pSndFile, HWND hPat, DWORD dwNotifyType)
+//----------------------------------------------------------------------------------------
 {
 	m_pSndFile = pSndFile;
 	m_hFollowSong = hPat;
-	m_notifyType = notifyType;
-	m_notifyItem = notifyItem;
+	m_dwNotifyType = dwNotifyType;
 }
 
 
-bool CMainFrame::PlayMod(CModDoc *pModDoc, HWND hPat, Notification::Type notifyType, Notification::Item notifyItem)
-//-----------------------------------------------------------------------------------------------------------------
+bool CMainFrame::PlayMod(CModDoc *pModDoc, HWND hPat, DWORD dwNotifyType)
+//-----------------------------------------------------------------------
 {
 	CriticalSection::AssertUnlocked();
 	if(!pModDoc) return false;
@@ -1391,7 +1381,7 @@ bool CMainFrame::PlayMod(CModDoc *pModDoc, HWND hPat, Notification::Type notifyT
 	// set mixing parameters in CSoundFile
 	ApplyTrackerSettings(pSndFile);
 
-	SetPlaybackSoundFile(pSndFile, hPat, notifyType, notifyItem);
+	SetPlaybackSoundFile(pSndFile, hPat, dwNotifyType);
 
 	const bool bPaused = m_pSndFile->IsPaused();
 	const bool bPatLoop = m_pSndFile->m_SongFlags[SONG_PATTERNLOOP];
@@ -1523,7 +1513,7 @@ BOOL CMainFrame::PlayDLSInstrument(UINT nDLSBank, UINT nIns, UINT nRgn, ModComma
 	{
 		CriticalSection cs;
 		InitPreview();
-		if(CTrackApp::gpDLSBanks[nDLSBank]->ExtractInstrument(m_WaveFile, 1, nIns, nRgn))
+		if(CTrackApp::gpDLSBanks[nDLSBank]->ExtractInstrument(&m_WaveFile, 1, nIns, nRgn))
 		{
 			PreparePreview(note);
 			ok = true;
@@ -1692,28 +1682,24 @@ void CMainFrame::PreparePreview(ModCommand::NOTE note)
 }
 
 
-BOOL CMainFrame::SetFollowSong(CModDoc *pDoc, HWND hwnd, BOOL bFollowSong, Notification::Type type, Notification::Item item)
-//--------------------------------------------------------------------------------------------------------------------------
+BOOL CMainFrame::SetFollowSong(CModDoc *pDoc, HWND hwnd, BOOL bFollowSong, DWORD dwType)
+//--------------------------------------------------------------------------------------
 {
-	if((!pDoc) || (pDoc != GetModPlaying())) return FALSE;
-	if(bFollowSong)
+	if ((!pDoc) || (pDoc != GetModPlaying())) return FALSE;
+	if (bFollowSong)
 	{
 		m_hFollowSong = hwnd;
 	} else
 	{
-		if(hwnd == m_hFollowSong) m_hFollowSong = NULL;
+		if (hwnd == m_hFollowSong) m_hFollowSong = NULL;
 	}
-	if(type != Notification::None)
-	{
-		m_notifyType = type;
-		m_notifyItem = item;
-	}
+	if (dwType) m_dwNotifyType = dwType;
 	return TRUE;
 }
 
 
 BOOL CMainFrame::SetupSoundCard(DWORD q, DWORD rate, UINT nBits, UINT nChns, UINT latency_ms, UINT updateinterval_ms, LONG wd)
-//----------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 {
 	const bool isPlaying = (IsPlaying() != 0);
 	if ((TrackerSettings::Instance().m_dwRate != rate) || ((TrackerSettings::Instance().m_dwSoundSetup & SOUNDSETUP_RESTARTMASK) != (q & SOUNDSETUP_RESTARTMASK))
@@ -1738,7 +1724,7 @@ BOOL CMainFrame::SetupSoundCard(DWORD q, DWORD rate, UINT nBits, UINT nChns, UIN
 			CriticalSection cs;
 			UpdateAudioParameters(FALSE);
 		}
-		if (pActiveMod) PlayMod(pActiveMod, hFollow, m_notifyType);
+		if (pActiveMod) PlayMod(pActiveMod, hFollow, m_dwNotifyType);
 		UpdateWindow();
 	} else
 	{
@@ -2282,7 +2268,7 @@ LRESULT CMainFrame::OnInvalidatePatterns(WPARAM wParam, LPARAM)
 LRESULT CMainFrame::OnUpdatePositionThreaded(WPARAM, LPARAM)
 //-----------------------------------------------------------------
 {
-	Notification * pnotify = &m_PendingNotification;
+	MPTNOTIFICATION * pnotify = &m_PendingNotification;
 	LRESULT retval = OnUpdatePosition(0, (LPARAM)pnotify);
 	// for all notifications which were delivered via the notification thread, release the semaphore
 	ReleaseSemaphore(m_PendingNotificationSempahore, 1, NULL);
@@ -2292,10 +2278,10 @@ LRESULT CMainFrame::OnUpdatePositionThreaded(WPARAM, LPARAM)
 LRESULT CMainFrame::OnUpdatePosition(WPARAM, LPARAM lParam)
 //---------------------------------------------------------
 {
-	Notification *pnotify = (Notification *)lParam;
+	MPTNOTIFICATION *pnotify = (MPTNOTIFICATION *)lParam;
 	if (pnotify)
 	{
-		if(pnotify->type[Notification::EOS])
+		if(pnotify->dwType & MPTNOTIFY_EOS)
 		{
 			PostMessage(WM_COMMAND, ID_PLAYER_STOP);
 		}

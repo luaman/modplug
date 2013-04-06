@@ -13,7 +13,6 @@
 #include "sndfile.h"
 #include "../common/misc_util.h"
 #include "Undo.h"
-#include "Notification.h"
 #include <time.h>
 
 
@@ -154,8 +153,7 @@ protected:
 	CSoundFile m_SndFile;
 
 	HWND m_hWndFollow;
-	FlagSet<Notification::Type, uint16> m_notifyType;
-	Notification::Item m_notifyItem;
+	DWORD m_dwNotifyType;
 	CSize m_szOldPatternScrollbarsPos;
 
 	CPatternUndo m_PatternUndo;
@@ -208,7 +206,7 @@ public:
 	void ViewSample(UINT nSmp);
 	void ViewInstrument(UINT nIns);
 	HWND GetFollowWnd() const { return m_hWndFollow; }
-	void SetFollowWnd(HWND hwnd, Notification::Type type, Notification::Item item = 0);
+	void SetFollowWnd(HWND hwnd, DWORD dwType);
 
 	void ActivateWindow();
 

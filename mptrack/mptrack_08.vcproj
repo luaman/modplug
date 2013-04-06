@@ -987,10 +987,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Notification.h"
-				>
-			</File>
-			<File
 				RelativePath="..\soundlib\pattern.h"
 				>
 			</File>

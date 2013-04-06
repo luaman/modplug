@@ -642,7 +642,7 @@ void CModScrollView::OnDestroy()
 		if (pMainFrm->GetFollowSong(pModDoc) == m_hWnd)
 		{
 			pMainFrm->SetFollowSong(pModDoc, NULL, FALSE);
-			pModDoc->SetFollowWnd(NULL, Notification::None);
+			pModDoc->SetFollowWnd(NULL, 0);
 		}
 		if (pMainFrm->GetMidiRecordWnd() == m_hWnd)
 		{
@@ -656,7 +656,7 @@ void CModScrollView::OnDestroy()
 LRESULT CModScrollView::OnUpdatePosition(WPARAM, LPARAM lParam)
 //-------------------------------------------------------------
 {
-	Notification *pnotify = (Notification *)lParam;
+	MPTNOTIFICATION *pnotify = (MPTNOTIFICATION *)lParam;
 	if (pnotify) return OnPlayerNotify(pnotify);
 	return 0;
 }

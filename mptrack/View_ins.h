@@ -26,31 +26,27 @@ protected:
 	CImageList m_bmpEnvBar;
 	POINT m_ptMenu;
 	RECT m_rcClient;
-
-	CBitmap m_bmpGrid;
-	CBitmap m_bmpMemMain;
-	CBitmap *m_pbmpOldGrid;
-	CBitmap *oldBitmap;
-
+	vector<bool> m_baPlayingNote;
+	vector<DWORD> m_dwNotifyPos;
+	INSTRUMENTINDEX m_nInstrument;
 	enmEnvelopeTypes m_nEnv;
-	UINT m_nDragItem, m_nBtnMouseOver;
+	UINT m_nDragItem, m_nBtnMouseOver, m_nPlayingChannel;
 	DWORD m_dwStatus;
 	DWORD m_NcButtonState[ENV_LEFTBAR_BUTTONS];
-
-	INSTRUMENTINDEX m_nInstrument;
-
-	CDC m_dcMemMain;
+	//rewbs.envRowGrid
+	bool m_bGrid;
+	bool m_bGridForceRedraw;
+	CBitmap *m_pbmpOldGrid;
+	CBitmap m_bmpGrid;
 	CDC m_dcGrid;
 	int m_GridScrollPos;
 	int m_GridSpeed;
+	CDC m_dcMemMain;
+	CBitmap m_bmpMemMain;
+	CBitmap* oldBitmap;
 
 	float m_fZoom;
-
-	bool m_bGrid;
-	bool m_bGridForceRedraw;
-
-	std::bitset<128> m_baPlayingNote;
-	uint32 m_dwNotifyPos[MAX_CHANNELS];
+	//rewbs.envRowGrid
 
 public:
 	CViewInstrument();
@@ -105,7 +101,7 @@ protected:
 	bool EnvToggleReleaseNode(int nPoint);
 
 	// Set envelope status
-	bool EnvToggleEnv(enmEnvelopeTypes envelope, CSoundFile &sndFile, ModInstrument &ins, bool enable, BYTE defaultValue, EnvelopeFlags extraFlags = EnvelopeFlags(0));
+	bool EnvToggleEnv(enmEnvelopeTypes envelope, CSoundFile *pSndFile, ModInstrument *pIns, bool enable, BYTE defaultValue, EnvelopeFlags extraFlags = EnvelopeFlags(0));
 	bool EnvSetVolEnv(bool bEnable);
 	bool EnvSetPanEnv(bool bEnable);
 	bool EnvSetPitchEnv(bool bEnable);
@@ -163,7 +159,7 @@ public:
 	virtual void UpdateView(DWORD dwHintMask=0, CObject *pObj=NULL);
 	virtual LRESULT OnModViewMsg(WPARAM, LPARAM);
 	virtual BOOL OnDragonDrop(BOOL, LPDRAGONDROP);
-	virtual LRESULT OnPlayerNotify(Notification *);
+	virtual LRESULT OnPlayerNotify(MPTNOTIFICATION *);
 	//}}AFX_VIRTUAL
 
 protected:

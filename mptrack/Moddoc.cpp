@@ -271,7 +271,7 @@ BOOL CModDoc::OnOpenDocument(LPCTSTR lpszPathName)
 													dwKey, &nDlsIns)))
 				{
 					if (dwKey < 0x80) nDrumRgn = pEmbeddedBank->GetRegionFromKey(nDlsIns, dwKey);
-					if (pEmbeddedBank->ExtractInstrument(m_SndFile, nIns, nDlsIns, nDrumRgn))
+					if (pEmbeddedBank->ExtractInstrument(&m_SndFile, nIns, nDlsIns, nDrumRgn))
 					{
 						pIns = m_SndFile.Instruments[nIns]; // Reset pIns because ExtractInstrument may delete the previous value.
 						if ((dwKey >= 24) && (dwKey < 100))
@@ -314,7 +314,7 @@ BOOL CModDoc::OnOpenDocument(LPCTSTR lpszPathName)
 														dwKey, &nDlsIns)))
 						{
 							if (dwKey < 0x80) nDrumRgn = pDLSBank->GetRegionFromKey(nDlsIns, dwKey);
-							pDLSBank->ExtractInstrument(m_SndFile, nIns, nDlsIns, nDrumRgn);
+							pDLSBank->ExtractInstrument(&m_SndFile, nIns, nDlsIns, nDrumRgn);
 							pIns = m_SndFile.Instruments[nIns]; // Reset pIns because ExtractInstrument may delete the previous value.
 							if ((dwKey >= 24) && (dwKey < 24+61))
 							{
@@ -937,7 +937,7 @@ CHANNELINDEX CModDoc::PlayNote(UINT note, INSTRUMENTINDEX nins, SAMPLEINDEX nsmp
 		if (pMainFrm->GetModPlaying() != this)
 		{
 			m_SndFile.m_SongFlags.set(SONG_PAUSED);
-			pMainFrm->PlayMod(this, m_hWndFollow, m_notifyType, m_notifyItem);
+			pMainFrm->PlayMod(this, m_hWndFollow, m_dwNotifyType);
 		}
 
 		CriticalSection cs;
@@ -1420,14 +1420,13 @@ UINT CModDoc::GetPatternSize(PATTERNINDEX nPat) const
 }
 
 
-void CModDoc::SetFollowWnd(HWND hwnd, Notification::Type type, Notification::Item item)
-//-------------------------------------------------------------------------------------
+void CModDoc::SetFollowWnd(HWND hwnd, DWORD dwType)
+//-------------------------------------------------
 {
 	CMainFrame *pMainFrm = CMainFrame::GetMainFrame();
 	m_hWndFollow = hwnd;
-	m_notifyType = type;
-	m_notifyItem = item;
-	if(pMainFrm) pMainFrm->SetFollowSong(this, m_hWndFollow, TRUE, m_notifyType, m_notifyItem);
+	m_dwNotifyType = dwType;
+	if(pMainFrm) pMainFrm->SetFollowSong(this, m_hWndFollow, TRUE, m_dwNotifyType);
 }
 
 
@@ -1927,7 +1926,7 @@ void CModDoc::OnPlayerPlay()
 		cs.Leave();
 
 		m_SndFile.m_SongFlags.reset(SONG_STEP | SONG_PAUSED | SONG_PATTERNLOOP);
-		pMainFrm->PlayMod(this, m_hWndFollow, m_notifyType, m_notifyItem);
+		pMainFrm->PlayMod(this, m_hWndFollow, m_dwNotifyType);
 	}
 }
 
@@ -2012,7 +2011,7 @@ void CModDoc::OnPlayerPlayFromStart()
 
 		cs.Leave();
 
-		pMainFrm->PlayMod(this, m_hWndFollow, m_notifyType, m_notifyItem);
+		pMainFrm->PlayMod(this, m_hWndFollow, m_dwNotifyType);
 	}
 }
 
@@ -2326,7 +2325,7 @@ void CModDoc::OnPatternRestart(bool loop)
 		
 		if(pModPlaying != this)
 		{
-			pMainFrm->PlayMod(this, followSonghWnd, m_notifyType|Notification::Position|Notification::VUMeters, m_notifyItem); //rewbs.fix2977
+			pMainFrm->PlayMod(this, followSonghWnd, m_dwNotifyType|MPTNOTIFY_POSITION|MPTNOTIFY_VUMETERS); //rewbs.fix2977
 		}
 	}
 	//SwitchToView();
@@ -2382,7 +2381,7 @@ void CModDoc::OnPatternPlay()
 
 		if(pModPlaying != this)
 		{
-			pMainFrm->PlayMod(this, followSonghWnd, m_notifyType | Notification::Position | Notification::VUMeters, m_notifyItem);  //rewbs.fix2977
+			pMainFrm->PlayMod(this, followSonghWnd, m_dwNotifyType|MPTNOTIFY_POSITION|MPTNOTIFY_VUMETERS);  //rewbs.fix2977
 		}
 	}
 	//SwitchToView();
@@ -2441,7 +2440,7 @@ void CModDoc::OnPatternPlayNoLoop()
 
 		if(pModPlaying != this)
 		{
-			pMainFrm->PlayMod(this, followSonghWnd, m_notifyType | Notification::Position | Notification::VUMeters, m_notifyItem);  //rewbs.fix2977
+			pMainFrm->PlayMod(this, followSonghWnd, m_dwNotifyType|MPTNOTIFY_POSITION|MPTNOTIFY_VUMETERS);  //rewbs.fix2977
 		}
 	}
 	//SwitchToView();

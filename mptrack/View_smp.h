@@ -33,12 +33,11 @@ protected:
 	SmpLength m_dwBeginSel, m_dwEndSel, m_dwBeginDrag, m_dwEndDrag;
 	DWORD m_dwMenuParam;
 	DWORD m_NcButtonState[SMP_LEFTBAR_BUTTONS];
+	DWORD m_dwNotifyPos[MAX_CHANNELS];
 	int m_nGridSegments;
 
-	CPoint m_lastDrawPoint;	// for drawing horizontal lines
 	bool m_bDrawingEnabled;	// sample drawing mode enabled?
-
-	SmpLength m_dwNotifyPos[MAX_CHANNELS];
+	CPoint m_lastDrawPoint;	// for drawing horizontal lines
 
 public:
 	CViewSample();
@@ -99,7 +98,7 @@ public:
 	virtual LRESULT OnModViewMsg(WPARAM, LPARAM);
 	virtual BOOL OnScrollBy(CSize sizeScroll, BOOL bDoScroll=TRUE);
 	virtual BOOL OnDragonDrop(BOOL, LPDRAGONDROP);
-	virtual LRESULT OnPlayerNotify(Notification *);
+	virtual LRESULT OnPlayerNotify(MPTNOTIFICATION *);
 	virtual BOOL PreTranslateMessage(MSG *pMsg); //rewbs.customKeys
 	//}}AFX_VIRTUAL
 

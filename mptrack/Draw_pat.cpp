@@ -1701,8 +1701,8 @@ void CViewPattern::UpdateXInfoText()
 //end rewbs.xinfo
 
 
-void CViewPattern::UpdateAllVUMeters(Notification *pnotify)
-//---------------------------------------------------------
+void CViewPattern::UpdateAllVUMeters(MPTNOTIFICATION *pnotify)
+//------------------------------------------------------------
 {
 	CMainFrame *pMainFrm = CMainFrame::GetMainFrame();
 	const CModDoc *pModDoc = GetDocument();
@@ -1714,6 +1714,7 @@ void CViewPattern::UpdateAllVUMeters(Notification *pnotify)
 	int x, xofs;
 	
 	if ((!pModDoc) || (!pMainFrm)) return;
+	memset(ChnVUMeters, 0, sizeof(ChnVUMeters));
 	GetClientRect(&rcClient);
 	xofs = GetXScrollPos();
 	pSndFile = pModDoc->GetSoundFile();
@@ -1723,8 +1724,8 @@ void CViewPattern::UpdateAllVUMeters(Notification *pnotify)
 	nChn = xofs;
 	while ((nChn < pSndFile->m_nChannels) && (x < rcClient.right))
 	{
-		ChnVUMeters[nChn] = (WORD)pnotify->pos[nChn];
-		if ((!bPlaying) || pnotify->type[Notification::Stop]) ChnVUMeters[nChn] = 0;
+		ChnVUMeters[nChn] = (WORD)pnotify->dwPos[nChn];
+		if ((!bPlaying) || (pnotify->dwType & MPTNOTIFY_STOP)) ChnVUMeters[nChn] = 0;
 		DrawChannelVUMeter(hdc, x + 1, rcClient.top + COLHDR_HEIGHT, nChn);
 		nChn++;
 		x += m_szCell.cx;
