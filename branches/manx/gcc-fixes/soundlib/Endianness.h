@@ -56,26 +56,31 @@ inline uint16 BigEndianW(uint16 x)	{ return bswap16(x); }
 #endif
 //#pragma deprecated(BigEndian, BigEndianW, LittleEndian, LittleEndianW)
 
+typedef uint32 ALIGN(1) unaligned_uint32;
+typedef uint16 ALIGN(1) unaligned_uint16;
+typedef  int32 ALIGN(1) unaligned_int32;
+typedef  int16 ALIGN(1) unaligned_int16;
+
 #ifdef PLATFORM_BIG_ENDIAN
 // PPC
-inline uint32 SwapBytesBE(uint32 &value)	{ return value; }
-inline uint16 SwapBytesBE(uint16 &value)	{ return value; }
-inline uint32 SwapBytesLE(uint32 &value)	{ return value = bswap32(value); }
-inline uint16 SwapBytesLE(uint16 &value)	{ return value = bswap16(value); }
-inline int32 SwapBytesBE(int32 &value)		{ return value; }
-inline int16 SwapBytesBE(int16 &value)		{ return value; }
-inline int32 SwapBytesLE(int32 &value)		{ return value = bswap32(value); }
-inline int16 SwapBytesLE(int16 &value)		{ return value = bswap16(value); }
+inline uint32 SwapBytesBE(unaligned_uint32 &value) { return value; }
+inline uint16 SwapBytesBE(unaligned_uint16 &value) { return value; }
+inline uint32 SwapBytesLE(unaligned_uint32 &value) { return value = bswap32(value); }
+inline uint16 SwapBytesLE(unaligned_uint16 &value) { return value = bswap16(value); }
+inline int32 SwapBytesBE(unaligned_int32 &value)  { return value; }
+inline int16 SwapBytesBE(unaligned_int16 &value)  { return value; }
+inline int32 SwapBytesLE(unaligned_int32 &value)  { return value = bswap32(value); }
+inline int16 SwapBytesLE(unaligned_int16 &value)  { return value = bswap16(value); }
 #else
 // x86
-inline uint32 SwapBytesBE(uint32 &value)	{ return value = bswap32(value); }
-inline uint16 SwapBytesBE(uint16 &value)	{ return value = bswap16(value); }
-inline uint32 SwapBytesLE(uint32 &value)	{ return value; }
-inline uint16 SwapBytesLE(uint16 &value)	{ return value; }
-inline int32 SwapBytesBE(int32 &value)		{ return value = bswap32(value); }
-inline int16 SwapBytesBE(int16 &value)		{ return value = bswap16(value); }
-inline int32 SwapBytesLE(int32 &value)		{ return value; }
-inline int16 SwapBytesLE(int16 &value)		{ return value; }
+inline uint32 SwapBytesBE(unaligned_uint32 &value) { return value = bswap32(value); }
+inline uint16 SwapBytesBE(unaligned_uint16 &value) { return value = bswap16(value); }
+inline uint32 SwapBytesLE(unaligned_uint32 &value) { return value; }
+inline uint16 SwapBytesLE(unaligned_uint16 &value) { return value; }
+inline int32 SwapBytesBE(unaligned_int32 &value)  { return value = bswap32(value); }
+inline int16 SwapBytesBE(unaligned_int16 &value)  { return value = bswap16(value); }
+inline int32 SwapBytesLE(unaligned_int32 &value)  { return value; }
+inline int16 SwapBytesLE(unaligned_int16 &value)  { return value; }
 #endif
 
 #undef bswap16
