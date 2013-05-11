@@ -14,6 +14,7 @@
 #include <sstream>
 #include <string>
 
+#include <cmath>
 #include <cstdlib>
 
 #include "typedefs.h"
@@ -177,7 +178,7 @@ T gcd(T a, T b)
 		if(b == 0)
 			return a;
 		a %= b;
-	}
+	} while(true);
 }
 
 
@@ -253,7 +254,7 @@ size_t ConvertInt2MIDI(uint8 *result, size_t maxLength, TIn value)
 			*result |= 0x80;
 		}
 		result++;
-	} while (++bytesUsed < maxLength && value != 0)
+	} while (++bytesUsed < maxLength && value != 0);
 	return bytesUsed;
 }
 

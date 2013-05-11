@@ -19,6 +19,10 @@
 #define MSVC_VER_VC10		1600
 #define MSVC_VER_2010		MSVC_VER_VC10
 
+#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+
+
+
 #if defined(_MSC_VER)
 #pragma warning(error : 4309) // Treat "truncation of constant value"-warning as error.
 #endif
@@ -31,8 +35,14 @@
 
 
 
-#if defined(_MSC_VER) && (_MSC_VER < MSVC_VER_2010)
+#if defined(_MSC_VER)
+#if (_MSC_VER < MSVC_VER_2010)
 	#define nullptr		0
+#endif
+#elif defined(__GNUC__)
+#if GCC_VERSION < 40600
+#define nullptr 0
+#endif
 #endif
 
 
@@ -246,7 +256,10 @@ typedef const char *  LPCSTR;
 typedef char *        LPSTR;
 typedef const char *  LPCTSTR;
 typedef char *        LPTSTR;
+
 #define MPT_TEXT(x) x
+
+#define wsprintf sprintf
 
 #endif // _WIN32
 
