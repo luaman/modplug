@@ -168,13 +168,14 @@ enum deleteInstrumentSamples
 
 //Note: These are bit indeces. MSF <-> Mod(Specific)Flag.
 //If changing these, ChangeModTypeTo() might need modification.
-FLAGSET(ModSpecificFlag)
+enum ModSpecificFlag
 {
 	MSF_COMPATIBLE_PLAY		= 1,		//IT/MPT/XM
 	MSF_OLDVOLSWING			= 2,		//IT/MPT
 	MSF_MIDICC_BUGEMULATION	= 4,		//IT/MPT/XM
 	MSF_OLD_MIDI_PITCHBENDS	= 8,		//IT/MPT/XM
 };
+DECLARE_FLAGSET(ModSpecificFlag)
 
 
 class CTuningCollection;
