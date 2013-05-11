@@ -164,12 +164,14 @@ MPWD			MIDI Pitch Wheel Depth
 -----------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------*/
 
+#define MULTICHAR_STRING_TO_INT(str) MULTICHAR4_LE_MSVC((str)[0],(str)[1],(str)[2],(str)[3])
+
 // --------------------------------------------------------------------------------------------
 // Convenient macro to help WRITE_HEADER declaration for single type members ONLY (non-array)
 // --------------------------------------------------------------------------------------------
 #define WRITE_MPTHEADER_sized_member(name,type,code) \
 static_assert(sizeof(input->name) >= sizeof(type), "Instrument property does not fit into specified type!");\
-fcode = #@code;\
+fcode = MULTICHAR_STRING_TO_INT(#code);\
 fwrite(& fcode , 1 , sizeof( __int32 ) , file);\
 fsize = sizeof( type );\
 fwrite(& fsize , 1 , sizeof( __int16 ) , file);\
@@ -180,7 +182,7 @@ fwrite(&input-> name , 1 , fsize , file);
 // --------------------------------------------------------------------------------------------
 #define WRITE_MPTHEADER_array_member(name,type,code,arraysize) \
 ASSERT(sizeof(input->name) >= sizeof(type) * arraysize);\
-fcode = #@code;\
+fcode = MULTICHAR_STRING_TO_INT(#code);\
 fwrite(& fcode , 1 , sizeof( __int32 ) , file);\
 fsize = sizeof( type ) * arraysize;\
 fwrite(& fsize , 1 , sizeof( __int16 ) , file);\
@@ -221,7 +223,7 @@ WRITE_MPTHEADER_sized_member(	nFadeOut				, UINT			, FO..							)
 { // dwFlags needs to be constructed so write it manually.
 	//WRITE_MPTHEADER_sized_member(	dwFlags					, DWORD			, dF..							)
 	const DWORD dwFlags = CreateExtensionFlags(*input);
-	fcode = 'dF..';
+	fcode = MULTICHAR_STRING_TO_INT("dF..");
 	fwrite(&fcode, 1, sizeof(int32), file);
 	fsize = sizeof(dwFlags);
 	fwrite(&fsize, 1, sizeof(int16), file);
@@ -290,17 +292,17 @@ WRITE_MPTHEADER_sized_member(	midiPWD					, int8			, MPWD							)
 // Convenient macro to help GET_HEADER declaration for single type members ONLY (non-array)
 // --------------------------------------------------------------------------------------------
 #define GET_MPTHEADER_sized_member(name,type,code) \
-case( #@code ):\
+if(fcode == MULTICHAR_STRING_TO_INT(#code)) {\
 if( fsize <= sizeof( type ) ) pointer = (char *)(&input-> name);\
-break;
+} else
 
 // --------------------------------------------------------------------------------------------
 // Convenient macro to help GET_HEADER declaration for array members ONLY
 // --------------------------------------------------------------------------------------------
 #define GET_MPTHEADER_array_member(name,type,code,arraysize) \
-case( #@code ):\
+if(fcode == MULTICHAR_STRING_TO_INT(#code)) {\
 if( fsize <= sizeof( type ) * arraysize ) pointer = (char *)(&input-> name);\
-break;
+} else
 
 // Return a pointer on the wanted field in 'input' ModInstrument given field code & size
 char *GetInstrumentHeaderFieldPointer(const ModInstrument *input, uint32 fcode, uint16 fsize)
@@ -308,7 +310,6 @@ char *GetInstrumentHeaderFieldPointer(const ModInstrument *input, uint32 fcode, 
 if(input == nullptr) return nullptr;
 char *pointer = nullptr;
 
-switch(fcode){
 GET_MPTHEADER_sized_member(	nFadeOut				, UINT			, FO..							)
 GET_MPTHEADER_sized_member(	dwFlags					, DWORD			, dF..							)
 GET_MPTHEADER_sized_member(	nGlobalVol				, UINT			, GV..							)
@@ -367,7 +368,7 @@ GET_MPTHEADER_sized_member(	PitchEnv.dwFlags		, uint32		, PFLG							)
 GET_MPTHEADER_sized_member(	PanEnv.dwFlags			, uint32		, AFLG							)
 GET_MPTHEADER_sized_member(	VolEnv.dwFlags			, uint32		, VFLG							)
 GET_MPTHEADER_sized_member(	midiPWD					, int8			, MPWD							)
-}
+{}
 
 return pointer;
 }
