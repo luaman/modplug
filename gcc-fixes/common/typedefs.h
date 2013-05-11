@@ -278,6 +278,8 @@ int c99_snprintf(char *str, size_t size, const char *format, ...);
 #define snprintf c99_snprintf
 #endif
 
+#define MULTICHAR4_LE_MSVC(a,b,c,d) static_cast<uint32>( (static_cast<uint8>(a) << 24) | (static_cast<uint8>(b) << 16) | (static_cast<uint8>(c) << 8) | (static_cast<uint8>(d) << 0) )
+
 
 
 //STRINGIZE makes a string of given argument. If used with #defined value,
