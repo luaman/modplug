@@ -258,18 +258,19 @@ typedef DWORD *       LPDWORD;
 typedef INT *         LPINT;
 typedef LONG *        LPLONG;
 
-typedef std::int8_t   CHAR;
 typedef char          TCHAR;
 typedef const char *  LPCSTR;
 typedef char *        LPSTR;
 typedef const char *  LPCTSTR;
 typedef char *        LPTSTR;
 
+// for BOOL
 #define TRUE (1)
 #define FALSE (0)
 
 #define MPT_TEXT(x) x
 
+// wsprintf is just sprintf, but defined in the WINDOWS API
 #define wsprintf sprintf
 
 #endif // _WIN32
