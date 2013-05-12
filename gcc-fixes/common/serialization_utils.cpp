@@ -17,6 +17,8 @@
 namespace srlztn
 {
 
+static const uint8 HeaderId_FlagByte = 0;
+
 // Indexing starts from 0.
 inline bool Testbit(uint8 val, uint8 bitindex) {return ((val & (1 << bitindex)) != 0);}
 
