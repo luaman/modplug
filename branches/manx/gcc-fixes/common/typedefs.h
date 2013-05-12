@@ -60,7 +60,7 @@
 #define PACKED __declspec(align(1))
 #define NEEDS_PRAGMA_PACK
 #elif defined(__GNUC__)
-#define PACKED __attribute__((packed))) __attribute__((aligned(1))))
+#define PACKED __attribute__((packed)) __attribute__((aligned(1)))
 #endif
 
 
@@ -235,6 +235,7 @@ STATIC_ASSERT(sizeof(FloatInt32) == 4);
 // openmpt assumes these type have exact WIN32 semantics
 
 #define VOID void
+typedef std::int32_t  BOOL;
 typedef std::uint8_t  BYTE;
 typedef std::uint16_t WORD;
 typedef std::uint32_t DWORD;
@@ -243,12 +244,19 @@ typedef std::int8_t   CHAR;
 typedef std::int16_t  SHORT;
 typedef std::int32_t  INT;
 typedef std::int32_t  LONG;
+typedef std::int64_t  LONGLONG;
 typedef std::uint8_t  UCHAR;
 typedef std::uint16_t USHORT;
 typedef std::uint32_t UINT;
 typedef std::uint32_t ULONG;
+typedef std::uint64_t ULONGLONG;
 typedef VOID *        LPVOID;
 typedef VOID *        PVOID;
+typedef BYTE *        LPBYTE;
+typedef WORD *        LPWORD;
+typedef DWORD *       LPDWORD;
+typedef INT *         LPINT;
+typedef LONG *        LPLONG;
 
 typedef std::int8_t   CHAR;
 typedef char          TCHAR;
@@ -256,6 +264,9 @@ typedef const char *  LPCSTR;
 typedef char *        LPSTR;
 typedef const char *  LPCTSTR;
 typedef char *        LPTSTR;
+
+#define TRUE (1)
+#define FALSE (0)
 
 #define MPT_TEXT(x) x
 
@@ -320,3 +331,10 @@ class Logger { public: void operator () (const char *format, ...) {} };
 
 // just #undef Log in files, where this Log redefinition causes problems
 //#undef Log
+
+
+
+#ifndef UNREFERENCED_PARAMETER
+#define UNREFERENCED_PARAMETER(x) (void)(x)
+#endif
+
