@@ -683,6 +683,7 @@ LONG PatchFreqToNote(ULONG nFreq)
 	const float k_12 = 12;
 	LONG result;
 	if (nFreq < 1) return 0;
+#if defined(ENABLE_X86)
 	_asm {
 	fld k_12
 	fild nFreq
@@ -691,6 +692,10 @@ LONG PatchFreqToNote(ULONG nFreq)
 	fyl2x
 	fistp result
 	}
+#else // !ENABLE_X86
+	const float inv_log_2 = 1.44269504089f; // 1.0f/std::log(2.0f)
+	result = std::log(nFreq * k_base) * (k_12 * inv_log_2);
+#endif // ENABLE_X86
 	return result;
 }
 
