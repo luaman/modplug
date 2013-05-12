@@ -789,7 +789,9 @@ public:
 
 };
 
+#ifdef _MSC_VER
 #pragma warning(default : 4324) //structure was padded due to __declspec(align())
+#endif
 
 
 extern const LPCSTR szNoteNames[12];

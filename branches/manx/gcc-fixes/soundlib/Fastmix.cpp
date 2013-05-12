@@ -1832,7 +1832,9 @@ VOID CSoundFile::FloatToStereoMix(const float *pIn1, const float *pIn2, int *pOu
 }
 
 
+#ifdef _MSC_VER
 #pragma warning (disable:4100)
+#endif
 
 
 #ifdef ENABLE_X86
@@ -2129,7 +2131,9 @@ void InitMixBuffer(int *pBuffer, UINT nSamples)
 //////////////////////////////////////////////////////////////////////////
 // Noise Shaping (Dither)
 
+#ifdef _MSC_VER
 #pragma warning(disable:4731) // ebp modified
+#endif
 
 
 #ifdef ENABLE_X86

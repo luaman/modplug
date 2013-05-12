@@ -13,7 +13,9 @@
 #include "stdafx.h"
 #include "Loaders.h"
 
+#ifdef _MSC_VER
 #pragma warning(disable:4244) //"conversion from 'type1' to 'type2', possible loss of data"
+#endif
 
 #ifdef NEEDS_PRAGMA_PACK
 #pragma pack(push, 1)
