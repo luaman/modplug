@@ -429,8 +429,6 @@ private:
 	Postype m_posMapStart;				// Write: Pos of map start.
 	OstrStream m_MapStream;				// Write: Map stream.
 
-private:
-	static const uint8 HeaderId_FlagByte = 0;
 public:
 	static const uint8 s_DefaultFlagbyte = 0;
 	static int32 s_DefaultReadLogMask;
