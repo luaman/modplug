@@ -1732,15 +1732,15 @@ void ReadInstrumentExtensionField(ModInstrument* pIns, const uint32 code, const 
 	// get field's address in instrument's header
 	char *fadr = GetInstrumentHeaderFieldPointer(pIns, code, size);
 	 
-	if(fadr && code != 'K[..')	// copy field data in instrument's header
+	if(fadr && code != MULTICHAR4_LE_MSVC('K','[','.','.'))	// copy field data in instrument's header
 		memcpy(fadr, file.GetRawData(), size);  // (except for keyboard mapping)
-	if(fadr && code == 'n[..')
+	if(fadr && code == MULTICHAR4_LE_MSVC('n','[','.','.'))
 		StringFixer::SetNullTerminator(pIns->name);
-	if(fadr && code == 'fn[.')
+	if(fadr && code == MULTICHAR4_LE_MSVC('f','n','[','.'))
 		StringFixer::SetNullTerminator(pIns->filename);
 	file.Skip(size);
 
-	if(code == 'dF..' && fadr != nullptr) // 'dF..' field requires additional processing.
+	if(code == MULTICHAR4_LE_MSVC('d','F','.','.') && fadr != nullptr) // 'dF..' field requires additional processing.
 		ConvertReadExtendedFlags(pIns);
 }
 
