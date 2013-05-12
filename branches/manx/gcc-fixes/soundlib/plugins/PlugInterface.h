@@ -19,10 +19,10 @@ typedef int32 VstInt32;
 typedef intptr_t VstIntPtr;
 #endif
 
-#include "Snd_defs.h"
-#include "../common/misc_util.h"
-#include "../soundlib/MIDIEvents.h"
-#include "../soundlib/Endianness.h"
+#include "../../soundlib/Snd_defs.h"
+#include "../../common/misc_util.h"
+#include "../../soundlib/MIDIEvents.h"
+#include "../../soundlib/Endianness.h"
 
 ////////////////////////////////////////////////////////////////////
 // Mix Plugins
