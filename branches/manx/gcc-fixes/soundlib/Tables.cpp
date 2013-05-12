@@ -49,8 +49,8 @@ const LPCTSTR szDefaultNoteNames[NOTE_MAX] = {
 struct ModFormatInfo
 {
 	MODTYPE format;		// MOD_TYPE_XXXX
-	char *name;			// "ProTracker"
-	char *extension;	// "mod"
+	const char *name;			// "ProTracker"
+	const char *extension;	// "mod"
 };
 
 // remember to also update libopenmpt/libopenmpt_foobar2000.cpp (all other plugins read these dynamically)
