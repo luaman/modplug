@@ -2090,7 +2090,7 @@ void CSoundFile::LoadExtendedInstrumentProperties(FileReader &file, bool *pInter
 	{
 		uint32 code = file.ReadUint32LE();
 
-		if(code == 'MPTS')					//Reached song extensions, break out of this loop
+		if(code == MULTICHAR4_LE_MSVC('M','P','T','S'))					//Reached song extensions, break out of this loop
 		{
 			file.SkipBack(4);
 			return;
@@ -2147,23 +2147,23 @@ void CSoundFile::LoadExtendedSongProperties(const MODTYPE modtype, FileReader &f
 
 		switch (code)					// interpret field code
 		{
-			CASE('DT..', m_nDefaultTempo);
-			CASE('RPB.', m_nDefaultRowsPerBeat);
-			CASE('RPM.', m_nDefaultRowsPerMeasure);
-			CASE_NOTXM('C...', m_nChannels);
-			CASE('TM..', m_nTempoMode);
-			CASE('PMM.', m_nMixLevels);
-			CASE('CWV.', m_dwCreatedWithVersion);
-			CASE('LSWV', m_dwLastSavedWithVersion);
-			CASE('SPA.', m_nSamplePreAmp);
-			CASE('VSTV', m_nVSTiVolume);
-			CASE('DGV.', m_nDefaultGlobalVolume);
-			CASE_NOTXM('RP..', m_nRestartPos);
-			CASE('MSF.', m_ModFlags);
+			CASE(MULTICHAR4_LE_MSVC('D','T','.','.'), m_nDefaultTempo);
+			CASE(MULTICHAR4_LE_MSVC('R','P','B','.'), m_nDefaultRowsPerBeat);
+			CASE(MULTICHAR4_LE_MSVC('R','P','M','.'), m_nDefaultRowsPerMeasure);
+			CASE_NOTXM(MULTICHAR4_LE_MSVC('C','.','.','.'), m_nChannels);
+			CASE(MULTICHAR4_LE_MSVC('T','M','.','.'), m_nTempoMode);
+			CASE(MULTICHAR4_LE_MSVC('P','M','M','.'), m_nMixLevels);
+			CASE(MULTICHAR4_LE_MSVC('C','W','V','.'), m_dwCreatedWithVersion);
+			CASE(MULTICHAR4_LE_MSVC('L','S','W','V'), m_dwLastSavedWithVersion);
+			CASE(MULTICHAR4_LE_MSVC('S','P','A','.'), m_nSamplePreAmp);
+			CASE(MULTICHAR4_LE_MSVC('V','S','T','V'), m_nVSTiVolume);
+			CASE(MULTICHAR4_LE_MSVC('D','G','V','.'), m_nDefaultGlobalVolume);
+			CASE_NOTXM(MULTICHAR4_LE_MSVC('R','P','.','.'), m_nRestartPos);
+			CASE(MULTICHAR4_LE_MSVC('M','S','F','.'), m_ModFlags);
 #ifdef MODPLUG_TRACKER
-			case 'MIMA': GetMIDIMapper().Deserialize(chunk.GetRawData(), size); break;
+			case MULTICHAR4_LE_MSVC('M','I','M','A'): GetMIDIMapper().Deserialize(chunk.GetRawData(), size); break;
 #endif
-			case 'ChnS':
+			case MULTICHAR4_LE_MSVC('C','h','n','S'):
 				if(size <= (MAX_BASECHANNELS - 64) * 2 && (size % 2u) == 0)
 				{
 					STATIC_ASSERT(CountOf(ChnSettings) >= 64);
@@ -2288,7 +2288,7 @@ size_t CSoundFile::LoadModularInstrumentData(FileReader &file, ModInstrument &in
 
 		switch (chunkID)
 		{
-		case 'PLUG':
+		case MULTICHAR4_LE_MSVC('P','L','U','G'):
 			// Chunks don't tell us their length - stupid!
 			ins.nMixPlug = modularData.ReadUint8();
 			break;
