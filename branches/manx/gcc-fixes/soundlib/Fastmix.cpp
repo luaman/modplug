@@ -1690,8 +1690,8 @@ void CSoundFile::ProcessPlugins(UINT nCount)
 	}
 	// Convert mix buffer
 	StereoMixToFloat(MixSoundBuffer, MixFloatBuffer, MixFloatBuffer + MIXBUFFERSIZE, nCount);
-	FLOAT *pMixL = MixFloatBuffer;
-	FLOAT *pMixR = MixFloatBuffer + MIXBUFFERSIZE;
+	float *pMixL = MixFloatBuffer;
+	float *pMixR = MixFloatBuffer + MIXBUFFERSIZE;
 
 	// Process Plugins
 	for(PLUGINDEX plug = 0; plug < MAX_MIXPLUGINS; plug++)
@@ -1711,8 +1711,8 @@ void CSoundFile::ProcessPlugins(UINT nCount)
 			}
 			IMixPlugin *pObject = plugin.pMixPlugin;
 			SNDMIXPLUGINSTATE *pState = plugin.pMixState;
-			FLOAT *pOutL = pMixL;
-			FLOAT *pOutR = pMixR;
+			float *pOutL = pMixL;
+			float *pOutR = pMixR;
 
 			if (!plugin.IsOutputToMaster())
 			{
@@ -1746,8 +1746,8 @@ void CSoundFile::ProcessPlugins(UINT nCount)
 			{
 				if (!isMasterMix)
 				{
-					FLOAT *pInL = pState->pOutBufferL;
-					FLOAT *pInR = pState->pOutBufferR;
+					float *pInL = pState->pOutBufferL;
+					float *pInR = pState->pOutBufferR;
 					for (UINT i=0; i<nCount; i++)
 					{
 						pInL[i] += pMixL[i];
@@ -1762,8 +1762,8 @@ void CSoundFile::ProcessPlugins(UINT nCount)
 
 			if (plugin.IsBypassed())
 			{
-				const FLOAT * const pInL = pState->pOutBufferL;
-				const FLOAT * const pInR = pState->pOutBufferR;
+				const float * const pInL = pState->pOutBufferL;
+				const float * const pInR = pState->pOutBufferR;
 				for (UINT i=0; i<nCount; i++)
 				{
 					pOutL[i] += pInL[i];
