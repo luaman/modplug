@@ -45,7 +45,7 @@ MODULAR (in/out) ModInstrument :
 - both following functions need to be updated when adding a new member in ModInstrument :
 
 void WriteInstrumentHeaderStruct(ModInstrument * input, FILE * file);
-BYTE * GetInstrumentHeaderFieldPointer(ModInstrument * input, __int32 fcode, __int16 fsize);
+BYTE * GetInstrumentHeaderFieldPointer(ModInstrument * input, uint32 fcode, int16 fsize);
 
 - see below for body declaration.
 
@@ -172,9 +172,9 @@ MPWD			MIDI Pitch Wheel Depth
 #define WRITE_MPTHEADER_sized_member(name,type,code) \
 static_assert(sizeof(input->name) >= sizeof(type), "Instrument property does not fit into specified type!");\
 fcode = MULTICHAR_STRING_TO_INT(#code);\
-fwrite(& fcode , 1 , sizeof( __int32 ) , file);\
+fwrite(& fcode , 1 , sizeof( uint32 ) , file);\
 fsize = sizeof( type );\
-fwrite(& fsize , 1 , sizeof( __int16 ) , file);\
+fwrite(& fsize , 1 , sizeof( int16 ) , file);\
 fwrite(&input-> name , 1 , fsize , file);
 
 // --------------------------------------------------------------------------------------------
@@ -183,9 +183,9 @@ fwrite(&input-> name , 1 , fsize , file);
 #define WRITE_MPTHEADER_array_member(name,type,code,arraysize) \
 ASSERT(sizeof(input->name) >= sizeof(type) * arraysize);\
 fcode = MULTICHAR_STRING_TO_INT(#code);\
-fwrite(& fcode , 1 , sizeof( __int32 ) , file);\
+fwrite(& fcode , 1 , sizeof( uint32 ) , file);\
 fsize = sizeof( type ) * arraysize;\
-fwrite(& fsize , 1 , sizeof( __int16 ) , file);\
+fwrite(& fsize , 1 , sizeof( int16 ) , file);\
 fwrite(&input-> name , 1 , fsize , file);
 
 namespace {
@@ -216,8 +216,8 @@ DWORD CreateExtensionFlags(const ModInstrument& ins)
 // Write (in 'file') 'input' ModInstrument with 'code' & 'size' extra field infos for each member
 void WriteInstrumentHeaderStruct(ModInstrument * input, FILE * file)
 {
-__int32 fcode;
-__int16 fsize;
+uint32 fcode;
+int16 fsize;
 WRITE_MPTHEADER_sized_member(	nFadeOut				, UINT			, FO..							)
 
 { // dwFlags needs to be constructed so write it manually.

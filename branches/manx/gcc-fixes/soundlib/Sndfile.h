@@ -540,7 +540,7 @@ public:
 	bool SaveIT(LPCSTR lpszFileName, bool compatibilityExport = false);
 	bool SaveITProject(LPCSTR lpszFileName); // -> CODE#0023 -> DESC="IT project files (.itp)" -! NEW_FEATURE#0023
 	UINT SaveMixPlugins(FILE *f=NULL, BOOL bUpdate=TRUE);
-	void WriteInstrumentPropertyForAllInstruments(__int32 code,  __int16 size, FILE* f, UINT nInstruments) const;
+	void WriteInstrumentPropertyForAllInstruments(uint32 code,  int16 size, FILE* f, UINT nInstruments) const;
 	void SaveExtendedInstrumentProperties(UINT nInstruments, FILE* f) const;
 	void SaveExtendedSongProperties(FILE* f) const;
 	size_t SaveModularInstrumentData(FILE *f, const ModInstrument *pIns) const;
