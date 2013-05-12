@@ -10,7 +10,7 @@
 
 
 #include "stdafx.h"
-#include "sndfile.h"
+#include "Sndfile.h"
 #ifdef MODPLUG_TRACKER
 #include "../mptrack/Moddoc.h"
 #include "../mptrack/Mainfrm.h"	// For ini settings

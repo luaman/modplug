@@ -12,7 +12,7 @@
 #include "stdafx.h"
 #include "Tables.h"
 #include <math.h>
-#include "sndfile.h"
+#include "Sndfile.h"
 
 #include "Resampler.h"
 // rewbs.resamplerConf
