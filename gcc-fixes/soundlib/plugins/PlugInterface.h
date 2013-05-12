@@ -151,7 +151,7 @@ struct SNDMIXPLUGIN
 	IMixPlugin *pMixPlugin;
 	SNDMIXPLUGINSTATE *pMixState;
 	ULONG nPluginDataSize;
-	void *pPluginData;
+	char *pPluginData;
 	SNDMIXPLUGININFO Info;
 	float fDryRatio;
 	VstInt32 defaultProgram;
