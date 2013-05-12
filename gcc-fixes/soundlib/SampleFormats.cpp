@@ -886,7 +886,11 @@ bool CSoundFile::ReadPATInstrument(INSTRUMENTINDEX nInstr, LPBYTE lpStream, DWOR
 /////////////////////////////////////////////////////////////
 // S3I Samples
 
-typedef struct S3ISAMPLESTRUCT
+#ifdef NEEDS_PRAGMA_PACK
+#pragma pack(push, 1)
+#endif
+
+typedef struct PACKED S3ISAMPLESTRUCT
 {
 	BYTE id;
 	char filename[12];
@@ -906,6 +910,12 @@ typedef struct S3ISAMPLESTRUCT
 	CHAR name[28];
 	DWORD scrs;
 } S3ISAMPLESTRUCT;
+
+STATIC_ASSERT(sizeof(S3ISAMPLESTRUCT) == 80);
+
+#ifdef NEEDS_PRAGMA_PACK
+#pragma pack(pop)
+#endif
 
 bool CSoundFile::ReadS3ISample(SAMPLEINDEX nSample, const LPBYTE lpMemFile, DWORD dwFileLength)
 //---------------------------------------------------------------------------------------------
