@@ -122,8 +122,8 @@ static void WriteTuningMap(ostream& oStrm, const CSoundFile& sf)
 
 
 template<class TUNNUMTYPE, class STRSIZETYPE>
-static bool ReadTuningMap(istream& iStrm, map<uint16, string>& shortToTNameMap, const size_t maxNum = 500)
-//--------------------------------------------------------------------------------------------------------
+static bool ReadTuningMapTemplate(istream& iStrm, map<uint16, string>& shortToTNameMap, const size_t maxNum = 500)
+//----------------------------------------------------------------------------------------------------------------
 {
 	typedef map<uint16, string> MAP;
 	typedef MAP::iterator MAP_ITER;
@@ -155,7 +155,7 @@ static void ReadTuningMap(istream& iStrm, CSoundFile& csf, const size_t = 0)
 	typedef map<WORD, string> MAP;
 	typedef MAP::iterator MAP_ITER;
 	MAP shortToTNameMap;
-	ReadTuningMap<uint16, uint8>(iStrm, shortToTNameMap);
+	ReadTuningMapTemplate<uint16, uint8>(iStrm, shortToTNameMap);
 
 	//Read & set tunings for instruments
 	std::list<string> notFoundTunings;
