@@ -11,7 +11,7 @@
 
 #include "stdafx.h"
 #include "Loaders.h"
-#include "dlsbank.h"
+#include "Dlsbank.h"
 #include "Wav.h"
 #ifdef MODPLUG_TRACKER
 #include "../mptrack/TrackerSettings.h"

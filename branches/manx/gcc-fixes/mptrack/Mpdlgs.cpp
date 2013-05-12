@@ -12,7 +12,7 @@
 #include "mptrack.h"
 #include "Sndfile.h"
 #include "mainfrm.h"
-#include "dlsbank.h"
+#include "Dlsbank.h"
 #include "mpdlgs.h"
 #include "moptions.h"
 #include "moddoc.h"

@@ -11,7 +11,7 @@
 #include "stdafx.h"
 #include "mptrack.h"
 #include "Sndfile.h"
-#include "dlsbank.h"
+#include "Dlsbank.h"
 #include "mainfrm.h"
 #include "mpdlgs.h"
 #include "vstplug.h"

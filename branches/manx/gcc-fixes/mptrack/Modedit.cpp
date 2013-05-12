@@ -13,7 +13,7 @@
 #include "mainfrm.h"
 #include "moddoc.h"
 #include "dlg_misc.h"
-#include "dlsbank.h"
+#include "Dlsbank.h"
 #include "modsmp_ctrl.h"
 #include "../common/misc_util.h"
 #include "../common/StringFixer.h"
