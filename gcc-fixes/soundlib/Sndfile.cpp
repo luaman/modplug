@@ -384,7 +384,9 @@ CTuningCollection* CSoundFile::s_pTuningsSharedBuiltIn(0);
 CTuningCollection* CSoundFile::s_pTuningsSharedLocal(0);
 #endif
 
+#ifdef _MSC_VER
 #pragma warning(disable : 4355) // "'this' : used in base member initializer list"
+#endif
 CSoundFile::CSoundFile() :
 	Patterns(*this),
 	Order(*this),
@@ -395,7 +397,9 @@ CSoundFile::CSoundFile() :
 #endif
 	visitedSongRows(*this),
 	m_pCustomLog(nullptr)
+#ifdef _MSC_VER
 #pragma warning(default : 4355) // "'this' : used in base member initializer list"
+#endif
 //----------------------
 {
 	gdwSysInfo = GetSysInfo();
