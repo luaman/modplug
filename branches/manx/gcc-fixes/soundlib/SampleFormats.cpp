@@ -596,7 +596,7 @@ STATIC_ASSERT(sizeof(GF1PATCHFILEHEADER) == 129);
 typedef struct PACKED GF1INSTRUMENT
 {
 	WORD id;				// Instrument id: 0-65535
-	CHAR name[16];			// Name of instrument. Gravis doesn't seem to use it
+	char name[16];			// Name of instrument. Gravis doesn't seem to use it
 	DWORD size;				// Number of bytes for the instrument with header. (To skip to next instrument)
 	BYTE layers;			// Number of layers in instrument: 1-4
 	BYTE reserved[40];
@@ -607,7 +607,7 @@ STATIC_ASSERT(sizeof(GF1INSTRUMENT) == 63);
 
 typedef struct PACKED GF1SAMPLEHEADER
 {
-	CHAR name[7];			// null terminated string. name of the wave.
+	char name[7];			// null terminated string. name of the wave.
 	BYTE fractions;			// Start loop point fraction in 4 bits + End loop point fraction in the 4 other bits.
 	DWORD length;			// total size of wavesample. limited to 65535 now by the drivers, not the card.
 	DWORD loopstart;		// start loop position in the wavesample
@@ -912,7 +912,7 @@ typedef struct PACKED S3ISAMPLESTRUCT
 	DWORD reserved3;
 	DWORD reserved4;
 	DWORD date;
-	CHAR name[28];
+	char name[28];
 	DWORD scrs;
 } S3ISAMPLESTRUCT;
 

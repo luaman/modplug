@@ -23,7 +23,7 @@
 
 typedef struct PACKED PTMFILEHEADER
 {
-	CHAR songname[28];		// name of song, asciiz string
+	char songname[28];		// name of song, asciiz string
 	CHAR eof;				// 26
 	BYTE version_lo;		// 03 version of file, currently 0203h
 	BYTE version_hi;		// 02
@@ -46,7 +46,7 @@ STATIC_ASSERT(sizeof(PTMFILEHEADER) == 608);
 typedef struct PACKED PTMSAMPLE
 {
 	BYTE sampletype;		// sample type (bit array)
-	CHAR filename[12];		// name of external sample file
+	char filename[12];		// name of external sample file
 	BYTE volume;			// default volume
 	WORD nC4Spd;			// C4 speed
 	WORD sampleseg;			// sample segment (used internally)
