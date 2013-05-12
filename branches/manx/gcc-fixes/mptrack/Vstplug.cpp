@@ -17,7 +17,7 @@
 #include "vstplug.h"
 #include "VstPresets.h"
 #include "moddoc.h"
-#include "sndfile.h"
+#include "Sndfile.h"
 #include "AbstractVstEditor.h"		//rewbs.defaultPlugGUI
 #include "VstEditor.h"				//rewbs.defaultPlugGUI
 #include "defaultvsteditor.h"		//rewbs.defaultPlugGUI

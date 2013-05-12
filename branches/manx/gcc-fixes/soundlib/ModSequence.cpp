@@ -9,7 +9,7 @@
 
 
 #include "stdafx.h"
-#include "sndfile.h"
+#include "Sndfile.h"
 #include "ModSequence.h"
 #ifdef MODPLUG_TRACKER
 #include "../mptrack/moddoc.h"
