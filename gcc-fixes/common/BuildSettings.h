@@ -129,8 +129,12 @@
 #define NO_FLAC
 #define NO_MP3_SAMPLES
 //#define NO_LIBMODPLUG
-//#define NO_WINAMP
-//#define NO_XMPLAY
+#if !defined(_WIN32)
+#define NO_WINAMP
+#endif
+#if !defined(_WIN32)
+#define NO_XMPLAY
+#endif
 //#define NO_LIBOPENMPT_C
 //#define NO_LIBOPENMPT_CXX
 
