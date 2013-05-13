@@ -307,7 +307,7 @@ public:
 				interleaved_int_buffer.push_back( buffers[channel][frame] );
 			}
 		}
-		std::cout.write( (const char*)( interleaved_int_buffer.data() ), interleaved_int_buffer.size() * sizeof( std::int32_t ) );
+		std::cout.write( (const char*)( interleaved_int_buffer.data() ), interleaved_int_buffer.size() * sizeof( std::int16_t ) );
 	}
 };
 
