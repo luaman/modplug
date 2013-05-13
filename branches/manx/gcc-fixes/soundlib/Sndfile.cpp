@@ -577,7 +577,10 @@ BOOL CSoundFile::Create(FileReader file, ModLoadingFlags loadFlags)
 // -! NEW_FEATURE#0023
 		 && !ReadIT(file, loadFlags)
 		 && !ReadS3M(file, loadFlags)
+#ifdef MODPLUG_TRACKER
+		// this makes little sense for a module player library
 		 && !ReadWav(file, loadFlags)
+#endif // MODPLUG_TRACKER
 		 && !ReadSTM(file, loadFlags)
 		 && !ReadMed(lpStream, dwMemLength, loadFlags)
 		 && !ReadMTM(file, loadFlags)
@@ -780,7 +783,8 @@ BOOL CSoundFile::Create(FileReader file, ModLoadingFlags loadFlags)
 	if(GetType() != MOD_TYPE_NONE)
 	{
 		SetModSpecsPointer(m_pModSpecs, m_nType);
-		const ORDERINDEX nMinLength = (std::min)(ModSequenceSet::s_nCacheSize, GetModSpecifications().ordersMax);
+		const ORDERINDEX CacheSize = ModSequenceSet::s_nCacheSize; // workaround reference to static const member problem
+		const ORDERINDEX nMinLength = std::min(CacheSize, GetModSpecifications().ordersMax);
 		if (Order.GetLength() < nMinLength)
 			Order.resize(nMinLength);
 		return TRUE;
