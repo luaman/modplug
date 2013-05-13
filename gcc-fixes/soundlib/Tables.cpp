@@ -112,8 +112,8 @@ static const ModFormatInfo modFormatInfo[] =
 static const ModFormatInfo otherFormatInfo[] =
 {
 	// Other stuff
-	{ MOD_TYPE_WAV,		"Wave",						"wav" },
 #ifdef MODPLUG_TRACKER
+	{ MOD_TYPE_WAV,		"Wave",						"wav" },
 	{ MOD_TYPE_MID,		"MIDI",						"mid" },
 	{ MOD_TYPE_MID,		"MIDI",						"rmi" },
 	{ MOD_TYPE_MID,		"MIDI",						"smf" },

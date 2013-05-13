@@ -17,6 +17,8 @@
 #include <cmath>
 #include <cstdlib>
 
+#include <string.h>
+
 #include "typedefs.h"
 
 #ifdef MODPLUG_TRACKER

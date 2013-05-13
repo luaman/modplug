@@ -652,7 +652,8 @@ bool ModSequenceSet::MergeSequences()
 	}
 	// Remove order name + fill up with empty patterns.
 	m_sName = "";
-	const ORDERINDEX nMinLength = std::min(ModSequenceSet::s_nCacheSize, m_sndFile.GetModSpecifications().ordersMax);
+	const ORDERINDEX CacheSize = s_nCacheSize; // work-around reference to static const member problem
+	const ORDERINDEX nMinLength = std::min(CacheSize, m_sndFile.GetModSpecifications().ordersMax);
 	if(GetLength() < nMinLength)
 		resize(nMinLength);
 	return true;
