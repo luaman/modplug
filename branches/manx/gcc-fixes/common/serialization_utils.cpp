@@ -148,7 +148,7 @@ void ReadAdaptive1248(InStream& iStrm, uint64& val)
 void WriteItemString(OutStream& oStrm, const char* const pStr, const size_t nSize)
 //--------------------------------------------------------------------------------
 {
-	uint32 id = (std::min)(nSize, (uint32_max >> 4)) << 4;
+	uint32 id = std::min<size_t>(nSize, (uint32_max >> 4)) << 4;
 	id |= 12; // 12 == 1100b
 	Binarywrite<uint32>(oStrm, id);
 	id >>= 4;
