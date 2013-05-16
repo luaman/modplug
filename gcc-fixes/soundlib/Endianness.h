@@ -79,6 +79,8 @@ inline int16 SwapBytesBE_(unaligned_int16 *value)  { return *value = bswap16(*va
 inline int32 SwapBytesLE_(unaligned_int32 *value)  { return *value; }
 inline int16 SwapBytesLE_(unaligned_int16 *value)  { return *value; }
 #endif
+// GCC will not bind references to members of packed structures, workaround it by using a raw pointer.
+// This is a temporary solution as this pointer might of course be unaligned which GCC seems to not care about in that case.
 #define SwapBytesBE(value) SwapBytesBE_(&(value))
 #define SwapBytesLE(value) SwapBytesLE_(&(value))
 
