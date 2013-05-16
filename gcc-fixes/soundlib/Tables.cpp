@@ -109,23 +109,22 @@ static const ModFormatInfo modFormatInfo[] =
 #endif
 };
 
+#ifdef MODPLUG_TRACKER
 static const ModFormatInfo otherFormatInfo[] =
 {
 	// Other stuff
-#ifdef MODPLUG_TRACKER
 	{ MOD_TYPE_WAV,		"Wave",						"wav" },
 	{ MOD_TYPE_MID,		"MIDI",						"mid" },
 	{ MOD_TYPE_MID,		"MIDI",						"rmi" },
 	{ MOD_TYPE_MID,		"MIDI",						"smf" },
-#endif
 };
+#endif
 
 
 std::vector<const char *> CSoundFile::GetSupportedExtensions(bool otherFormats)
 //-----------------------------------------------------------------------------
 {
 	std::vector<const char *> exts;
-	exts.reserve(CountOf(modFormatInfo) + otherFormats ? CountOf(otherFormatInfo) : 0);
 	for(size_t i = 0; i < CountOf(modFormatInfo); i++)
 	{
 		// Avoid dupes in list
@@ -134,6 +133,7 @@ std::vector<const char *> CSoundFile::GetSupportedExtensions(bool otherFormats)
 			exts.push_back(modFormatInfo[i].extension);
 		}
 	}
+#ifdef MODPLUG_TRACKER
 	if(otherFormats)
 	{
 		for(size_t i = 0; i < CountOf(otherFormatInfo); i++)
@@ -141,6 +141,7 @@ std::vector<const char *> CSoundFile::GetSupportedExtensions(bool otherFormats)
 			exts.push_back(otherFormatInfo[i].extension);
 		}
 	}
+#endif
 	return exts;
 }
 
