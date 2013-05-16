@@ -88,7 +88,7 @@ public:
 	{
 		return 0;
 	}
-	off_t Read(char */*dst*/, off_t /*pos*/, off_t /*count*/) const
+	off_t Read(char * /*dst*/, off_t /*pos*/, off_t /*count*/) const
 	{
 		return 0;
 	}
