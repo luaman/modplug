@@ -679,6 +679,12 @@ static bool is_modplug123_binary_name( std::string name ) {
 	if ( equal_end( name, "modplug123.exe" ) ) {
 		return true;
 	}
+	if ( equal_end( name, "modplug12364" ) ) {
+		return true;
+	}
+	if ( equal_end( name, "modplug12364.exe" ) ) {
+		return true;
+	}
 	return false;
 }
 
