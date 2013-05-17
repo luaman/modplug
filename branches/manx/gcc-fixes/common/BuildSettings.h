@@ -25,7 +25,7 @@
 #define ENABLE_ASM
 
 // inline assembly requires MSVC compiler
-#if defined(ENABLE_ASM) && defined(_MSC_VER)
+#if defined(ENABLE_ASM) && defined(_MSC_VER) && defined(_M_IX86)
 
 // Generate general x86 inline assembly.
 #define ENABLE_X86
@@ -122,17 +122,17 @@
 #define NO_ASIO
 #define NO_VST
 #define NO_PORTAUDIO
-#if !defined(_WIN32)
+#if !defined(_WIN32) || (defined(_WIN32) && !defined(_M_IX86))
 #define NO_MO3
 #endif
 #define NO_DSOUND
 #define NO_FLAC
 #define NO_MP3_SAMPLES
 //#define NO_LIBMODPLUG
-#if !defined(_WIN32)
+#if !defined(_WIN32) || (defined(_WIN32) && !defined(_M_IX86))
 #define NO_WINAMP
 #endif
-#if !defined(_WIN32)
+#if !defined(_WIN32) || (defined(_WIN32) && !defined(_M_IX86))
 #define NO_XMPLAY
 #endif
 //#define NO_LIBOPENMPT_C
