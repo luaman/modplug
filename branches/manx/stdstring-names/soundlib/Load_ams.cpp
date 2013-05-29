@@ -426,7 +426,7 @@ bool CSoundFile::ReadAMS(FileReader &file, ModLoadingFlags loadFlags)
 	}
 
 	// Texts
-	ReadAMSString(m_szNames[0], file);
+	ReadAMSString(songName, file);
 
 	// Read sample names
 	for(SAMPLEINDEX smp = 1; smp <= GetNumSamples(); smp++)
@@ -753,7 +753,7 @@ bool CSoundFile::ReadAMS2(FileReader &file, ModLoadingFlags loadFlags)
 
 	AMS2FileHeader fileHeader;
 	if(!file.ReadMagic("AMShdr\x1A")
-		|| !ReadAMSString(m_szNames[0], file)
+		|| !ReadAMSString(songName, file)
 		|| !file.ReadConvertEndianness(fileHeader))
 	{
 		return false;
