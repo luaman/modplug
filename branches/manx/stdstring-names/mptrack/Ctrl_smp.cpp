@@ -798,7 +798,7 @@ bool CCtrlSamples::OpenSample(LPCSTR lpszFileName)
 				sample.nVolume = 256;
 				sample.nPan = 128;
 				sample.uFlags.reset(CHN_LOOP | CHN_SUSTAINLOOP);
-				sample.filename[0] = '\0';
+				sample.filename = "";
 				m_sndFile.m_szNames[m_nSample][0] = '\0';
 				if(!sample.nC5Speed) sample.nC5Speed = 22050;
 			} else
@@ -819,7 +819,7 @@ OpenError:
 	{
 		ModSample &sample = m_sndFile.GetSample(m_nSample);
 		TrackerSettings::Instance().SetWorkingDirectory(lpszFileName, DIR_SAMPLES, true);
-		if (!sample.filename[0])
+		if(sample.filename.empty())
 		{
 			CHAR szFullFilename[_MAX_PATH];
 			_splitpath(lpszFileName, 0, 0, szName, szExt);
@@ -1075,17 +1075,18 @@ void CCtrlSamples::OnSampleSave()
 			if(doBatchSave)
 			{
 				CString sSampleNumber;
-				TCHAR sSampleName[64], sSampleFilename[64];
+				TCHAR sSampleName[64];
+				std::string sampleFilename;
 				sSampleNumber.Format(sNumberFormat, iSmp);
 
 				strcpy(sSampleName, (m_sndFile.m_szNames[iSmp]) ? m_sndFile.m_szNames[iSmp] : "untitled");
-				strcpy(sSampleFilename, (m_sndFile.GetSample(iSmp).filename[0]) ? m_sndFile.GetSample(iSmp).filename : m_sndFile.m_szNames[iSmp]);
+				sampleFilename = !m_sndFile.GetSample(iSmp).filename.empty() ? m_sndFile.GetSample(iSmp).filename : m_sndFile.m_szNames[iSmp];
 				SanitizeFilename(sSampleName);
-				SanitizeFilename(sSampleFilename);
+				SanitizeFilename(sampleFilename);
 
 				sFilename = files.first_file.c_str();
 				sFilename.Replace("%sample_number%", sSampleNumber);
-				sFilename.Replace("%sample_filename%", sSampleFilename);
+				sFilename.Replace("%sample_filename%", sampleFilename.c_str());
 				sFilename.Replace("%sample_name%", sSampleName);
 			}
 			if(!lstrcmpi(ext, ".raw"))

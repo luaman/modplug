@@ -23,6 +23,7 @@
 #include "SampleEditorDialogs.h"
 #include "modsmp_ctrl.h"
 #include "Wav.h"
+#include "../common/StringFixer.h"
 
 #define new DEBUG_NEW
 
@@ -1880,8 +1881,7 @@ void CViewSample::OnEditCopy()
 	dwSmpLen = dwMemSize;
 	dwMemSize += sizeof(WAVEFILEHEADER) + sizeof(WAVEFORMATHEADER) + sizeof(WAVEDATAHEADER)
 			 + sizeof(WAVEEXTRAHEADER) + sizeof(WAVESAMPLERINFO);
-	// For name + fname
-	dwMemSize += 32 * 2;
+	dwMemSize += MAX_SAMPLENAME + MAX_SAMPLEFILENAME;
 	BeginWaitCursor();
 	if ((pMainFrm->OpenClipboard()) && ((hCpy = GlobalAlloc(GMEM_MOVEABLE|GMEM_DDESHARE, dwMemSize))!=NULL))
 	{
@@ -1957,16 +1957,16 @@ void CViewSample::OnEditCopy()
 				pxh->nVibSweep = 255 - pxh->nVibSweep;
 			}
 		
-			if ((pSndFile->m_szNames[m_nSample][0]) || (sample.filename[0]))
+			if((pSndFile->m_szNames[m_nSample][0]) || !sample.filename.empty())
 		{
 				LPSTR pszText = (LPSTR)(pxh+1);
-				memcpy(pszText, pSndFile->m_szNames[m_nSample], MAX_SAMPLENAME);
+				mpt::String::Write<mpt::String::nullTerminated>(pszText, MAX_SAMPLENAME, pSndFile->m_szNames[m_nSample]);
 				pxh->xtra_len += MAX_SAMPLENAME;
-				if (sample.filename[0])
-			{
-					memcpy(pszText + MAX_SAMPLENAME, sample.filename, MAX_SAMPLEFILENAME);
+				if(!sample.filename.empty())
+				{
+					mpt::String::Write<mpt::String::nullTerminated>(pszText + MAX_SAMPLENAME, MAX_SAMPLEFILENAME, sample.filename);
 					pxh->xtra_len += MAX_SAMPLEFILENAME;
-			}
+				}
 		}
 			phdr->filesize += (psh->smpl_len + 8) + (pxh->xtra_len + 8);
 		}
@@ -1985,7 +1985,6 @@ void CViewSample::OnEditPaste()
 	BeginWaitCursor();
 	if ((pModDoc) && (OpenClipboard()))
 	{
-		CHAR s[32], s2[32];
 		HGLOBAL hCpy = ::GetClipboardData(CF_WAVE);
 		LPBYTE p;
 
@@ -1998,16 +1997,18 @@ void CViewSample::OnEditPaste()
 
 			ModSample &sample = pSndFile->GetSample(m_nSample);
 
-			memcpy(s, pSndFile->m_szNames[m_nSample], 32);
-			memcpy(s2, sample.filename, 22);
+			std::string oldSampleName;
+			std::string oldSampleFilename;
+			mpt::String::Copy(oldSampleName, pSndFile->m_szNames[m_nSample]);
+			mpt::String::Copy(oldSampleFilename, sample.filename);
 			pSndFile->ReadSampleFromFile(m_nSample, p, dwMemSize);
-			if (!pSndFile->m_szNames[m_nSample][0])
-{
-				memcpy(pSndFile->m_szNames[m_nSample], s, 32);
-}
-			if (!sample.filename[0])
+			if(!pSndFile->m_szNames[m_nSample][0])
 			{
-				memcpy(sample.filename, s2, 22);
+				mpt::String::Copy(pSndFile->m_szNames[m_nSample], oldSampleName);
+			}
+			if(sample.filename.empty())
+			{
+				mpt::String::Copy(sample.filename, oldSampleFilename);
 			}
 
 			GlobalUnlock(hCpy);

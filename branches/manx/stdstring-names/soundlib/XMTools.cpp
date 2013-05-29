@@ -462,7 +462,7 @@ void XMSample::ConvertToMPT(ModSample &mptSmp) const
 
 	mptSmp.SanitizeLoops();
 
-	strcpy(mptSmp.filename, "");
+	mptSmp.filename = "";
 }
 
 

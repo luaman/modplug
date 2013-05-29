@@ -325,8 +325,7 @@ void CViewComments::OnUpdate(CView *pSender, LPARAM lHint, CObject *)
 						}
 						break;
 					case SMPLIST_FILENAME:
-						memcpy(s, sample.filename, sizeof(sample.filename));
-						s[CountOf(sample.filename)] = 0;
+						mpt::String::Copy(s, sample.filename);
 						break;
 					}
 					lvi.mask = LVIF_TEXT;
