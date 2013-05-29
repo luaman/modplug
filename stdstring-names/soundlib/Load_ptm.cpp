@@ -101,7 +101,7 @@ bool CSoundFile::ReadPTM(const BYTE *lpStream, const DWORD dwMemLength, ModLoadi
 		return true;
 	}
 
-	mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[0], pfh.songname);
+	mpt::String::Read<mpt::String::maybeNullTerminated>(songName, pfh.songname);
 
 	InitializeGlobals();
 	madeWithTracker = mpt::String::Format("PolyTracker %d.%d", pfh.version_hi, pfh.version_lo);

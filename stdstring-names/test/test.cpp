@@ -492,7 +492,7 @@ void TestLoadXMFile(const CSoundFile &sndFile)
 #endif // MODPLUG_TRACKER
 
 	// Global Variables
-	VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[0], "Test Module"), 0);
+	VERIFY_EQUAL_NONCONT(sndFile.GetTitle(), "Test Module");
 	VERIFY_EQUAL_NONCONT(sndFile.songMessage.at(0), 'O');
 	VERIFY_EQUAL_NONCONT(sndFile.m_nDefaultTempo, 139);
 	VERIFY_EQUAL_NONCONT(sndFile.m_nDefaultSpeed, 5);
@@ -691,7 +691,7 @@ void TestLoadMPTMFile(const CSoundFile &sndFile)
 #endif // MODPLUG_TRACKER
 
 	// Global Variables
-	VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[0], "Test Module_____________X"), 0);
+	VERIFY_EQUAL_NONCONT(sndFile.GetTitle(), "Test Module_____________X");
 	VERIFY_EQUAL_NONCONT(sndFile.songMessage.at(0), 'O');
 	VERIFY_EQUAL_NONCONT(sndFile.m_nDefaultTempo, 139);
 	VERIFY_EQUAL_NONCONT(sndFile.m_nDefaultSpeed, 5);
@@ -950,7 +950,7 @@ void TestLoadS3MFile(const CSoundFile &sndFile, bool resaved)
 {
 
 	// Global Variables
-	VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[0], "S3M_Test__________________X"), 0);
+	VERIFY_EQUAL_NONCONT(sndFile.GetTitle(), "S3M_Test__________________X");
 	VERIFY_EQUAL_NONCONT(sndFile.m_nDefaultTempo, 33);
 	VERIFY_EQUAL_NONCONT(sndFile.m_nDefaultSpeed, 254);
 	VERIFY_EQUAL_NONCONT(sndFile.m_nGlobalVolume, 32 * 4);
