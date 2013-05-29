@@ -959,7 +959,7 @@ bool CSoundFile::ReadIT(FileReader &file, ModLoadingFlags loadFlags)
 			} else if(fileHeader.cwtv == 0x0214 && fileHeader.cmwt == 0x0214 && fileHeader.reserved == ITFileHeader::chibiMagic)
 			{
 				madeWithTracker = "ChibiTracker";
-			} else if(fileHeader.cwtv == 0x0214 && fileHeader.cmwt == 0x0214 && !(fileHeader.special & 3) && fileHeader.reserved == 0 && !strcmp(Samples[1].filename, "XXXXXXXX.YYY"))
+			} else if(fileHeader.cwtv == 0x0214 && fileHeader.cmwt == 0x0214 && !(fileHeader.special & 3) && fileHeader.reserved == 0 && Samples[1].filename == "XXXXXXXX.YYY")
 			{
 				madeWithTracker = "CheeseTracker";
 			} else
