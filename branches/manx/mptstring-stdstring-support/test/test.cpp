@@ -1518,11 +1518,11 @@ void TestStringIO()
 		std::string src3string = std::string(src3, CountOf(src3));
 
 #define ReadTest(mode, dst, src, expectedResult) \
-	mpt::String::Read<mpt::String::##mode>(dst, src); \
+	mpt::String::Read<mpt::String:: mode >(dst, src); \
 	VERIFY_EQUAL_NONCONT(dst, expectedResult); /* Ensure that the strings are identical */ \
 
 #define WriteTest(mode, dst, src, expectedResult) \
-	mpt::String::Write<mpt::String::##mode>(dst, src); \
+	mpt::String::Write<mpt::String:: mode >(dst, src); \
 	VERIFY_EQUAL_NONCONT(strncmp(dst, expectedResult, CountOf(dst)), 0);  /* Ensure that the strings are identical */ \
 	for(size_t i = strlen(dst); i < CountOf(dst); i++) \
 		VERIFY_EQUAL_NONCONT(dst[i], '\0'); /* Ensure that rest of the buffer is completely nulled */

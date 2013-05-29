@@ -13,6 +13,7 @@
 
 #include <string>
 #include <vector>
+#include <cstring>
 #include <string.h>
 
 namespace mpt { namespace String
