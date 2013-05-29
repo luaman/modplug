@@ -189,7 +189,7 @@ BOOL CFindReplaceTab::OnInitDialog()
 		{
 			if(sndFile.GetNumInstruments())
 			{
-				wsprintf(s, "%03d:%s", n, sndFile.GetInstrumentName(n));
+				wsprintf(s, "%03d:%s", n, sndFile.GetInstrumentName(n).c_str());
 			} else
 			{
 				wsprintf(s, "%03d:%s", n, sndFile.m_szNames[n]);
