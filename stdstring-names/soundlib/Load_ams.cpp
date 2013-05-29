@@ -47,6 +47,15 @@ bool ReadAMSString(char (&destBuffer)[destSize], FileReader &file)
 }
 
 
+// Read variable-length AMS string (we ignore the maximum text length specified by the AMS specs and accept any length).
+bool ReadAMSString(std::string &dest, FileReader &file)
+//-----------------------------------------------------
+{
+	const size_t length = file.ReadUint8();
+	return file.ReadString<mpt::String::spacePadded>(dest, length);
+}
+
+
 // Read AMS or AMS2 (newVersion = true) pattern. At least this part of the format is more or less identical between the two trackers...
 void ReadAMSPattern(CPattern &pattern, bool newVersion, FileReader &patternChunk, CSoundFile &sndFile)
 //----------------------------------------------------------------------------------------------------

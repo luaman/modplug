@@ -863,7 +863,7 @@ bool CAbstractVstEditor::CreateInstrument()
 	ModInstrument *pIns = sndFile.Instruments[nIns];
 	m_nInstrument = nIns;
 
-	_snprintf(pIns->name, CountOf(pIns->name) - 1, _T("%d: %s"), m_VstPlugin.GetSlot() + 1, sndFile.m_MixPlugins[m_VstPlugin.GetSlot()].GetName());
+	pIns->name = mpt::String::Format("%d: %s", m_VstPlugin.GetSlot() + 1, sndFile.m_MixPlugins[m_VstPlugin.GetSlot()].GetName());
 	mpt::String::CopyN(pIns->filename, sndFile.m_MixPlugins[m_VstPlugin.GetSlot()].GetLibraryName());
 	pIns->nMixPlug = (PLUGINDEX)m_VstPlugin.GetSlot() + 1;
 	pIns->nMidiChannel = 1;

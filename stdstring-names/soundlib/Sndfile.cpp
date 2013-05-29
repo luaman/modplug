@@ -224,6 +224,28 @@ MPWD			MIDI Pitch Wheel Depth
 	} \
 /**/
 
+// --------------------------------------------------------------------------------------------
+// Convenient macro to help WRITE_HEADER declaration for std::string members ONLY
+// --------------------------------------------------------------------------------------------
+#define WRITE_MPTHEADER_string_member(name,code,stringlength) \
+	fcode = MULTICHAR_STRING_TO_INT(#code);\
+	fsize = stringlength; \
+	if(only_this_code == -1) \
+	{ \
+		fwrite(& fcode , 1 , sizeof( uint32 ) , file); \
+		fwrite(& fsize , 1 , sizeof( int16 ) , file); \
+		char buf[stringlength]; \
+		mpt::String::Write<mpt::String::nullTerminated>(buf, input-> name ); \
+		fwrite(buf, 1 , fsize , file); \
+	} else if(only_this_code == fcode) \
+	{ \
+		fsize = fixedsize; /* just trust the size we got passed */ \
+		std::vector<char> buf(fsize); \
+		mpt::String::Write<mpt::String::nullTerminated>(buf, input-> name ); \
+		fwrite(buf.data(), 1 , fsize , file); \
+	} \
+/**/
+
 namespace {
 // Create 'dF..' entry.
 DWORD CreateExtensionFlags(const ModInstrument& ins)
@@ -314,8 +336,8 @@ WRITE_MPTHEADER_array_member(	PanEnv.Values			, uint8			, PE[.		, ((input->PanEn
 WRITE_MPTHEADER_array_member(	PitchEnv.Values			, uint8			, PiE[		, ((input->PitchEnv.nNodes > 32) ? MAX_ENVPOINTS : 32))
 WRITE_MPTHEADER_array_member(	NoteMap					, uint8			, NM[.		, 128				)
 WRITE_MPTHEADER_array_member(	Keyboard				, uint16		, K[..		, 128				)
-WRITE_MPTHEADER_array_member(	name					, char			, n[..		, 32				)
-WRITE_MPTHEADER_array_member(	filename				, char			, fn[.		, 12				)
+WRITE_MPTHEADER_string_member(	name									, n[..		, 32				)
+WRITE_MPTHEADER_string_member(	filename								, fn[.		, 12				)
 WRITE_MPTHEADER_sized_member(	nMixPlug				, uint8			, MiP.							)
 WRITE_MPTHEADER_sized_member(	nVolRampUp				, uint16		, VR..							)
 WRITE_MPTHEADER_sized_member(	nResampling				, uint16		, R...							)
@@ -372,6 +394,20 @@ WRITE_MPTHEADER_sized_member(	midiPWD					, int8			, MPWD							)
 	} else \
 /**/
 
+// --------------------------------------------------------------------------------------------
+// Convenient macro to help GET_HEADER declaration for std::string members ONLY
+// --------------------------------------------------------------------------------------------
+#define GET_MPTHEADER_string_member(name,code,stringlength) \
+	if(fcode == MULTICHAR_STRING_TO_INT(#code)) {\
+		if( fsize <= stringlength ) \
+		{ \
+			if(!file.CanRead(stringlength)) return false; \
+			file.ReadString<mpt::String::maybeNullTerminated>(input-> name , stringlength); \
+			return true; \
+		} \
+	} else \
+/**/
+
 
 // Return a pointer on the wanted field in 'input' ModInstrument given field code & size
 bool ReadInstrumentHeaderField(ModInstrument *input, uint32 fcode, uint16 fsize, FileReader &file)
@@ -418,8 +454,8 @@ GET_MPTHEADER_array_member(	PanEnv.Values			, uint8			, PE[.		, MAX_ENVPOINTS		)
 GET_MPTHEADER_array_member(	PitchEnv.Values			, uint8			, PiE[		, MAX_ENVPOINTS		)
 GET_MPTHEADER_array_member(	NoteMap					, uint8			, NM[.		, 128				)
 GET_MPTHEADER_array_member(	Keyboard				, uint16		, K[..		, 128				)
-GET_MPTHEADER_array_member(	name					, CHAR			, n[..		, 32				)
-GET_MPTHEADER_array_member(	filename				, CHAR			, fn[.		, 12				)
+GET_MPTHEADER_string_member(	name									, n[..		, 32				)
+GET_MPTHEADER_string_member(	filename								, fn[.		, 12				)
 GET_MPTHEADER_sized_member(	nMixPlug				, uint8			, MiP.							)
 GET_MPTHEADER_sized_member(	nVolRampUp				, uint16		, VR..							)
 GET_MPTHEADER_sized_member(	nResampling				, UINT			, R...							)
