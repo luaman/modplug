@@ -337,6 +337,14 @@ namespace mpt { namespace String
 	}
 
 	template <ReadWriteMode mode>
+	void Write(char *destBuffer, const size_t destSize, const std::string &src)
+	//-------------------------------------------------------------------------
+	{
+		ASSERT(destSize > 0);
+		Write<mode>(destBuffer, destSize, src.c_str(), src.length() + 1); // include null-termination char
+	}
+
+	template <ReadWriteMode mode>
 	void Write(std::vector<char> &destBuffer, const std::string &src)
 	//---------------------------------------------------------------
 	{
@@ -398,12 +406,20 @@ namespace mpt { namespace String
 		CopyN(destBuffer, src.c_str(), src.length() + 1); // include null-termination char
 	}
 
-	// Copy from a fixed size char array to as std::string.
+	// Copy from a fixed size char array to a std::string.
 	template <size_t srcSize>
 	void Copy(std::string &dest, const char (&srcBuffer)[srcSize])
 	//----------------------------------------------------------------------------
 	{
 		dest.assign(srcBuffer, srcBuffer + srcSize);
+		FixNullString(dest); // if we copied \0 in the middle of the buffer, remove junk after it
+	}
+
+	// Copy from a std::string to a std::string.
+	static inline void Copy(std::string &dest, const std::string &src)
+	//----------------------------------------------------------------
+	{
+		dest.assign(src);
 		FixNullString(dest); // if we copied \0 in the middle of the buffer, remove junk after it
 	}
 
