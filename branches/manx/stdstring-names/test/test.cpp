@@ -1385,6 +1385,7 @@ void TestPCnoteSerialization()
 void TestStringIO()
 //-----------------
 {
+	char src0[4] = { '\0', 'X', ' ', 'X' };		// Weird empty buffer
 	char src1[4] = { 'X', ' ', '\0', 'X' };		// Weird buffer (hello Impulse Tracker)
 	char src2[4] = { 'X', 'Y', 'Z', ' ' };		// Full buffer, last character space
 	char src3[4] = { 'X', 'Y', 'Z', '!' };		// Full buffer, last character non-space
@@ -1404,21 +1405,25 @@ void TestStringIO()
 		VERIFY_EQUAL_NONCONT(dst[i], '\0'); /* Ensure that rest of the buffer is completely nulled */
 
 	// Check reading of null-terminated string into larger buffer
+	ReadTest(nullTerminated, dst1, src0, "");
 	ReadTest(nullTerminated, dst1, src1, "X ");
 	ReadTest(nullTerminated, dst1, src2, "XYZ");
 	ReadTest(nullTerminated, dst1, src3, "XYZ");
 
 	// Check reading of string that should be null-terminated, but is maybe too long to still hold the null character.
+	ReadTest(maybeNullTerminated, dst1, src0, "");
 	ReadTest(maybeNullTerminated, dst1, src1, "X ");
 	ReadTest(maybeNullTerminated, dst1, src2, "XYZ ");
 	ReadTest(maybeNullTerminated, dst1, src3, "XYZ!");
 
 	// Check reading of space-padded strings with ignored last character
+	ReadTest(spacePaddedNull, dst1, src0, " X");
 	ReadTest(spacePaddedNull, dst1, src1, "X");
 	ReadTest(spacePaddedNull, dst1, src2, "XYZ");
 	ReadTest(spacePaddedNull, dst1, src3, "XYZ");
 
 	// Check reading of space-padded strings
+	ReadTest(spacePadded, dst1, src0, " X X");
 	ReadTest(spacePadded, dst1, src1, "X  X");
 	ReadTest(spacePadded, dst1, src2, "XYZ");
 	ReadTest(spacePadded, dst1, src3, "XYZ!");
@@ -1426,21 +1431,25 @@ void TestStringIO()
 	///////////////////////////////
 
 	// Check reading of null-terminated string into smaller buffer
+	ReadTest(nullTerminated, dst2, src0, "");
 	ReadTest(nullTerminated, dst2, src1, "X ");
 	ReadTest(nullTerminated, dst2, src2, "XY");
 	ReadTest(nullTerminated, dst2, src3, "XY");
 
 	// Check reading of string that should be null-terminated, but is maybe too long to still hold the null character.
+	ReadTest(maybeNullTerminated, dst2, src0, "");
 	ReadTest(maybeNullTerminated, dst2, src1, "X ");
 	ReadTest(maybeNullTerminated, dst2, src2, "XY");
 	ReadTest(maybeNullTerminated, dst2, src3, "XY");
 
 	// Check reading of space-padded strings with ignored last character
+	ReadTest(spacePaddedNull, dst2, src0, " X");
 	ReadTest(spacePaddedNull, dst2, src1, "X");
 	ReadTest(spacePaddedNull, dst2, src2, "XY");
 	ReadTest(spacePaddedNull, dst2, src3, "XY");
 
 	// Check reading of space-padded strings
+	ReadTest(spacePadded, dst2, src0, " X");
 	ReadTest(spacePadded, dst2, src1, "X");
 	ReadTest(spacePadded, dst2, src2, "XY");
 	ReadTest(spacePadded, dst2, src3, "XY");
@@ -1448,21 +1457,25 @@ void TestStringIO()
 	///////////////////////////////
 
 	// Check writing of null-terminated string into larger buffer
+	WriteTest(nullTerminated, dst1, src0, "");
 	WriteTest(nullTerminated, dst1, src1, "X ");
 	WriteTest(nullTerminated, dst1, src2, "XYZ ");
 	WriteTest(nullTerminated, dst1, src3, "XYZ!");
 
 	// Check writing of string that should be null-terminated, but is maybe too long to still hold the null character.
+	WriteTest(maybeNullTerminated, dst1, src0, "");
 	WriteTest(maybeNullTerminated, dst1, src1, "X ");
 	WriteTest(maybeNullTerminated, dst1, src2, "XYZ ");
 	WriteTest(maybeNullTerminated, dst1, src3, "XYZ!");
 
 	// Check writing of space-padded strings with last character set to null
+	WriteTest(spacePaddedNull, dst1, src0, "     ");
 	WriteTest(spacePaddedNull, dst1, src1, "X    ");
 	WriteTest(spacePaddedNull, dst1, src2, "XYZ  ");
 	WriteTest(spacePaddedNull, dst1, src3, "XYZ! ");
 
 	// Check writing of space-padded strings
+	WriteTest(spacePadded, dst1, src0, "      ");
 	WriteTest(spacePadded, dst1, src1, "X     ");
 	WriteTest(spacePadded, dst1, src2, "XYZ   ");
 	WriteTest(spacePadded, dst1, src3, "XYZ!  ");
@@ -1470,21 +1483,25 @@ void TestStringIO()
 	///////////////////////////////
 
 	// Check writing of null-terminated string into smaller buffer
+	WriteTest(nullTerminated, dst2, src0, "");
 	WriteTest(nullTerminated, dst2, src1, "X ");
 	WriteTest(nullTerminated, dst2, src2, "XY");
 	WriteTest(nullTerminated, dst2, src3, "XY");
 
 	// Check writing of string that should be null-terminated, but is maybe too long to still hold the null character.
+	WriteTest(maybeNullTerminated, dst2, src0, "");
 	WriteTest(maybeNullTerminated, dst2, src1, "X ");
 	WriteTest(maybeNullTerminated, dst2, src2, "XYZ");
 	WriteTest(maybeNullTerminated, dst2, src3, "XYZ");
 
 	// Check writing of space-padded strings with last character set to null
+	WriteTest(spacePaddedNull, dst2, src0, "  ");
 	WriteTest(spacePaddedNull, dst2, src1, "X ");
 	WriteTest(spacePaddedNull, dst2, src2, "XY");
 	WriteTest(spacePaddedNull, dst2, src3, "XY");
 
 	// Check writing of space-padded strings
+	WriteTest(spacePadded, dst2, src0, "   ");
 	WriteTest(spacePadded, dst2, src1, "X  ");
 	WriteTest(spacePadded, dst2, src2, "XYZ");
 	WriteTest(spacePadded, dst2, src3, "XYZ");
@@ -1495,6 +1512,7 @@ void TestStringIO()
 	{
 
 		std::string dststring;
+		std::string src0string = std::string(src0, CountOf(src0));
 		std::string src1string = std::string(src1, CountOf(src1));
 		std::string src2string = std::string(src2, CountOf(src2));
 		std::string src3string = std::string(src3, CountOf(src3));
@@ -1510,21 +1528,25 @@ void TestStringIO()
 		VERIFY_EQUAL_NONCONT(dst[i], '\0'); /* Ensure that rest of the buffer is completely nulled */
 
 		// Check reading of null-terminated string into std::string
+		ReadTest(nullTerminated, dststring, src0, "");
 		ReadTest(nullTerminated, dststring, src1, "X ");
 		ReadTest(nullTerminated, dststring, src2, "XYZ");
 		ReadTest(nullTerminated, dststring, src3, "XYZ");
 
 		// Check reading of string that should be null-terminated, but is maybe too long to still hold the null character.
+		ReadTest(maybeNullTerminated, dststring, src0, "");
 		ReadTest(maybeNullTerminated, dststring, src1, "X ");
 		ReadTest(maybeNullTerminated, dststring, src2, "XYZ ");
 		ReadTest(maybeNullTerminated, dststring, src3, "XYZ!");
 
 		// Check reading of space-padded strings with ignored last character
+		ReadTest(spacePaddedNull, dststring, src0, " X");
 		ReadTest(spacePaddedNull, dststring, src1, "X");
 		ReadTest(spacePaddedNull, dststring, src2, "XYZ");
 		ReadTest(spacePaddedNull, dststring, src3, "XYZ");
 
 		// Check reading of space-padded strings
+		ReadTest(spacePadded, dststring, src0, " X X");
 		ReadTest(spacePadded, dststring, src1, "X  X");
 		ReadTest(spacePadded, dststring, src2, "XYZ");
 		ReadTest(spacePadded, dststring, src3, "XYZ!");
@@ -1532,21 +1554,25 @@ void TestStringIO()
 		///////////////////////////////
 
 		// Check writing of null-terminated string into larger buffer
+		WriteTest(nullTerminated, dst1, src0string, "");
 		WriteTest(nullTerminated, dst1, src1string, "X ");
 		WriteTest(nullTerminated, dst1, src2string, "XYZ ");
 		WriteTest(nullTerminated, dst1, src3string, "XYZ!");
 
 		// Check writing of string that should be null-terminated, but is maybe too long to still hold the null character.
+		WriteTest(maybeNullTerminated, dst1, src0string, "");
 		WriteTest(maybeNullTerminated, dst1, src1string, "X ");
 		WriteTest(maybeNullTerminated, dst1, src2string, "XYZ ");
 		WriteTest(maybeNullTerminated, dst1, src3string, "XYZ!");
 
 		// Check writing of space-padded strings with last character set to null
+		WriteTest(spacePaddedNull, dst1, src0string, "     ");
 		WriteTest(spacePaddedNull, dst1, src1string, "X    ");
 		WriteTest(spacePaddedNull, dst1, src2string, "XYZ  ");
 		WriteTest(spacePaddedNull, dst1, src3string, "XYZ! ");
 
 		// Check writing of space-padded strings
+		WriteTest(spacePadded, dst1, src0string, "      ");
 		WriteTest(spacePadded, dst1, src1string, "X     ");
 		WriteTest(spacePadded, dst1, src2string, "XYZ   ");
 		WriteTest(spacePadded, dst1, src3string, "XYZ!  ");
@@ -1554,21 +1580,25 @@ void TestStringIO()
 		///////////////////////////////
 
 		// Check writing of null-terminated string into smaller buffer
+		WriteTest(nullTerminated, dst2, src0string, "");
 		WriteTest(nullTerminated, dst2, src1string, "X ");
 		WriteTest(nullTerminated, dst2, src2string, "XY");
 		WriteTest(nullTerminated, dst2, src3string, "XY");
 
 		// Check writing of string that should be null-terminated, but is maybe too long to still hold the null character.
+		WriteTest(maybeNullTerminated, dst2, src0string, "");
 		WriteTest(maybeNullTerminated, dst2, src1string, "X ");
 		WriteTest(maybeNullTerminated, dst2, src2string, "XYZ");
 		WriteTest(maybeNullTerminated, dst2, src3string, "XYZ");
 
 		// Check writing of space-padded strings with last character set to null
+		WriteTest(spacePaddedNull, dst2, src0string, "  ");
 		WriteTest(spacePaddedNull, dst2, src1string, "X ");
 		WriteTest(spacePaddedNull, dst2, src2string, "XY");
 		WriteTest(spacePaddedNull, dst2, src3string, "XY");
 
 		// Check writing of space-padded strings
+		WriteTest(spacePadded, dst2, src0string, "   ");
 		WriteTest(spacePadded, dst2, src1string, "X  ");
 		WriteTest(spacePadded, dst2, src2string, "XYZ");
 		WriteTest(spacePadded, dst2, src3string, "XYZ");

@@ -310,7 +310,7 @@ namespace mpt { namespace String
 	//--------------------------------------------------------------
 	{
 		STATIC_ASSERT(destSize > 0);
-		Write<mode, destSize>(destBuffer, src.c_str(), src.length());
+		Write<mode, destSize>(destBuffer, src.c_str(), src.length() + 1); // include null-termination char
 	}
 
 
@@ -356,7 +356,7 @@ namespace mpt { namespace String
 	void Copy(char (&destBuffer)[destSize], const std::string &src)
 	//-------------------------------------------------------------
 	{
-		CopyN(destBuffer, src.c_str(), src.length());
+		CopyN(destBuffer, src.c_str(), src.length() + 1); // include null-termination char
 	}
 
 	// Copy from a fixed size char array to as std::string.
