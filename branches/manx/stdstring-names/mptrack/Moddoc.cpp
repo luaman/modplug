@@ -347,8 +347,8 @@ BOOL CModDoc::OnOpenDocument(LPCTSTR lpszPathName)
 							_splitpath(pszMidiMapName, NULL, NULL, szName, szExt);
 							strncat(szName, szExt, sizeof(szName));
 							pIns = m_SndFile.Instruments[nIns];
-							if (!pIns->filename[0]) mpt::String::Copy(pIns->filename, szName);
-							if (!pIns->name[0])
+							if(pIns->filename.empty()) mpt::String::Copy(pIns->filename, szName);
+							if(pIns->name.empty())
 							{
 								if (nMidiCode < 128)
 								{
@@ -1786,8 +1786,8 @@ void CModDoc::OnFileWaveConvert(ORDERINDEX nMinOrder, ORDERINDEX nMaxOrder)
 
 				if(m_SndFile.Instruments[i + 1] == nullptr || !m_SndFile.IsInstrumentUsed((INSTRUMENTINDEX)(i + 1)))
 					continue;
-				if(strcmp(m_SndFile.Instruments[i + 1]->name, ""))
-					sprintf(fileNameAdd, "-%03d_%s", i + 1, m_SndFile.Instruments[i + 1]->name);
+				if(!m_SndFile.Instruments[i + 1]->name.empty())
+					sprintf(fileNameAdd, "-%03d_%s", i + 1, m_SndFile.Instruments[i + 1]->name.c_str());
 				else
 					sprintf(fileNameAdd, "-%03d", i + 1);
 				// Unmute instrument to process

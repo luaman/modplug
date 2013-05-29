@@ -90,8 +90,8 @@ struct ModInstrument
 	uint8 NoteMap[128];					// Note mapping, e.g. C-5 => D-5.
 	SAMPLEINDEX Keyboard[128];			// Sample mapping, e.g. C-5 => Sample 1
 
-	char name[MAX_INSTRUMENTNAME];
-	char filename[MAX_INSTRUMENTFILENAME];
+	mpt::string name;
+	mpt::string filename;
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// WHEN adding new members here, ALSO update Sndfile.cpp (instructions near the top of this file)!

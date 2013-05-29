@@ -197,7 +197,7 @@ BOOL CModToMidi::OnInitDialog()
 			ModInstrument *pIns = m_pSndFile->Instruments[nIns];
 			if ((pIns) && (m_pSndFile->IsInstrumentUsed(nIns)))
 			{
-				wsprintf(s, "%02d: %s", nIns, pIns->name);
+				wsprintf(s, "%02d: %s", nIns, pIns->name.c_str());
 				m_CbnInstrument.SetItemData(m_CbnInstrument.AddString(s), nIns);
 			}
 		}

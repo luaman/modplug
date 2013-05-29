@@ -855,7 +855,6 @@ END_MESSAGE_MAP()
 void CPageEditNote::UpdateDialog()
 //--------------------------------
 {
-	char s[64];
 	CComboBox *combo;
 
 	if ((!m_bInitialized)) return;
@@ -904,16 +903,15 @@ void CPageEditNote::UpdateDialog()
 			const UINT nmax = sndFile.GetNumInstruments() ? sndFile.GetNumInstruments() : sndFile.GetNumSamples();
 			for (UINT i = 1; i <= nmax; i++)
 			{
-				wsprintf(s, "%02d: ", i);
-				int k = strlen(s);
+				CString s;
+				s.Format("%02d: ", i);
 				// instrument / sample
 				if (sndFile.GetNumInstruments())
 				{
 					if (sndFile.Instruments[i])
-						memcpy(s + k, sndFile.Instruments[i]->name, CountOf(sndFile.Instruments[i]->name));
+						s.Append(sndFile.Instruments[i]->name);
 				} else
-					memcpy(s+k, sndFile.m_szNames[i], MAX_SAMPLENAME);
-				s[k+32] = 0;
+					s.Append(sndFile.m_szNames[i]);
 				combo->SetItemData(combo->AddString(s), i);
 			}
 		}

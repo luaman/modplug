@@ -441,11 +441,11 @@ UINT CSoundFile::MapMidiInstrument(DWORD dwBankProgram, UINT nChannel, UINT nNot
 	if (nChannel != MIDI_DRUMCHANNEL)
 	{
 		// GM Midi Name
-		strcpy(pIns->name, szMidiProgramNames[nProgram]);
+		pIns->name = szMidiProgramNames[nProgram];
 		strcpy(m_szNames[m_nSamples], szMidiProgramNames[nProgram]);
 	} else
 	{
-		strcpy(pIns->name, "Percussions");
+		pIns->name = "Percussions";
 		if ((nNote >= 24) && (nNote <= 84))
 			strcpy(m_szNames[m_nSamples], szMidiPercussionNames[nNote-24]);
 		else
