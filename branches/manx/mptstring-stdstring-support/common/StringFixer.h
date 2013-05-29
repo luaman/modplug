@@ -26,8 +26,15 @@ namespace mpt { namespace String
 		buffer[size - 1] = 0;
 	}
 
+	inline void SetNullTerminator(char *buffer, size_t size)
+	//------------------------------------------------------
+	{
+		ASSERT(size > 0);
+		buffer[size - 1] = 0;
+	}
+
 	// just a dummy implementation
-	DEPRECATED inline void SetNullTerminator(std::string & /*str*/)
+	/*DEPRECATED*/ inline void SetNullTerminator(std::string & /*str*/)
 	//-------------------------------------------------------------
 	{
 		// nothing to do here
@@ -249,14 +256,14 @@ namespace mpt { namespace String
 	}
 
 
-	// Copy a string from srcBuffer to destBuffer using a given write mode.
-	// Used for writing strings to files.
-	// Only use this version of the function if the size of the source buffer is variable.
-	template <ReadWriteMode mode, size_t destSize>
-	void Write(char (&destBuffer)[destSize], const char *srcBuffer, const size_t srcSize)
-	//-----------------------------------------------------------------------------------
+	// Copy a string from from srcBuffer to destBuffer using a given write mode.
+	// You should only use this function if noth src and dest are dynamically sized,
+	// otherwise use one of the safer overloads below.
+	template <ReadWriteMode mode>
+	void Write(char *destBuffer, const size_t destSize, const char *srcBuffer, const size_t srcSize)
+	//----------------------------------------------------------------------------------------------
 	{
-		STATIC_ASSERT(destSize > 0);
+		ASSERT(destSize > 0);
 		ASSERT(srcSize > 0);
 
 		const size_t maxSize = MIN(destSize, srcSize);
@@ -289,8 +296,32 @@ namespace mpt { namespace String
 		if(mode == nullTerminated || mode == spacePaddedNull)
 		{
 			// Make sure that destination is really null-terminated.
-			SetNullTerminator(destBuffer);
+			SetNullTerminator(destBuffer, destSize);
 		}
+	}
+
+	// Copy a string from srcBuffer to a dynamically sized std::vector destBuffer using a given write mode.
+	// Used for writing strings to files.
+	// Only use this version of the function if the size of the source buffer is variable and the destination buffer also has variable size.
+	template <ReadWriteMode mode>
+	void Write(std::vector<char> &destBuffer, const char *srcBuffer, const size_t srcSize)
+	//------------------------------------------------------------------------------------
+	{
+		ASSERT(destBuffer.size() > 0);
+		ASSERT(srcSize > 0);
+		Write<mode>(destBuffer.data(), destBuffer.size(), srcBuffer, srcSize);
+	}
+
+	// Copy a string from srcBuffer to destBuffer using a given write mode.
+	// Used for writing strings to files.
+	// Only use this version of the function if the size of the source buffer is variable.
+	template <ReadWriteMode mode, size_t destSize>
+	void Write(char (&destBuffer)[destSize], const char *srcBuffer, const size_t srcSize)
+	//-----------------------------------------------------------------------------------
+	{
+		STATIC_ASSERT(destSize > 0);
+		ASSERT(srcSize > 0);
+		Write<mode>(destBuffer, destSize, srcBuffer, srcSize);
 	}
 
 	// Copy a string from srcBuffer to destBuffer using a given write mode.
@@ -303,6 +334,14 @@ namespace mpt { namespace String
 		STATIC_ASSERT(destSize > 0);
 		STATIC_ASSERT(srcSize > 0);
 		Write<mode, destSize>(destBuffer, srcBuffer, srcSize);
+	}
+
+	template <ReadWriteMode mode>
+	void Write(std::vector<char> &destBuffer, const std::string &src)
+	//---------------------------------------------------------------
+	{
+		ASSERT(destBuffer.size() > 0);
+		Write<mode>(destBuffer, src.c_str(), src.length() + 1); // include null-termination char
 	}
 
 	template <ReadWriteMode mode, size_t destSize>
