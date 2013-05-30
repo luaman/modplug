@@ -416,6 +416,10 @@ void TestMisc()
 	VERIFY_EQUAL( mpt::saturate_cast<uint32>(std::numeric_limits<int32>::min() - int64(1)), std::numeric_limits<uint32>::min() );
 	VERIFY_EQUAL( mpt::saturate_cast<uint32>(std::numeric_limits<int32>::max() + int64(1)), (uint32)std::numeric_limits<int32>::max() + 1 );
 
+	VERIFY_EQUAL( mpt::String::LTrim(" "), "" );
+	VERIFY_EQUAL( mpt::String::RTrim(" "), "" );
+	VERIFY_EQUAL( mpt::String::Trim(" "), "" );
+
 	// weird things with std::string containing \0 in the middle and trimming \0
 	VERIFY_EQUAL( std::string("\0\ta\0b ",6).length(), 6 );
 	VERIFY_EQUAL( mpt::String::RTrim(std::string("\0\ta\0b ",6)), std::string("\0\ta\0b",5) );
