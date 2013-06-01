@@ -36,13 +36,6 @@ namespace mpt { namespace String
 		buffer[size - 1] = 0;
 	}
 
-	// just a dummy implementation
-	inline void SetNullTerminator(std::string & /*str*/)
-	//--------------------------------------------------
-	{
-		// nothing to do here
-	}
-
 
 	// Remove any chars after the first null char
 	template <size_t size>
