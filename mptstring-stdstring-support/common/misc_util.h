@@ -220,6 +220,15 @@ static inline void SanitizeFilename(std::string &str)
 		str[i] = SanitizeFilenameChar(str[i]);
 	}
 }
+#ifdef MODPLUG_TRACKER
+static inline void SanitizeFilename(CString &str)
+//-----------------------------------------------
+{
+	std::string tmp = str;
+	SanitizeFilename(tmp);
+	str = tmp.c_str();
+}
+#endif
 
 
 // Greatest Common Divisor.
