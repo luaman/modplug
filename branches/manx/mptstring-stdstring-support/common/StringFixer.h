@@ -373,11 +373,10 @@ namespace mpt { namespace String
 	}
 
 	// Copy from a char array to a std::string.
-	inline void CopyN(std::string &dest, const char *srcBuffer, const size_t srcSize = SIZE_MAX)
-	//------------------------------------------------------------------------------------------
+	static inline void CopyN(std::string &dest, const char *srcBuffer, const size_t srcSize = SIZE_MAX)
+	//-------------------------------------------------------------------------------------------------
 	{
-		dest.assign(srcBuffer, srcBuffer + srcSize);
-		FixNullString(dest); // if we copied \0 in the middle of the buffer, remove junk after it
+		dest.assign(srcBuffer, srcBuffer + mpt::strnlen(srcBuffer, srcSize));
 	}
 
 
