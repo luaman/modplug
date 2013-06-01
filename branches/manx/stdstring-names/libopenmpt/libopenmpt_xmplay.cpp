@@ -18,16 +18,6 @@
 #define LIBOPENMPT_USE_SETTINGS_DLL
 #include "libopenmpt_settings.h"
 
-#ifdef _WIN32
-#ifdef LIBOPENMPT_BUILD_DLL
-#define LIBOPENMPT_XMPLAY_API __declspec(dllexport)
-#else
-#define LIBOPENMPT_XMPLAY_API
-#endif
-#else
-#define LIBOPENMPT_XMPLAY_API
-#endif
-
 //#define CUSTOM_OUTPUT_SETTINGS
 
 //#define EXPERIMENTAL_VIS
@@ -895,9 +885,7 @@ void xmp_openmpt_on_dll_unload() {
 	xmpin.exts = NULL;
 }
 
-extern "C" {
-
-XMPIN * XMPIN_GetInterface_cxx( DWORD face, InterfaceProc faceproc ) {
+static XMPIN * XMPIN_GetInterface_cxx( DWORD face, InterfaceProc faceproc ) {
 	if (face!=XMPIN_FACE) return NULL;
 	xmpfin=(XMPFUNC_IN*)faceproc(XMPFUNC_IN_FACE);
 	xmpfmisc=(XMPFUNC_MISC*)faceproc(XMPFUNC_MISC_FACE);
@@ -906,6 +894,14 @@ XMPIN * XMPIN_GetInterface_cxx( DWORD face, InterfaceProc faceproc ) {
 	xmpfstatus=(XMPFUNC_STATUS*)faceproc(XMPFUNC_STATUS_FACE);
 	return &xmpin;
 }
+
+extern "C" {
+
+// XMPLAY expects a WINAPI (which is __stdcall) function using an undecorated symbol name.
+XMPIN * WINAPI XMPIN_GetInterface( DWORD face, InterfaceProc faceproc ) {
+	return XMPIN_GetInterface_cxx( face, faceproc );
+}
+#pragma comment(linker, "/EXPORT:XMPIN_GetInterface=_XMPIN_GetInterface@8")
 
 }; // extern "C"
 

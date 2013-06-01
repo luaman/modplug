@@ -7,7 +7,7 @@
  * The OpenMPT source code is released under the BSD license. Read LICENSE for more details.
  */
 
-#include "common/stdafx.h"
+#include "BuildSettings.h"
 
 #include "libopenmpt_internal.h"
 #include "libopenmpt.h"
@@ -15,6 +15,8 @@
 
 #include "libopenmpt_impl.hpp"
 
+#include <limits>
+#include <sstream>
 #include <stdexcept>
 
 #include <cmath>
@@ -105,6 +107,39 @@ public:
 	}
 }; // class CSoundFileLog_log_func
 
+static std::string format_exception( const char * const function ) {
+	std::ostringstream err;
+	try {
+		throw;
+	} catch ( openmpt::exception & e ) {
+		err
+			<< function << ": "
+			<< "ERROR: "
+			<< e.what();
+	} catch ( std::exception & e ) {
+		err
+			<< function << ": "
+			<< "INTERNAL ERROR: "
+			<< e.what();
+	} catch ( ... ) {
+		err
+			<< function << ": "
+			<< "UNKOWN INTERNAL ERROR";
+	}
+	return err.str();
+}
+
+static void report_exception( const char * const function, openmpt_log_func const logfunc = 0, void * const user = 0, openmpt::module_impl * const impl = 0 ) {
+	const std::string message = format_exception( function );
+	if ( impl ) {
+		impl->PushToCSoundFileLog( message );
+	} else if ( logfunc ) {
+		logfunc( message.c_str(), user );
+	} else {
+		openmpt_log_func_default( message.c_str(), NULL );
+	}
+}
+
 } // namespace openmpt
 
 extern "C" {
@@ -116,137 +151,29 @@ struct openmpt_module {
 };
 
 #define OPENMPT_INTERFACE_CATCH \
-	 catch ( openmpt::exception & e ) { \
-		std::cerr \
-			<< "openmpt: " \
-			<< __FUNCTION__ << ": " \
-			<< "ERROR: " \
-			<< e.what() \
-			<< std::endl; \
-	} catch ( std::exception & e ) { \
-		std::cerr \
-			<< "openmpt: " \
-			<< __FUNCTION__ << ": " \
-			<< "INTERNAL ERROR: " \
-			<< e.what() \
-			<< std::endl; \
-	} catch ( ... ) { \
-		std::cerr \
-			<< "openmpt: " \
-			<< __FUNCTION__ << ": " \
-			<< "UNKOWN INTERNAL ERROR" \
-			<< std::endl; \
+	 catch ( ... ) { \
+		openmpt::report_exception( __FUNCTION__ ); \
 	} \
 	do { } while (0) \
 /**/
 
 #define OPENMPT_INTERFACE_CATCH_TO_LOG_FUNC \
-	 catch ( openmpt::exception & e ) { \
-		std::ostringstream err; \
-		err \
-			<< __FUNCTION__ << ": " \
-			<< "ERROR: " \
-			<< e.what(); \
-		if ( logfunc ) { \
-			logfunc( err.str().c_str(), user ); \
-		} else { \
-			openmpt_log_func_default( err.str().c_str(), NULL ); \
-		} \
-	} catch ( std::exception & e ) { \
-		std::ostringstream err; \
-		err \
-			<< __FUNCTION__ << ": " \
-			<< "INTERNAL ERROR: " \
-			<< e.what(); \
-		if ( logfunc ) { \
-			logfunc( err.str().c_str(), user ); \
-		} else { \
-			openmpt_log_func_default( err.str().c_str(), NULL ); \
-		} \
-	} catch ( ... ) { \
-		std::ostringstream err; \
-		err \
-			<< __FUNCTION__ << ": " \
-			<< "UNKOWN INTERNAL ERROR"; \
-		if ( logfunc ) { \
-			logfunc( err.str().c_str(), user ); \
-		} else { \
-			openmpt_log_func_default( err.str().c_str(), NULL ); \
-		} \
+	 catch ( ... ) { \
+		openmpt::report_exception( __FUNCTION__, logfunc, user ); \
 	} \
 	do { } while (0) \
 /**/
 
 #define OPENMPT_INTERFACE_CATCH_TO_MOD_LOG_FUNC \
-	 catch ( openmpt::exception & e ) { \
-		std::ostringstream err; \
-		err \
-			<< __FUNCTION__ << ": " \
-			<< "ERROR: " \
-			<< e.what(); \
-		if ( mod->logfunc ) { \
-			mod->logfunc( err.str().c_str(), mod->user ); \
-		} else { \
-			openmpt_log_func_default( err.str().c_str(), NULL ); \
-		} \
-	} catch ( std::exception & e ) { \
-		std::ostringstream err; \
-		err \
-			<< __FUNCTION__ << ": " \
-			<< "INTERNAL ERROR: " \
-			<< e.what(); \
-		if ( mod->logfunc ) { \
-			mod->logfunc( err.str().c_str(), mod->user ); \
-		} else { \
-			openmpt_log_func_default( err.str().c_str(), NULL ); \
-		} \
-	} catch ( ... ) { \
-		std::ostringstream err; \
-		err \
-			<< __FUNCTION__ << ": " \
-			<< "UNKOWN INTERNAL ERROR"; \
-		if ( mod->logfunc ) { \
-			mod->logfunc( err.str().c_str(), mod->user ); \
-		} else { \
-			openmpt_log_func_default( err.str().c_str(), NULL ); \
-		} \
+	 catch ( ... ) { \
+		openmpt::report_exception( __FUNCTION__, mod->logfunc, mod->user ); \
 	} \
 	do { } while (0) \
 /**/
 
 #define OPENMPT_INTERFACE_CATCH_TO_LOG \
-	 catch ( openmpt::exception & e ) { \
-		std::ostringstream err; \
-		err \
-			<< __FUNCTION__ << ": " \
-			<< "ERROR: " \
-			<< e.what(); \
-		if ( mod && mod->impl ) { \
-			mod->impl->PushToCSoundFileLog( LogError, err.str() ); \
-		} else { \
-			openmpt_log_func_default( err.str().c_str(), NULL ); \
-		} \
-	} catch ( std::exception & e ) { \
-		std::ostringstream err; \
-		err \
-			<< __FUNCTION__ << ": " \
-			<< "INTERNAL ERROR: " \
-			<< e.what(); \
-		if ( mod && mod->impl ) { \
-			mod->impl->PushToCSoundFileLog( LogError, err.str() ); \
-		} else { \
-			openmpt_log_func_default( err.str().c_str(), NULL ); \
-		} \
-	} catch ( ... ) { \
-		std::ostringstream err; \
-		err \
-			<< __FUNCTION__ << ": " \
-			<< "UNKOWN INTERNAL ERROR"; \
-		if ( mod && mod->impl ) { \
-			mod->impl->PushToCSoundFileLog( LogError, err.str() ); \
-		} else { \
-			openmpt_log_func_default( err.str().c_str(), NULL ); \
-		} \
+	 catch ( ... ) { \
+		openmpt::report_exception( __FUNCTION__, mod->logfunc, mod->user, mod->impl ); \
 	} \
 	do { } while (0) \
 /**/
@@ -309,7 +236,7 @@ const char * openmpt_get_supported_extensions(void) {
 	try {
 		std::string retval;
 		bool first = true;
-		std::vector<std::string> supported_extensions = openmpt::get_supported_extensions();
+		std::vector<std::string> supported_extensions = openmpt::module_impl::get_supported_extensions();
 		for ( std::vector<std::string>::iterator i = supported_extensions.begin(); i != supported_extensions.end(); ++i ) {
 			if ( first ) {
 				first = false;
@@ -328,13 +255,13 @@ int openmpt_is_extension_supported( const char * extension ) {
 		if ( !extension ) {
 			return 0;
 		}
-		return openmpt::is_extension_supported( extension ) ? 1 : 0;
+		return openmpt::module_impl::is_extension_supported( extension ) ? 1 : 0;
 	} OPENMPT_INTERFACE_CATCH;
 	return 0;
 }
 
 void openmpt_log_func_default( const char * message, void * /*user*/ ) {
-	fprintf( stderr, "%s\n", message );
+	fprintf( stderr, "openmpt: %s\n", message );
 	fflush( stderr );
 }
 
