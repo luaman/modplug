@@ -342,7 +342,7 @@ namespace mpt { namespace String
 	//-------------------------------------------------------------------------
 	{
 		ASSERT(destSize > 0);
-		Write<mode>(destBuffer, destSize, src.c_str(), src.length() + 1); // include null-termination char
+		Write<mode>(destBuffer, destSize, src.c_str(), src.length());
 	}
 
 	template <ReadWriteMode mode>
@@ -350,7 +350,7 @@ namespace mpt { namespace String
 	//---------------------------------------------------------------
 	{
 		ASSERT(destBuffer.size() > 0);
-		Write<mode>(destBuffer, src.c_str(), src.length() + 1); // include null-termination char
+		Write<mode>(destBuffer, src.c_str(), src.length());
 	}
 
 	template <ReadWriteMode mode, size_t destSize>
@@ -358,7 +358,7 @@ namespace mpt { namespace String
 	//--------------------------------------------------------------
 	{
 		STATIC_ASSERT(destSize > 0);
-		Write<mode, destSize>(destBuffer, src.c_str(), src.length() + 1); // include null-termination char
+		Write<mode, destSize>(destBuffer, src.c_str(), src.length());
 	}
 
 
@@ -372,7 +372,7 @@ namespace mpt { namespace String
 		destBuffer[copySize] = '\0';
 	}
 
-	// Copy from a char array to a std::string.
+	// Copy at most srcSize characters from srcBuffer to a std::string.
 	static inline void CopyN(std::string &dest, const char *srcBuffer, const size_t srcSize = SIZE_MAX)
 	//-------------------------------------------------------------------------------------------------
 	{
@@ -393,7 +393,7 @@ namespace mpt { namespace String
 	void Copy(char (&destBuffer)[destSize], const std::string &src)
 	//-------------------------------------------------------------
 	{
-		CopyN(destBuffer, src.c_str(), src.length() + 1); // include null-termination char
+		CopyN(destBuffer, src.c_str(), src.length());
 	}
 
 	// Copy from a fixed size char array to a std::string.
@@ -401,8 +401,7 @@ namespace mpt { namespace String
 	void Copy(std::string &dest, const char (&srcBuffer)[srcSize])
 	//----------------------------------------------------------------------------
 	{
-		dest.assign(srcBuffer, srcBuffer + srcSize);
-		FixNullString(dest); // if we copied \0 in the middle of the buffer, remove junk after it
+		CopyN(dest, srcBuffer, srcSize);
 	}
 
 	// Copy from a std::string to a std::string.
@@ -410,7 +409,6 @@ namespace mpt { namespace String
 	//----------------------------------------------------------------
 	{
 		dest.assign(src);
-		FixNullString(dest); // if we copied \0 in the middle of the buffer, remove junk after it
 	}
 
 
