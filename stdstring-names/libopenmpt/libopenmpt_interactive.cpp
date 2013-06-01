@@ -1,5 +1,5 @@
 
-#include "stdafx.h"
+#include "BuildSettings.h"
 
 #include "libopenmpt_internal.h"
 #include "libopenmpt_interactive.hpp"
@@ -94,9 +94,9 @@ interactive_module::interactive_module( const void * data, std::size_t size, std
 	set_impl( interactive_impl );
 }
 interactive_module::~interactive_module() {
-	set_impl( nullptr );
+	set_impl( 0 );
 	delete interactive_impl;
-	interactive_impl = nullptr;
+	interactive_impl = 0;
 }
 interactive_module::interactive_module( const interactive_module & other ) : module(other) {
 	throw std::runtime_error("openmpt::interactive_module is non-copyable");
