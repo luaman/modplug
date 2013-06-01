@@ -37,8 +37,8 @@ namespace mpt { namespace String
 	}
 
 	// just a dummy implementation
-	/*DEPRECATED*/ inline void SetNullTerminator(std::string & /*str*/)
-	//-------------------------------------------------------------
+	inline void SetNullTerminator(std::string & /*str*/)
+	//--------------------------------------------------
 	{
 		// nothing to do here
 	}
@@ -95,7 +95,6 @@ namespace mpt { namespace String
 	};
 
 
-	// Copy a string from srcBuffer to destBuffer using a given read mode.
 	// Copy a string from srcBuffer to destBuffer using a given read mode.
 	// Used for reading strings from files.
 	// Only use this version of the function if the size of the source buffer is variable.
@@ -163,7 +162,6 @@ namespace mpt { namespace String
 	}
 
 
-	// Copy a string from srcBuffer to destBuffer using a given read mode.
 	// Copy a string from srcBuffer to destBuffer using a given read mode.
 	// Used for reading strings from files.
 	// Only use this version of the function if the size of the source buffer is variable.
@@ -259,8 +257,8 @@ namespace mpt { namespace String
 	}
 
 
-	// Copy a string from from srcBuffer to destBuffer using a given write mode.
-	// You should only use this function if noth src and dest are dynamically sized,
+	// Copy a string from srcBuffer to destBuffer using a given write mode.
+	// You should only use this function if src and dest are dynamically sized,
 	// otherwise use one of the safer overloads below.
 	template <ReadWriteMode mode>
 	void Write(char *destBuffer, const size_t destSize, const char *srcBuffer, const size_t srcSize)
@@ -375,11 +373,10 @@ namespace mpt { namespace String
 	}
 
 	// Copy from a char array to a std::string.
-	inline void CopyN(std::string &dest, const char *srcBuffer, const size_t srcSize = SIZE_MAX)
-	//------------------------------------------------------------------------------------------
+	static inline void CopyN(std::string &dest, const char *srcBuffer, const size_t srcSize = SIZE_MAX)
+	//-------------------------------------------------------------------------------------------------
 	{
-		dest.assign(srcBuffer, srcBuffer + srcSize);
-		FixNullString(dest); // if we copied \0 in the middle of the buffer, remove junk after it
+		dest.assign(srcBuffer, srcBuffer + mpt::strnlen(srcBuffer, srcSize));
 	}
 
 
