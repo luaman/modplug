@@ -32,7 +32,7 @@ AR  = ar
 DYNLINK = 1
 
 
-CPPFLAGS = -I../common -I.. 
+CPPFLAGS = -I../common -I.. -I../include/modplug/include
 CXXFLAGS = -std=c++0x -O3 -fPIC -fvisibility=hidden -fno-strict-aliasing -ffast-math -Wall -Wextra -Wcast-align
 CFLAGS   = -std=c99   -O3 -fPIC -fvisibility=hidden -fno-strict-aliasing -ffast-math -Wall -Wextra -Wcast-align
 LDFLAGS  = 
@@ -83,7 +83,7 @@ CPPFLAGS += -I../common/svn_version_svnversion -D BUILD_SVNVERSION=\"$(BUILD_SVN
 #CPPFLAGS += -I../common/svn_version_default
 
 
-CPPFLAGS += -DLIBOPENMPT_BUILD -DLIBOPENMPT_BUILD_DLL
+CPPFLAGS += -DLIBOPENMPT_BUILD
 
 
 COMMON_CXX_SOURCES += \
@@ -144,8 +144,12 @@ all:
 
 -include $(ALL_DEPENDS)
 
-OUTPUTS = bin/openmpt123 bin/modplug123 bin/libopenmpt.so bin/openmpt.a
-#OUTPUTS += lib/libopenmpt_modplug.so
+OUTPUTS += bin/libopenmpt.so
+OUTPUTS += bin/openmpt.a
+OUTPUTS += bin/openmpt123
+#OUTPUTS += bin/libopenmpt_modplug.so
+#OUTPUTS += bin/modplug123
+
 all: $(OUTPUTS)
 
 bin/libopenmpt.so: $(LIBOPENMPT_OBJECTS)
