@@ -12,6 +12,9 @@
 #pragma once
 
 
+#include "../soundlib/Mixer.h"
+
+
 #define MAX_EQ_BANDS	6
 
 typedef struct ALIGN(4) _EQBANDSTRUCT
@@ -53,9 +56,10 @@ class CQuadEQ
 private:
 	CEQ front;
 	CEQ rear;
+	float EQTempFloatBuffer[MIXBUFFERSIZE * 2];
 public:
 	void Initialize(BOOL bReset, DWORD MixingFreq);
-	void Process(int *frontBuffer, int *rearBuffer, float *tempFloatBuffer, UINT nCount, UINT nChannels);
+	void Process(int *frontBuffer, int *rearBuffer, UINT nCount, UINT nChannels);
 	void SetEQGains(const UINT *pGains, UINT nGains, const UINT *pFreqs, BOOL bReset, DWORD MixingFreq);
 };
 
