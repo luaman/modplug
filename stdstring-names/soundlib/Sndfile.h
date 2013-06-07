@@ -186,12 +186,6 @@ class CModDoc;
 #endif // MODPLUG_TRACKER
 
 
-#ifdef ENABLE_ASM
-void InitProcSupport();
-uint32 GetProcSupport();
-#endif
-
-
 void StereoMixToFloat(const int *pSrc, float *pOut1, float *pOut2, UINT nCount, const float _i2fc);
 void FloatToStereoMix(const float *pIn1, const float *pIn2, int *pOut, UINT nCount, const float _f2ic);
 void MonoMixToFloat(const int *pSrc, float *pOut, UINT nCount, const float _i2fc);
@@ -311,7 +305,7 @@ public:
 	CDSP m_DSP;
 #endif
 #ifndef NO_EQ
-	CEQ m_EQ;
+	CQuadEQ m_EQ;
 #endif
 #ifndef NO_AGC
 	CAGC m_AGC;
@@ -336,7 +330,8 @@ public:	// for Editing
 	INSTRUMENTINDEX m_nInstruments;
 	UINT m_nDefaultSpeed, m_nDefaultTempo, m_nDefaultGlobalVolume;
 	FlagSet<SongFlags> m_SongFlags;
-	UINT m_nMixChannels, m_nMixStat;
+	CHANNELINDEX m_nMixChannels;
+	UINT m_nMixStat;
 	samplecount_t m_nBufferCount;
 	double m_dBufferDiff;
 	UINT m_nTickCount;
@@ -371,7 +366,7 @@ public:	// for Editing
 	LONG m_nRepeatCount;	// -1 means repeat infinitely.
 	DWORD m_nGlobalFadeSamples, m_nGlobalFadeMaxSamples;
 	UINT m_nMaxOrderPosition;
-	UINT ChnMix[MAX_CHANNELS];							// Channels to be mixed
+	CHANNELINDEX ChnMix[MAX_CHANNELS];							// Channels to be mixed
 	ModChannel Chn[MAX_CHANNELS];						// Mixing channels... First m_nChannel channels are master channels (i.e. they are never NNA channels)!
 	ModChannelSettings ChnSettings[MAX_BASECHANNELS];	// Initial channels settings
 	CPatternContainer Patterns;							// Patterns
@@ -599,7 +594,7 @@ public:
 	void RecalculateGainForAllPlugs();
 	void ResetChannels();
 	UINT Read(LPVOID lpBuffer, UINT cbBuffer, void * const *outputBuffers = nullptr);
-	UINT CreateStereoMix(int count);
+	void CreateStereoMix(int count);
 	BOOL FadeSong(UINT msec);
 	BOOL GlobalFadeSong(UINT msec);
 	void ProcessPlugins(UINT nCount);
@@ -787,7 +782,7 @@ public:
 #ifdef MODPLUG_TRACKER
 	void ProcessMidiOut(CHANNELINDEX nChn);
 #endif // MODPLUG_TRACKER
-	void ApplyGlobalVolume(int SoundBuffer[], int RearBuffer[], long lTotalSampleCount);
+	void ApplyGlobalVolume(int *SoundBuffer, int *RearBuffer, long lCount);
 
 #ifndef MODPLUG_TRACKER
 	void ApplyFinalOutputGain(int SoundBuffer[], int RearBuffer[], long lCount); // lCount meaning the number of frames, totally independet from the numer of channels

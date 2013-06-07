@@ -202,13 +202,13 @@ UINT CSoundFile::Read(LPVOID lpDestBuffer, UINT count, void * const *outputBuffe
 	LPCONVERTPROC pCvt = nullptr;
 	samplecount_t lMax, lCount, lSampleCount;
 	size_t lSampleSize;
-	UINT nStat = 0;
 	UINT nMaxPlugins;
 	std::size_t renderedCount = 0;
 
 	nMaxPlugins = MAX_MIXPLUGINS;
 	while ((nMaxPlugins > 0) && (!m_MixPlugins[nMaxPlugins-1].pMixPlugin)) nMaxPlugins--;
-	m_nMixStat = 0;
+	
+	UINT nMixStatCount = 0;
 
 	lSampleSize = m_MixerSettings.gnChannels;
 	switch(m_MixerSettings.m_SampleFormat)
@@ -279,23 +279,30 @@ UINT CSoundFile::Read(LPVOID lpDestBuffer, UINT count, void * const *outputBuffe
 		if (!lCount) 
 			break;
 
+		ASSERT(lCount <= MIXBUFFERSIZE); // ensure MIXBUFFERSIZE really is our max buffer size
+
 		lSampleCount = lCount;
 
-#ifndef NO_REVERB
-		m_Reverb.gnReverbSend = 0;
-#endif // NO_REVERB
+		if(nMixStatCount == 0)
+		{
+			// reset mixer channel count before we are calling CreateStereoMix the first time this round, if we are not updating the mixer state, we do not reset statistics
+			m_nMixStat = 0;
+		}
+		nMixStatCount++;
 
 		// Resetting sound buffer
 		StereoFill(MixSoundBuffer, lCount, &gnDryROfsVol, &gnDryLOfsVol);
+#ifndef NO_REVERB
+		m_Reverb.ProcessPrepare(MixReverbBuffer, lCount);
+#endif // NO_REVERB
 		
-		ASSERT(lCount<=MIXBUFFERSIZE);		// ensure MIXBUFFERSIZE really is our max buffer size
 		if (m_MixerSettings.gnChannels >= 2)
 		{
 			lSampleCount *= 2;
-			m_nMixStat += CreateStereoMix(lCount);
+			CreateStereoMix(lCount);
 
 #ifndef NO_REVERB
-			m_Reverb.Process(MixSoundBuffer, MixReverbBuffer, lCount, GetProcSupport());
+			m_Reverb.Process(MixSoundBuffer, MixReverbBuffer, lCount);
 #endif // NO_REVERB
 
 			if (nMaxPlugins) ProcessPlugins(lCount);
@@ -303,14 +310,14 @@ UINT CSoundFile::Read(LPVOID lpDestBuffer, UINT count, void * const *outputBuffe
 			// Apply global volume
 			if (m_PlayConfig.getGlobalVolumeAppliesToMaster())
 			{
-				ApplyGlobalVolume(MixSoundBuffer, MixRearBuffer, lSampleCount);
+				ApplyGlobalVolume(MixSoundBuffer, MixRearBuffer, lCount);
 			}
 		} else
 		{
-			m_nMixStat += CreateStereoMix(lCount);
+			CreateStereoMix(lCount);
 
 #ifndef NO_REVERB
-			m_Reverb.Process(MixSoundBuffer, MixReverbBuffer, lCount, GetProcSupport());
+			m_Reverb.Process(MixSoundBuffer, MixReverbBuffer, lCount);
 #endif // NO_REVERB
 
 			if (nMaxPlugins) ProcessPlugins(lCount);
@@ -319,7 +326,7 @@ UINT CSoundFile::Read(LPVOID lpDestBuffer, UINT count, void * const *outputBuffe
 			// Apply global volume
 			if (m_PlayConfig.getGlobalVolumeAppliesToMaster())
 			{
-				ApplyGlobalVolume(MixSoundBuffer, nullptr, lSampleCount);
+				ApplyGlobalVolume(MixSoundBuffer, MixRearBuffer, lCount);
 			}
 		}
 
@@ -331,14 +338,9 @@ UINT CSoundFile::Read(LPVOID lpDestBuffer, UINT count, void * const *outputBuffe
 		// Graphic Equalizer
 		if (m_MixerSettings.DSPMask & SNDDSP_EQ)
 		{
-			if (m_MixerSettings.gnChannels >= 2)
-				m_EQ.ProcessStereo(MixSoundBuffer, MixFloatBuffer, lCount, m_PlayConfig);
-			else
-				m_EQ.ProcessMono(MixSoundBuffer, MixFloatBuffer, lCount, m_PlayConfig);
+			m_EQ.Process(MixSoundBuffer, MixRearBuffer, MixFloatBuffer, lCount, m_MixerSettings.gnChannels);
 		}
 #endif // NO_EQ
-
-		nStat++;
 
 #ifndef MODPLUG_TRACKER
 		if(!m_MixerSettings.IsFloatSampleFormat())
@@ -431,7 +433,10 @@ UINT CSoundFile::Read(LPVOID lpDestBuffer, UINT count, void * const *outputBuffe
 	}
 MixDone:
 	if (lRead && lpBuffer) memset(lpBuffer, (m_MixerSettings.m_SampleFormat == SampleFormatUnsigned8) ? 0x80 : 0, lRead * lSampleSize); // clear remaining interleaved output buffer
-	if (nStat) { m_nMixStat += nStat-1; m_nMixStat /= nStat; }
+	if(nMixStatCount > 0)
+	{
+		m_nMixStat = (m_nMixStat + nMixStatCount - 1) / nMixStatCount; // round up
+	}
 	return renderedCount;
 }
 
@@ -2113,12 +2118,12 @@ BOOL CSoundFile::ReadNote()
 	// Checking Max Mix Channels reached: ordering by volume
 	if ((m_nMixChannels >= m_MixerSettings.m_nMaxMixChannels) && !IsRenderingToDisc())
 	{
-		for (UINT i=0; i<m_nMixChannels; i++)
+		for(CHANNELINDEX i=0; i<m_nMixChannels; i++)
 		{
-			UINT j=i;
+			CHANNELINDEX j=i;
 			while ((j+1<m_nMixChannels) && (Chn[ChnMix[j]].nRealVolume < Chn[ChnMix[j+1]].nRealVolume))
 			{
-				UINT n = ChnMix[j];
+				CHANNELINDEX n = ChnMix[j];
 				ChnMix[j] = ChnMix[j+1];
 				ChnMix[j+1] = n;
 				j++;
@@ -2265,11 +2270,41 @@ void CSoundFile::ProcessMidiOut(CHANNELINDEX nChn)
 #endif // MODPLUG_TRACKER
 
 
-void CSoundFile::ApplyGlobalVolume(int SoundBuffer[], int RearBuffer[], long lTotalSampleCount)
-//---------------------------------------------------------------------------------------------
+template<int channels>
+forceinline void ApplyGlobalVolumeWithRamping(int *SoundBuffer, int *RearBuffer, long lCount, UINT m_nGlobalVolume, long step, UINT &m_nSamplesToGlobalVolRampDest, long &m_lHighResRampingGlobalVolume)
 {
-	long step = 0;
+	const bool isStereo = (channels >= 2);
+	const bool hasRear = (channels >= 4);
+	for(int pos = 0; pos < lCount; ++pos)
+	{
+		if(m_nSamplesToGlobalVolRampDest > 0)
+		{
+			// Ramping required
+			m_lHighResRampingGlobalVolume += step;
+			             SoundBuffer[0] = Util::muldiv(SoundBuffer[0], m_lHighResRampingGlobalVolume, MAX_GLOBAL_VOLUME << VOLUMERAMPPRECISION);
+			if(isStereo) SoundBuffer[1] = Util::muldiv(SoundBuffer[1], m_lHighResRampingGlobalVolume, MAX_GLOBAL_VOLUME << VOLUMERAMPPRECISION);
+			if(hasRear)  RearBuffer[0]  = Util::muldiv(RearBuffer[0] , m_lHighResRampingGlobalVolume, MAX_GLOBAL_VOLUME << VOLUMERAMPPRECISION);
+			if(hasRear)  RearBuffer[1]  = Util::muldiv(RearBuffer[1] , m_lHighResRampingGlobalVolume, MAX_GLOBAL_VOLUME << VOLUMERAMPPRECISION);
+			m_nSamplesToGlobalVolRampDest--;
+		} else
+		{
+			             SoundBuffer[0] = Util::muldiv(SoundBuffer[0], m_nGlobalVolume, MAX_GLOBAL_VOLUME);
+			if(isStereo) SoundBuffer[1] = Util::muldiv(SoundBuffer[1], m_nGlobalVolume, MAX_GLOBAL_VOLUME);
+			if(hasRear)  RearBuffer[0]  = Util::muldiv(RearBuffer[0] , m_nGlobalVolume, MAX_GLOBAL_VOLUME);
+			if(hasRear)  RearBuffer[1]  = Util::muldiv(RearBuffer[1] , m_nGlobalVolume, MAX_GLOBAL_VOLUME);
+			m_lHighResRampingGlobalVolume = m_nGlobalVolume << VOLUMERAMPPRECISION;
+		}
+		SoundBuffer += isStereo ? 2 : 1;
+		if(hasRear) RearBuffer += 2;
+	}
+}
 
+
+void CSoundFile::ApplyGlobalVolume(int *SoundBuffer, int *RearBuffer, long lCount)
+//--------------------------------------------------------------------------------
+{
+
+	// should we ramp?
 	if(IsGlobalVolumeUnset())
 	{
 		// do not ramp if no global volume was set before (which is the case at song start), to prevent audible glitches when default volume is > 0 and it is set to 0 in the first row
@@ -2279,13 +2314,20 @@ void CSoundFile::ApplyGlobalVolume(int SoundBuffer[], int RearBuffer[], long lTo
 	} else if(m_nGlobalVolumeDestination != m_nGlobalVolume)
 	{
 		// User has provided new global volume
-		const bool rampUp = m_nGlobalVolumeDestination > m_nGlobalVolume;
+
+		// m_nGlobalVolume: the last global volume which got set e.g. by a pattern command
+		// m_nGlobalVolumeDestination: the current target of the ramping algorithm
+		const bool rampUp = m_nGlobalVolume > m_nGlobalVolumeDestination;
+
 		m_nGlobalVolumeDestination = m_nGlobalVolume;
 		m_nSamplesToGlobalVolRampDest = m_nGlobalVolumeRampAmount = rampUp ? m_MixerSettings.glVolumeRampUpSamples : m_MixerSettings.glVolumeRampDownSamples;
 	} 
 
+	// calculate ramping step
+	long step = 0;
 	if (m_nSamplesToGlobalVolRampDest > 0)
 	{
+
 		// Still some ramping left to do.
 		long highResGlobalVolumeDestination = static_cast<long>(m_nGlobalVolumeDestination) << VOLUMERAMPPRECISION;
 
@@ -2302,32 +2344,18 @@ void CSoundFile::ApplyGlobalVolume(int SoundBuffer[], int RearBuffer[], long lTo
 		}
 	}
 
-	const long highResVolume = m_lHighResRampingGlobalVolume;
-	const UINT samplesToRamp = m_nSamplesToGlobalVolRampDest;
-
-	// SoundBuffer has interleaved left/right channels for the front channels; RearBuffer has the rear left/right channels.
-	// So we process the pairs independently for ramping.
-	for (int pairs = MAX(m_MixerSettings.gnChannels / 2, 1); pairs > 0; pairs--)
+	// apply volume and ramping
+	if(m_MixerSettings.gnChannels == 1)
 	{
-		int *sample = (pairs == 1) ? SoundBuffer : RearBuffer;
-		m_lHighResRampingGlobalVolume = highResVolume;
-		m_nSamplesToGlobalVolRampDest = samplesToRamp;
-
-		for (int pos = lTotalSampleCount; pos > 0; pos--, sample++)
-		{
-			if (m_nSamplesToGlobalVolRampDest > 0)
-			{
-				// Ramping required
-				m_lHighResRampingGlobalVolume += step;
-				*sample = Util::muldiv(*sample, m_lHighResRampingGlobalVolume, MAX_GLOBAL_VOLUME << VOLUMERAMPPRECISION);
-				m_nSamplesToGlobalVolRampDest--;
-			} else
-			{
-				*sample = Util::muldiv(*sample, m_nGlobalVolume, MAX_GLOBAL_VOLUME);
-				m_lHighResRampingGlobalVolume = m_nGlobalVolume << VOLUMERAMPPRECISION;
-			}
-		}
+		ApplyGlobalVolumeWithRamping<1>(SoundBuffer, RearBuffer, lCount, m_nGlobalVolume, step, m_nSamplesToGlobalVolRampDest, m_lHighResRampingGlobalVolume);
+	} else if(m_MixerSettings.gnChannels == 2)
+	{
+		ApplyGlobalVolumeWithRamping<2>(SoundBuffer, RearBuffer, lCount, m_nGlobalVolume, step, m_nSamplesToGlobalVolRampDest, m_lHighResRampingGlobalVolume);
+	} else if(m_MixerSettings.gnChannels == 4)
+	{
+		ApplyGlobalVolumeWithRamping<4>(SoundBuffer, RearBuffer, lCount, m_nGlobalVolume, step, m_nSamplesToGlobalVolRampDest, m_lHighResRampingGlobalVolume);
 	}
+
 }
 
 

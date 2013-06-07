@@ -109,10 +109,11 @@ EQ_Loop:
 }
 
 
+#ifdef ENABLE_X86_AMD
+
 static void AMD_StereoEQ(EQBANDSTRUCT *pbl, EQBANDSTRUCT *pbr, float32 *pbuffer, UINT nCount)
 //-------------------------------------------------------------------------------------------
 {
-#ifdef ENABLE_3DNOW
 	float tmp[16];
 
 	_asm {
@@ -189,14 +190,16 @@ mainloop:
 	movd [edx+EQBANDSTRUCT.y2], mm7
 	emms
 	}
-#endif
 }
 
+#endif // ENABLE_X86_AMD
+
+
+#ifdef ENABLE_SSE
 
 static void SSE_StereoEQ(EQBANDSTRUCT *pbl, EQBANDSTRUCT *pbr, float32 *pbuffer, UINT nCount)
 //-------------------------------------------------------------------------------------------
 {
-#ifdef ENABLE_SSE
 	static const float gk1 = 1.0f;
 	_asm {
 	mov eax, pbl
@@ -284,8 +287,9 @@ mainloop:
 	movss [edx+EQBANDSTRUCT.y2], xmm1
 done:;
 	}
-#endif // ENABLE_SSE
 }
+
+#endif // ENABLE_SSE
 
 #pragma warning(default:4100)
 
@@ -309,34 +313,31 @@ static void EQFilter(EQBANDSTRUCT *pbs, float32 *pbuffer, UINT nCount)
 #endif
 
 
-void CEQ::ProcessMono(int *pbuffer, float *MixFloatBuffer, UINT nCount, CSoundFilePlayConfig &config)
-//---------------------------------------------------------------------------------------------------
+void CEQ::ProcessMono(int *pbuffer, float *MixFloatBuffer, UINT nCount)
+//---------------------------------------------------------------------
 {
-	MonoMixToFloat(pbuffer, MixFloatBuffer, nCount, config.getIntToFloat());
+	MonoMixToFloat(pbuffer, MixFloatBuffer, nCount, 1.0f/static_cast<float>(MIXING_CLIPMAX));
 	for (UINT b=0; b<MAX_EQ_BANDS; b++)
 	{
 		if ((gEQ[b].bEnable) && (gEQ[b].Gain != 1.0f)) EQFilter(&gEQ[b], MixFloatBuffer, nCount);
 	}
-	FloatToMonoMix(MixFloatBuffer, pbuffer, nCount, config.getFloatToInt());
+	FloatToMonoMix(MixFloatBuffer, pbuffer, nCount, static_cast<float>(MIXING_CLIPMAX));
 }
 
 
-void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount, CSoundFilePlayConfig &config)
-//-----------------------------------------------------------------------------------------------------
+void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount)
+//-----------------------------------------------------------------------
 {
 
 #ifdef ENABLE_SSE
-#ifdef ENABLE_MMX
 
-	// Still allow the check, because the user can turn this on/off
-	
 	if(GetProcSupport() & PROCSUPPORT_SSE)
 	{
 		int sse_state, sse_eqstate;
-		MonoMixToFloat(pbuffer, MixFloatBuffer, nCount*2, config.getIntToFloat());
+		MonoMixToFloat(pbuffer, MixFloatBuffer, nCount*2, 1.0f/static_cast<float>(MIXING_CLIPMAX));
 
 		_asm stmxcsr sse_state;
-		sse_eqstate = sse_state | 0xFF80;
+		sse_eqstate = sse_state | 0xFF80; // set flush-to-zero, denormals-are-zero, round-to-zero, mask all exception, leave flags alone
 		_asm ldmxcsr sse_eqstate;
 		for (UINT b=0; b<MAX_EQ_BANDS; b++)
 		{
@@ -345,20 +346,17 @@ void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount, CSound
 		}
 		_asm ldmxcsr sse_state;
 
-		FloatToMonoMix(MixFloatBuffer, pbuffer, nCount*2, config.getFloatToInt());
+		FloatToMonoMix(MixFloatBuffer, pbuffer, nCount*2, static_cast<float>(MIXING_CLIPMAX));
 
 	} else
 
-#endif // ENABLE_MMX
 #endif // ENABLE_SSE
 
-#ifdef ENABLE_3DNOW
+#ifdef ENABLE_X86_AMD
 
-	// We still perform the MMX check because the user can enable/disable this
-
-	if(GetProcSupport() & PROCSUPPORT_3DNOW)
+	if(GetProcSupport() & PROCSUPPORT_AMD_3DNOW)
 	{ 
-		MonoMixToFloat(pbuffer, MixFloatBuffer, nCount*2, config.getIntToFloat());
+		MonoMixToFloat(pbuffer, MixFloatBuffer, nCount*2, 1.0f/static_cast<float>(MIXING_CLIPMAX));
 
 		for (UINT b=0; b<MAX_EQ_BANDS; b++)
 		{
@@ -367,14 +365,14 @@ void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount, CSound
 				AMD_StereoEQ(&gEQ[b], &gEQ[b+MAX_EQ_BANDS], MixFloatBuffer, nCount);
 		}
 
-		FloatToMonoMix(MixFloatBuffer, pbuffer, nCount*2, config.getFloatToInt());
+		FloatToMonoMix(MixFloatBuffer, pbuffer, nCount*2, static_cast<float>(MIXING_CLIPMAX));
 		
 	} else
-#endif // ENABLE_3DNOW
+#endif // ENABLE_X86_AMD
 
 	{	
 
-		StereoMixToFloat(pbuffer, MixFloatBuffer, MixFloatBuffer+MIXBUFFERSIZE, nCount, config.getIntToFloat());
+		StereoMixToFloat(pbuffer, MixFloatBuffer, MixFloatBuffer+MIXBUFFERSIZE, nCount, 1.0f/static_cast<float>(MIXING_CLIPMAX));
 		
 		for (UINT bl=0; bl<MAX_EQ_BANDS; bl++)
 		{
@@ -385,7 +383,7 @@ void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount, CSound
 			if ((gEQ[br].bEnable) && (gEQ[br].Gain != 1.0f)) EQFilter(&gEQ[br], MixFloatBuffer+MIXBUFFERSIZE, nCount);
 		}
 
-		FloatToStereoMix(MixFloatBuffer, MixFloatBuffer+MIXBUFFERSIZE, pbuffer, nCount, config.getFloatToInt());
+		FloatToStereoMix(MixFloatBuffer, MixFloatBuffer+MIXBUFFERSIZE, pbuffer, nCount, static_cast<float>(MIXING_CLIPMAX));
 
 	}
 }
@@ -394,10 +392,10 @@ void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount, CSound
 CEQ::CEQ()
 //--------
 {
-	#if defined(ENABLE_MMX) || defined(ENABLE_SSE)
+	#if defined(ENABLE_SSE) || defined(ENABLE_X86_AMD)
 		ALWAYS_ASSERT(((uintptr_t)&(gEQ[0])) % 4 == 0);
 		ALWAYS_ASSERT(((uintptr_t)&(gEQ[1])) % 4 == 0);
-	#endif
+	#endif // ENABLE_SSE || ENABLE_X86_AMD
 	memcpy(gEQ, gEQDefaults, sizeof(gEQ));
 }
 
@@ -517,3 +515,34 @@ void CEQ::SetEQGains(const UINT *pGains, UINT nGains, const UINT *pFreqs, BOOL b
 	Initialize(bReset, MixingFreq);
 }
 
+
+
+void CQuadEQ::Initialize(BOOL bReset, DWORD MixingFreq)
+//-----------------------------------------------------
+{
+	front.Initialize(bReset, MixingFreq);
+	rear.Initialize(bReset, MixingFreq);
+}
+
+void CQuadEQ::SetEQGains(const UINT *pGains, UINT nGains, const UINT *pFreqs, BOOL bReset, DWORD MixingFreq)
+//----------------------------------------------------------------------------------------------------------
+{
+	front.SetEQGains(pGains, nGains, pFreqs, bReset, MixingFreq);
+	rear.SetEQGains(pGains, nGains, pFreqs, bReset, MixingFreq);
+}
+
+void CQuadEQ::Process(int *frontBuffer, int *rearBuffer, float *tempFloatBuffer, UINT nCount, UINT nChannels)
+//-----------------------------------------------------------------------------------------------------------
+{
+	if(nChannels == 1)
+	{
+		front.ProcessMono(frontBuffer, tempFloatBuffer, nCount);
+	} else if(nChannels == 2)
+	{
+		front.ProcessStereo(frontBuffer, tempFloatBuffer, nCount);
+	} else if(nChannels == 4)
+	{
+		front.ProcessStereo(frontBuffer, tempFloatBuffer, nCount);
+		rear.ProcessStereo(rearBuffer, tempFloatBuffer, nCount);
+	}
+}

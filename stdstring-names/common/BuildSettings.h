@@ -44,11 +44,11 @@
 // Generate inline assembly using MMX instructions (only used when the CPU supports it).
 #define ENABLE_MMX
 
-// Generate inline assembly using 3DNOW instructions (only used when the CPU supports it).
-#define ENABLE_3DNOW
-
 // Generate inline assembly using SSE instructions (only used when the CPU supports it).
 #define ENABLE_SSE
+
+// Generate inline assembly using AMD specific instruction set extensions (only used when the CPU supports it).
+#define ENABLE_X86_AMD
 
 #endif // ENABLE_ASM
 
@@ -171,6 +171,12 @@
 
 #if defined(ENABLE_TESTS) && defined(MODPLUG_NO_FILESAVE)
 #undef MODPLUG_NO_FILESAVE // tests require file saving
+#endif
+
+#if !defined(NO_LIBMODPLUG)
+#if !defined(LIBOPENMPT_BUILD) || (defined(LIBOPENMPT_BUILD) && defined(_WIN32) && !defined(LIBOPENMPT_BUILD_DLL))
+#define NO_LIBMODPLUG // libmodplug interface emulation requires libopenmpt dll build on windows
+#endif
 #endif
 
 #if !defined(NO_WINAMP)
