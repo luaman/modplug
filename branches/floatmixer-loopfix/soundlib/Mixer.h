@@ -8,6 +8,8 @@
  */
 
 
+#pragma once
+
 //#define MPT_INTMIXER
 
 #ifdef MPT_INTMIXER
