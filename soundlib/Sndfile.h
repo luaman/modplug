@@ -291,9 +291,6 @@ private:
 	mixsample_t MixRearBuffer_[MIXBUFFERSIZE * 2];
 	int MixSoundBuffer[MIXBUFFERSIZE * 4];
 	int MixRearBuffer[MIXBUFFERSIZE * 2];
-#ifndef NO_REVERB
-	int MixReverbBuffer[MIXBUFFERSIZE * 2];
-#endif
 	// Non-interleaved plugin processing buffer
 	float MixFloatBuffer[2][MIXBUFFERSIZE];
 	LONG gnDryLOfsVol;
