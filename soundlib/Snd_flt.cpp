@@ -107,21 +107,23 @@ void CSoundFile::SetupChannelFilter(ModChannel *pChn, bool bReset, int flt_modif
 		pChn->nFilter_A0 = 1.0f - fg;
 		pChn->nFilter_B0 = fb0;
 		pChn->nFilter_B1 = fb1;
-		pChn->nFilter_HP = -1;
+		//pChn->nFilter_HP = -1;
+		pChn->nFilter_HPf = 1.0f;
 		break;
 
 	default:
 		pChn->nFilter_A0 = fg;
 		pChn->nFilter_B0 = fb0;
 		pChn->nFilter_B1 = fb1;
-		pChn->nFilter_HP = 0;
+		//pChn->nFilter_HP = 0;
+		pChn->nFilter_HPf = 0.0f;
 		break;
 	}
 	
 	if (bReset)
 	{
-		pChn->nFilter_Y1 = pChn->nFilter_Y2 = 0;
-		pChn->nFilter_Y3 = pChn->nFilter_Y4 = 0;
+		pChn->nFilter_Y[0][0] = pChn->nFilter_Y[0][1] = 0.0f;
+		pChn->nFilter_Y[1][0] = pChn->nFilter_Y[1][1] = 0.0f;
 	}
 
 }

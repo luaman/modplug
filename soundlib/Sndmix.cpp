@@ -336,7 +336,7 @@ UINT CSoundFile::Read(LPVOID lpDestBuffer, UINT count, void * const *outputBuffe
 		// Graphic Equalizer
 		if (m_MixerSettings.DSPMask & SNDDSP_EQ)
 		{
-			m_EQ.Process(MixSoundBuffer, MixRearBuffer, MixFloatBuffer, lCount, m_MixerSettings.gnChannels);
+			m_EQ.Process(MixSoundBuffer, MixRearBuffer, MixFloatBuffer[0], lCount, m_MixerSettings.gnChannels);
 		}
 #endif // NO_EQ
 
@@ -1991,7 +1991,7 @@ BOOL CSoundFile::ReadNote()
 #endif
 
 		// Check for too big nInc
-		if (((pChn->nInc >> 16) + 1) >= (LONG)(pChn->nLoopEnd - pChn->nLoopStart)) pChn->dwFlags.reset(CHN_LOOP);
+		//if (((pChn->nInc >> 16) + 1) >= (int32)(pChn->nLoopEnd - pChn->nLoopStart)) pChn->dwFlags.reset(CHN_LOOP);
 		pChn->newLeftVol = pChn->newRightVol = 0;
 		pChn->pCurrentSample = ((pChn->pSample) && (pChn->nLength) && (pChn->nInc)) ? pChn->pSample : NULL;
 		if (pChn->pCurrentSample)

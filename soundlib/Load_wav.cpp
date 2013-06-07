@@ -35,7 +35,6 @@ bool CopyWavChannel(ModSample &sample, const FileReader &file, size_t channelInd
 
 	const uint8 *inBuf = reinterpret_cast<const uint8 *>(file.GetRawData());
 	CopySample<SampleConverter>(sample.pSample, sample.nLength, 1, inBuf + offset, file.BytesLeft() - offset, numChannels);
-	CSoundFile::AdjustSampleLoop(sample);
 	return true;
 }
 
@@ -172,6 +171,7 @@ bool CSoundFile::ReadWav(FileReader &file, ModLoadingFlags loadFlags)
 				CopyWavChannel<ReadBigIntTo16PCM<4, 2, 3> >(sample, sampleChunk, channel, wavFile.GetNumChannels());
 			}
 		}
+		sample.PrecomputeLoops(*this, false);
 
 	}
 

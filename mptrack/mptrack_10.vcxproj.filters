@@ -870,6 +870,18 @@
     <ClInclude Include="Vstplug.h">
       <Filter>Header Files\mptrack</Filter>
     </ClInclude>
+    <ClInclude Include="..\soundlib\FloatMixer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\soundlib\Mixer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\soundlib\MixerInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\soundlib\IntMixer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\common\Logging.h">
       <Filter>Header Files\common</Filter>
     </ClInclude>

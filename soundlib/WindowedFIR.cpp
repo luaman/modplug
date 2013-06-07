@@ -12,11 +12,11 @@
 #include "stdafx.h"
 #include "WindowedFIR.h"
 #include <math.h>
+#include "../common/misc_util.h"
 
 // -> CODE#0025
 // -> DESC="enable polyphase resampling on stereo samples"
 // -> !!! stolen from modplug-xmms sourceforge project !!!
-
 
 float CWindowedFIR::coef( int _PCnr, float _POfs, float _PCut, int _PWidth, int _PType ) //float _PPos, float _PFc, int _PLen )
 {	
@@ -26,10 +26,13 @@ float CWindowedFIR::coef( int _PCnr, float _POfs, float _PCut, int _PWidth, int 
 	double	_LPos           = _LPosU-_LWidthM1Half;
 	double	_LPIdl          = 2.0*M_zPI/_LWidthM1;
 	double	_LWc,_LSi;
-	if( fabs(_LPos)<M_zEPS ) {	
+	if( fabs(_LPos)<M_zEPS )
+	{
 		_LWc	= 1.0;
 		_LSi	= _PCut;
-	} else {	
+	} else
+	{
+		// Window function
 		switch( _PType )
 		{	
 		case WFIR_HANN:
@@ -66,7 +69,8 @@ float CWindowedFIR::coef( int _PCnr, float _POfs, float _PCut, int _PWidth, int 
 	return (float)(_LWc*_LSi);
 }
 
-void CWindowedFIR::InitTable(double WFIRCutoff, uint8 WFIRType) {
+void CWindowedFIR::InitTable(double WFIRCutoff, uint8 WFIRType)
+{
 	int _LPcl;
 	float _LPcllen	= (float)(1L<<WFIR_FRACBITS);	// number of precalculated lines for 0..1 (-1..0)
 	float _LNorm	= 1.0f / (float)(2.0f * _LPcllen);
@@ -82,20 +86,15 @@ void CWindowedFIR::InitTable(double WFIRCutoff, uint8 WFIRType) {
 		}
 		_LGain = 1.0f/_LGain;
 		for( _LCc=0;_LCc<WFIR_WIDTH;_LCc++ )
-		{	float _LCoef = (float)floor( 0.5 + _LScale*_LCoefs[_LCc]*_LGain );
-		lut[_LIdx+_LCc] = (signed short)( (_LCoef<-_LScale)?-_LScale:((_LCoef>_LScale)?_LScale:_LCoef) );
+		{
+			float _LCoef = floorf( 0.5f + _LScale*_LCoefs[_LCc]*_LGain );
+			float _LCoeff = _LCoefs[_LCc]*_LGain;
+			lut[_LIdx+_LCc] = (signed short)( (_LCoef<-_LScale)?-_LScale:((_LCoef>_LScale)?_LScale:_LCoef) );
+			lutf[_LIdx+_LCc] = _LCoeff;
 		}
 	}
 }
 
-
-CWindowedFIR::CWindowedFIR()
-{	
-}
-
-CWindowedFIR::~CWindowedFIR()
-{	// nothing todo
-}
 
 
 // -! BEHAVIOUR_CHANGE#0025

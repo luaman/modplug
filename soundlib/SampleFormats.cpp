@@ -308,7 +308,7 @@ bool CSoundFile::ReadSampleFromSong(SAMPLEINDEX targetSample, const CSoundFile &
 		{
 			SmpLength nSize = sourceSmp.GetSampleSizeInBytes();
 			memcpy(Samples[targetSample].pSample, sourceSmp.pSample, nSize);
-			AdjustSampleLoop(Samples[targetSample]);
+			Samples[targetSample].PrecomputeLoops(*this, false);
 		}
 	}
 
@@ -357,7 +357,7 @@ bool CSoundFile::ReadWAVSample(SAMPLEINDEX nSample, FileReader &file, FileReader
 			return false;
 		}
 		IMAADPCMUnpack16((int16 *)sample.pSample, sample.nLength, sampleChunk.GetRawData(), sampleChunk.BytesLeft(), wavFile.GetBlockAlign());
-		AdjustSampleLoop(sample);
+		sample.PrecomputeLoops(*this, false);
 	} else if(wavFile.GetSampleFormat() == WAVFormatChunk::fmtMP3)
 	{
 		// MP3 in WAV
@@ -379,6 +379,7 @@ bool CSoundFile::ReadWAVSample(SAMPLEINDEX nSample, FileReader &file, FileReader
 		}
 
 		sampleIO.ReadSample(sample, sampleChunk);
+		Samples[nSample].PrecomputeLoops(*this, false);
 	}
 
 	if(wsmpChunk != nullptr)
@@ -944,6 +945,7 @@ bool CSoundFile::ReadS3ISample(SAMPLEINDEX nSample, const LPBYTE lpMemFile, DWOR
 		SampleIO::littleEndian,
 		SampleIO::unsignedPCM)
 		.ReadSample(sample, chunk);
+	sample.PrecomputeLoops(*this, false);
 
 	return true;
 }
@@ -1048,6 +1050,7 @@ bool CSoundFile::ReadXIInstrument(INSTRUMENTINDEX nInstr, FileReader &file)
 		if(sampleMap[i])
 		{
 			sampleFlags[i].ReadSample(Samples[sampleMap[i]], file);
+			Samples[sampleMap[i]].PrecomputeLoops(*this, false);
 		}
 	}
 
@@ -1176,6 +1179,7 @@ bool CSoundFile::ReadXISample(SAMPLEINDEX nSample, FileReader &file)
 
 	// Read sample data
 	sampleHeader.GetSampleFormat().ReadSample(Samples[nSample], file);
+	Samples[nSample].PrecomputeLoops(*this, false);
 
 	return true;
 }
@@ -1518,6 +1522,7 @@ bool CSoundFile::ReadAIFFSample(SAMPLEINDEX nSample, FileReader &file)
 	}
 
 	mptSample.Convert(MOD_TYPE_IT, GetType());
+	mptSample.PrecomputeLoops(*this, false);
 	return true;
 }
 
@@ -1547,6 +1552,7 @@ bool CSoundFile::ReadITSSample(SAMPLEINDEX nSample, FileReader &file, bool rewin
 	Samples[nSample].Convert(MOD_TYPE_IT, GetType());
 
 	sampleHeader.GetSampleFormat().ReadSample(Samples[nSample], file);
+	Samples[nSample].PrecomputeLoops(*this, false);
 	return true;
 }
 
@@ -1907,6 +1913,7 @@ bool CSoundFile::Read8SVXSample(SAMPLEINDEX nSample, LPBYTE lpMemFile, DWORD dwF
 						SampleIO::bigEndian,
 						SampleIO::signedPCM)
 						.ReadSample(sample, chunk);
+					sample.PrecomputeLoops(*this, false);
 				}
 			}
 			break;
@@ -2129,6 +2136,7 @@ bool CSoundFile::ReadFLACSample(SAMPLEINDEX sample, FileReader &file)
 	if(client.ready && Samples[sample].pSample != nullptr)
 	{
 		Samples[sample].Convert(MOD_TYPE_IT, GetType());
+		Samples[sample].PrecomputeLoops(*this, false);
 		return true;
 	}
 #else
@@ -2465,6 +2473,7 @@ bool CSoundFile::ReadMP3Sample(SAMPLEINDEX sample, FileReader &file)
 	if(Samples[sample].pSample != nullptr)
 	{
 		Samples[sample].Convert(MOD_TYPE_IT, GetType());
+		Samples[sample].PrecomputeLoops(*this, false);
 		return true;
 	}
 #else

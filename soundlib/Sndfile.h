@@ -20,7 +20,6 @@
 #include <bitset>
 #include <set>
 #include "Snd_defs.h"
-#include "tuning.h"
 #include "MIDIMacros.h"
 #ifdef MODPLUG_TRACKER
 #include "../mptrack/MIDIMapping.h"
@@ -34,6 +33,7 @@
 #include "RowVisitor.h"
 #include "Message.h"
 
+#include "Mixer.h"
 #include "Resampler.h"
 #include "../sounddsp/Reverb.h"
 #include "../sounddsp/AGC.h"
@@ -181,6 +181,7 @@ DECLARE_FLAGSET(ModSpecificFlag)
 
 
 class CTuningCollection;
+class FileReader;
 #ifdef MODPLUG_TRACKER
 class CModDoc;
 #endif // MODPLUG_TRACKER
@@ -285,13 +286,16 @@ private: //Misc data
 	FlagSet<ModSpecificFlag, uint16> m_ModFlags;
 
 private:
-	// Front Mix Buffer (Also room for interleaved rear mix)
+	// Interleaved Front Mix Buffer (Also room for interleaved rear mix)
+	mixsample_t MixSoundBuffer_[MIXBUFFERSIZE * 4];
+	mixsample_t MixRearBuffer_[MIXBUFFERSIZE * 2];
 	int MixSoundBuffer[MIXBUFFERSIZE * 4];
 	int MixRearBuffer[MIXBUFFERSIZE * 2];
 #ifndef NO_REVERB
 	int MixReverbBuffer[MIXBUFFERSIZE * 2];
 #endif
-	float MixFloatBuffer[MIXBUFFERSIZE * 2];
+	// Non-interleaved plugin processing buffer
+	float MixFloatBuffer[2][MIXBUFFERSIZE];
 	LONG gnDryLOfsVol;
 	LONG gnDryROfsVol;
 
@@ -599,6 +603,8 @@ public:
 	bool HasPositionChanged() { bool b = m_bPositionChanged; m_bPositionChanged = false; return b; }
 	bool IsRenderingToDisc() const { return m_bIsRendering; }
 
+	void PrecomputeSampleLoops(bool updateChannels = false);
+
 public:
 	// Mixer Config
 	void SetMixerSettings(const MixerSettings &mixersettings);
@@ -722,13 +728,13 @@ public:
 	// Check whether a given sample is used by a given instrument.
 	bool IsSampleReferencedByInstrument(SAMPLEINDEX sample, INSTRUMENTINDEX instr) const;
 
+	ModInstrument *AllocateInstrument(INSTRUMENTINDEX instr, SAMPLEINDEX assignedSample = 0);
 	bool DestroyInstrument(INSTRUMENTINDEX nInstr, deleteInstrumentSamples removeSamples);
 	bool IsSampleUsed(SAMPLEINDEX nSample) const;
 	bool IsInstrumentUsed(INSTRUMENTINDEX nInstr) const;
 	bool RemoveInstrumentSamples(INSTRUMENTINDEX nInstr);
 	SAMPLEINDEX DetectUnusedSamples(std::vector<bool> &sampleUsed) const;
 	SAMPLEINDEX RemoveSelectedSamples(const std::vector<bool> &keepSamples);
-	static void AdjustSampleLoop(ModSample &sample);
 
 	// Samples file I/O
 	bool ReadSampleFromFile(SAMPLEINDEX nSample, const LPBYTE lpMemFile, DWORD dwFileLength);
@@ -786,12 +792,7 @@ public:
 	void ApplyFinalOutputGainFloat(float *beg, float *end);
 #endif
 
-	// System-Dependant functions
 public:
-	static void *AllocateSample(UINT nbytes);
-	static void FreeSample(void *p);
-
-	ModInstrument *AllocateInstrument(INSTRUMENTINDEX instr, SAMPLEINDEX assignedSample = 0);
 
 	// WAV export
 	UINT Normalize24BitBuffer(LPBYTE pbuffer, UINT cbsizebytes, DWORD lmax24, DWORD dwByteInc);
@@ -832,7 +833,6 @@ inline IMixPlugin* CSoundFile::GetInstrumentPlugin(INSTRUMENTINDEX instr)
 // Low-level Mixing functions
 
 #define SCRATCH_BUFFER_SIZE 64 //Used for plug's final processing (cleanup)
-#define VOLUMERAMPPRECISION	12
 #define FADESONGDELAY		100
 
 #define MOD2XMFineTune(k)	((int)( (signed char)((k)<<4) ))

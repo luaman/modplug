@@ -26,7 +26,7 @@
 	then calculate gain and scale filter coefs to have unity gain.
   ------------------------------------------------------------------------------------------------
 */
-// quantizer scale of window coefs
+// quantizer scale of window coefs - only required for integer mixing
 #define WFIR_QUANTBITS		15
 #define WFIR_QUANTSCALE		(1L<<WFIR_QUANTBITS)
 #define WFIR_8SHIFT			(WFIR_QUANTBITS-8)
@@ -37,18 +37,20 @@
 // number of samples in window
 #define WFIR_LOG2WIDTH		3
 #define WFIR_WIDTH			(1L<<WFIR_LOG2WIDTH)
-#define WFIR_SMPSPERWING	((WFIR_WIDTH-1)>>1)
 // cutoff (1.0 == pi/2)
 //float WFIR_CUTOFF			= 0.5f;//0.75f;	//0.90f;
 // wfir type
-#define WFIR_HANN			0
-#define WFIR_HAMMING		1
-#define WFIR_BLACKMANEXACT	2
-#define WFIR_BLACKMAN3T61	3
-#define WFIR_BLACKMAN3T67	4
-#define WFIR_BLACKMAN4T92	5
-#define WFIR_BLACKMAN4T74	6
-#define WFIR_KAISER4T		7
+enum WFIRType
+{
+	WFIR_HANN			= 0,
+	WFIR_HAMMING		= 1,
+	WFIR_BLACKMANEXACT	= 2,
+	WFIR_BLACKMAN3T61	= 3,
+	WFIR_BLACKMAN3T67	= 4,
+	WFIR_BLACKMAN4T92	= 5,
+	WFIR_BLACKMAN4T74	= 6,
+	WFIR_KAISER4T		= 7,
+};
 //int WFIR_TYPE				= WFIR_KAISER4T;//WFIR_BLACKMANEXACT;
 //int WFIR_TYPE				= TrackerSettings::Instance().gbWFIRType;
 // wfir help
@@ -56,7 +58,6 @@
 #define M_zPI				3.1415926535897932384626433832795
 #endif
 #define M_zEPS				1e-8
-#define M_zBESSELEPS		1e-21
 
 
 // fir interpolation
@@ -67,10 +68,9 @@
 class CWindowedFIR
 {
 public:
-	CWindowedFIR();
-	~CWindowedFIR();
 	float coef(int,float,float,int,int);
 	void InitTable(double WFIRCutoff, uint8 WFIRType);
 	signed short lut[WFIR_LUTLEN*WFIR_WIDTH];
+	float lutf[WFIR_LUTLEN*WFIR_WIDTH];
 
 };
