@@ -18,13 +18,41 @@
 #include "Resampler.h"
 #include "WindowedFIR.h"
 
+#ifdef MPT_INTMIXER
+#include "IntMixer.h"
+#else
+#include "FloatMixer.h"
+#endif // MPT_INTMIXER
 
-// 4x256 taps polyphase FIR resampling filter
-#define gFastSinc CResampler::FastSincTable
+
+template<typename T>
+static void InterleaveStereo(const T *inputL, const T *inputR, T *output, size_t numSamples)
+//------------------------------------------------------------------------------------------
+{
+	while(numSamples--)
+	{
+		*(output++) = *(inputL++);
+		*(output++) = *(inputR++);
+	}
+}
+
+
+template<typename T>
+static void DeinterleaveStereo(const T *input, T *outputL, T *outputR, size_t numSamples)
+//---------------------------------------------------------------------------------------
+{
+	while(numSamples--)
+	{
+		*(outputL++) = *(input++);
+		*(outputR++) = *(input++);
+	}
+}
 
 
 /////////////////////////////////////////////////////
 // Mixing Macros
+
+#ifdef MPT_INTMIXER
 
 #define SNDMIX_BEGINSAMPLELOOP8\
 	register ModChannel * const pChn = pChannel;\
@@ -80,14 +108,14 @@
 #define SNDMIX_GETMONOVOL8HQSRC\
 	int poshi = nPos >> 16;\
 	int poslo = (nPos >> 6) & 0x3FC;\
-	int vol = (gFastSinc[poslo]*p[poshi-1] + gFastSinc[poslo+1]*p[poshi]\
-		 + gFastSinc[poslo+2]*p[poshi+1] + gFastSinc[poslo+3]*p[poshi+2]) >> 6;\
+	int vol = (CResampler::FastSincTable[poslo]*p[poshi-1] + CResampler::FastSincTable[poslo+1]*p[poshi]\
+		 + CResampler::FastSincTable[poslo+2]*p[poshi+1] + CResampler::FastSincTable[poslo+3]*p[poshi+2]) >> 6;\
 
 #define SNDMIX_GETMONOVOL16HQSRC\
 	int poshi = nPos >> 16;\
 	int poslo = (nPos >> 6) & 0x3FC;\
-	int vol = (gFastSinc[poslo]*p[poshi-1] + gFastSinc[poslo+1]*p[poshi]\
-		 + gFastSinc[poslo+2]*p[poshi+1] + gFastSinc[poslo+3]*p[poshi+2]) >> 14;\
+	int vol = (CResampler::FastSincTable[poslo]*p[poshi-1] + CResampler::FastSincTable[poslo+1]*p[poshi]\
+		 + CResampler::FastSincTable[poslo+2]*p[poshi+1] + CResampler::FastSincTable[poslo+3]*p[poshi+2]) >> 14;\
 
 // 8-taps polyphase
 #define SNDMIX_GETMONOVOL8KAISER\
@@ -177,18 +205,18 @@
 #define SNDMIX_GETSTEREOVOL8HQSRC\
 	int poshi = nPos >> 16;\
 	int poslo = (nPos >> 6) & 0x3FC;\
-	int vol_l = (gFastSinc[poslo]*p[poshi*2-2] + gFastSinc[poslo+1]*p[poshi*2]\
-		 + gFastSinc[poslo+2]*p[poshi*2+2] + gFastSinc[poslo+3]*p[poshi*2+4]) >> 6;\
-	int vol_r = (gFastSinc[poslo]*p[poshi*2-1] + gFastSinc[poslo+1]*p[poshi*2+1]\
-		 + gFastSinc[poslo+2]*p[poshi*2+3] + gFastSinc[poslo+3]*p[poshi*2+5]) >> 6;\
+	int vol_l = (CResampler::FastSincTable[poslo]*p[poshi*2-2] + CResampler::FastSincTable[poslo+1]*p[poshi*2]\
+		 + CResampler::FastSincTable[poslo+2]*p[poshi*2+2] + CResampler::FastSincTable[poslo+3]*p[poshi*2+4]) >> 6;\
+	int vol_r = (CResampler::FastSincTable[poslo]*p[poshi*2-1] + CResampler::FastSincTable[poslo+1]*p[poshi*2+1]\
+		 + CResampler::FastSincTable[poslo+2]*p[poshi*2+3] + CResampler::FastSincTable[poslo+3]*p[poshi*2+5]) >> 6;\
 
 #define SNDMIX_GETSTEREOVOL16HQSRC\
 	int poshi = nPos >> 16;\
 	int poslo = (nPos >> 6) & 0x3FC;\
-	int vol_l = (gFastSinc[poslo]*p[poshi*2-2] + gFastSinc[poslo+1]*p[poshi*2]\
-		 + gFastSinc[poslo+2]*p[poshi*2+2] + gFastSinc[poslo+3]*p[poshi*2+4]) >> 14;\
-	int vol_r = (gFastSinc[poslo]*p[poshi*2-1] + gFastSinc[poslo+1]*p[poshi*2+1]\
-		 + gFastSinc[poslo+2]*p[poshi*2+3] + gFastSinc[poslo+3]*p[poshi*2+5]) >> 14;\
+	int vol_l = (CResampler::FastSincTable[poslo]*p[poshi*2-2] + CResampler::FastSincTable[poslo+1]*p[poshi*2]\
+		 + CResampler::FastSincTable[poslo+2]*p[poshi*2+2] + CResampler::FastSincTable[poslo+3]*p[poshi*2+4]) >> 14;\
+	int vol_r = (CResampler::FastSincTable[poslo]*p[poshi*2-1] + CResampler::FastSincTable[poslo+1]*p[poshi*2+1]\
+		 + CResampler::FastSincTable[poslo+2]*p[poshi*2+3] + CResampler::FastSincTable[poslo+3]*p[poshi*2+5]) >> 14;\
 
 // -> CODE#0025
 // -> DESC="enable polyphase resampling on stereo samples"
@@ -317,16 +345,16 @@
 static forceinline void ProcessMonoFilter(int &vol, ModChannel *pChn)
 //-------------------------------------------------------------------
 {
-	float fy1 = pChn->nFilter_Y1;
-	float fy2 = pChn->nFilter_Y2;
+	float fy1 = pChn->nFilter_Y[0][0];
+	float fy2 = pChn->nFilter_Y[0][1];
 
 	float fy = ((float)vol * pChn->nFilter_A0 + ClipFilter(fy1) * pChn->nFilter_B0 + ClipFilter(fy2) * pChn->nFilter_B1);
 	fy2 = fy1;
 	fy1 = fy - (float)(vol & pChn->nFilter_HP);
 	vol = (int)fy;
 
-	pChn->nFilter_Y1 = fy1;
-	pChn->nFilter_Y2 = fy2;
+	pChn->nFilter_Y[0][0] = fy1;
+	pChn->nFilter_Y[0][1] = fy2;
 }
 
 
@@ -335,28 +363,28 @@ static forceinline void ProcessStereoFilter(int &vol_l, int &vol_r, ModChannel *
 //-----------------------------------------------------------------------------------
 {
 	// Left channel
-	float fy1 = pChn->nFilter_Y1;
-	float fy2 = pChn->nFilter_Y2;
+	float fy1 = pChn->nFilter_Y[0][0];
+	float fy2 = pChn->nFilter_Y[0][1];
 
 	float fy = ((float)vol_l * pChn->nFilter_A0 + ClipFilter(fy1) * pChn->nFilter_B0 + ClipFilter(fy2) * pChn->nFilter_B1);
 	fy2 = fy1;
 	fy1 = fy - (float)(vol_l & pChn->nFilter_HP);
 	vol_l = (int)fy;
 
-	pChn->nFilter_Y1 = fy1;
-	pChn->nFilter_Y2 = fy2;
+	pChn->nFilter_Y[0][0] = fy1;
+	pChn->nFilter_Y[0][1] = fy2;
 
 	// Right channel
-	fy1 = pChn->nFilter_Y3;
-	fy2 = pChn->nFilter_Y4;
+	fy1 = pChn->nFilter_Y[1][0];
+	fy2 = pChn->nFilter_Y[1][1];
 
 	fy = ((float)vol_r * pChn->nFilter_A0 + ClipFilter(fy1) * pChn->nFilter_B0 + ClipFilter(fy2) * pChn->nFilter_B1);
 	fy2 = fy1;
 	fy1 = fy - (float)(vol_r & pChn->nFilter_HP);
 	vol_r = (int)fy;
 
-	pChn->nFilter_Y3 = fy1;
-	pChn->nFilter_Y4 = fy2;
+	pChn->nFilter_Y[1][0] = fy1;
+	pChn->nFilter_Y[1][1] = fy2;
 }
 
 
@@ -457,13 +485,6 @@ typedef VOID (* LPMIXINTERFACE)(ModChannel *, const CResampler *, int *, int *);
 		pChannel->rightVol = rampRightVol >> VOLUMERAMPPRECISION;\
 	}
 
-
-/////////////////////////////////////////////////////
-//
-
-void InitMixBuffer(int *pBuffer, UINT nSamples);
-void EndChannelOfs(ModChannel *pChannel, int *pBuffer, UINT nSamples);
-void StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLONG lpLOfs);
 
 
 /////////////////////////////////////////////////////
@@ -1206,18 +1227,9 @@ END_RAMPMIX_STFLT_INTERFACE()
 // -! BEHAVIOUR_CHANGE#0025
 #endif
 
-/////////////////////////////////////////////////////////////////////////////////////
-//
-// Mix function tables
-//
-//
-// Index is as follow:
-//	[b1-b0]	format (8-bit-mono, 16-bit-mono, 8-bit-stereo, 16-bit-stereo)
-//	[b2]	ramp
-//	[b3]	filter
-//	[b5-b4]	src type
-//
+#endif // MPT_INTMIXER
 
+#ifdef MPT_INTMIXER
 #define MIXNDX_16BIT	0x01
 #define MIXNDX_STEREO	0x02
 #define MIXNDX_RAMP		0x04
@@ -1315,120 +1327,235 @@ const LPMIXINTERFACE gpFastMixFunctionTable[2*16] =
 	FilterMono8BitLinearRampMix,FilterMono16BitLinearRampMix,FilterStereo8BitLinearRampMix,FilterStereo16BitLinearRampMix,
 };
 
+#else
+
+namespace MixFuncTable
+{
+#ifdef MPT_INTMIXER
+	typedef Int8MToIntS I8M;
+	typedef Int16MToIntS I16M;
+	typedef Int8SToIntS I8S;
+	typedef Int16SToIntS I16S;
+#else
+	typedef Int8MToFloatS I8M;
+	typedef Int16MToFloatS I16M;
+	typedef Int8SToFloatS I8S;
+	typedef Int16SToFloatS I16S;
+#endif // MPT_INTMIXER
+
+// Table index:
+//	[b1-b0]	format (8-bit-mono, 16-bit-mono, 8-bit-stereo, 16-bit-stereo)
+//	[b2]	ramp
+//	[b3]	filter
+//	[b6-b4]	src type
+
+// Sample type / processing type index
+enum FunctionIndex
+{
+	ndx16Bit		= 0x01,
+	ndxStereo		= 0x02,
+	ndxRamp			= 0x04,
+	ndxFilter		= 0x08,
+};
+
+// SRC index
+enum ResamplingIndex
+{
+	ndxNoInterpolation	= 0x00,
+	ndxLinear			= 0x10,
+	ndxFastSinc			= 0x20,
+	ndxKaiser			= 0x30,
+	ndxFIRFilter		= 0x40,
+};
+
+// Build mix function table for given resampling, filter and ramping settings: One function each for 8-Bit / 16-Bit Mono / Stereo
+#define BuildMixFuncTableRamp(resampling, filter, ramp) \
+	SampleLoop<I8M, resampling<I8M>, filter<I8M>, MixMono ## ramp<I8M> >, \
+	SampleLoop<I16M, resampling<I16M>, filter<I16M>, MixMono ## ramp<I16M> >, \
+	SampleLoop<I8S, resampling<I8S>, filter<I8S>, MixStereo ## ramp<I8S> >, \
+	SampleLoop<I16S, resampling<I16S>, filter<I16S>, MixStereo ## ramp<I16S> >
+
+// Build mix function table for given resampling, filter settings: With and without ramping
+#define BuildMixFuncTableFilter(resampling, filter) \
+	BuildMixFuncTableRamp(resampling, filter, NoRamp), \
+	BuildMixFuncTableRamp(resampling, filter, Ramp)
+
+// Build mix function table for given resampling settings: With and without filter
+#define BuildMixFuncTable(resampling) \
+	BuildMixFuncTableFilter(resampling, NoFilter), \
+	BuildMixFuncTableFilter(resampling, ResonantFilter)
+
+typedef void (*MixFuncInterface)(ModChannel &, const CResampler &, mixsample_t *, int);
+const MixFuncInterface Functions[5 * 16] =
+{
+	BuildMixFuncTable(NoInterpolation),			// No SRC
+	BuildMixFuncTable(LinearInterpolation),		// Linear SRC
+	BuildMixFuncTable(FastSincInterpolation),	// HQ SRC
+	BuildMixFuncTable(PolyphaseInterpolation),	// Kaiser SRC
+	BuildMixFuncTable(FIRFilterInterpolation),	// FIR SRC
+};
+
+#undef BuildMixFuncTableRamp
+#undef BuildMixFuncTableFilter
+#undef BuildMixFuncTable
+#endif
+
+static forceinline ResamplingIndex ResamplingModeToMixFlags(uint8 resamplingMode)
+//-------------------------------------------------------------------------------
+{
+	switch(resamplingMode)
+	{
+	case SRCMODE_NEAREST:   return ndxNoInterpolation;
+	case SRCMODE_LINEAR:    return ndxLinear;
+	case SRCMODE_SPLINE:    return ndxFastSinc;
+	case SRCMODE_POLYPHASE: return ndxKaiser;
+	case SRCMODE_FIRFILTER: return ndxFIRFilter;
+	}
+	return ndxNoInterpolation;
+}
+
+} // namespace MixFuncTable
+
+
+/////////////////////////////////////////////////////
+//
+
+void InitMixBuffer(int *pBuffer, UINT nSamples);
+void EndChannelOfs(ModChannel *pChannel, int *pBuffer, UINT nSamples);
+void StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLONG lpLOfs);
+
 
 /////////////////////////////////////////////////////////////////////////
 
-static forceinline LONG GetSampleCount(ModChannel *pChn, LONG nSamples, bool bITBidiMode)
+// Returns the number of samples (in 16.16 format) that are going to be read from a sample, given a mix buffer length and the channel's playback speed.
+// Result is negative in case of backwards-playing sample.
+static forceinline int32 BufferLengthToSamples(int32 mixBufferCount, const ModChannel &chn)
+//-----------------------------------------------------------------------------------------
+{
+	return (mixBufferCount * chn.nInc + static_cast<int32>(chn.nPosLo));
+}
+
+
+// Returns the buffer length required to render a certain amount of samples, based on the channel's playback speed.
+static forceinline int32 SamplesToBufferLength(int32 numSamples, const ModChannel &chn)
+//-------------------------------------------------------------------------------------
+{
+	return std::max(1, ((numSamples << 16)/* + static_cast<int32>(chn.nPosLo) + 0xFFFF*/) / abs(chn.nInc));
+}
+
+
+// Check how many samples can be rendered without encountering loop or sample end, and also update loop position / direction
+static forceinline int32 GetSampleCount(ModChannel &chn, int32 nSamples, bool ITBidiMode)
 //---------------------------------------------------------------------------------------
 {
-	LONG nLoopStart = pChn->dwFlags[CHN_LOOP] ? pChn->nLoopStart : 0;
-	LONG nInc = pChn->nInc;
+	int32 nLoopStart = chn.dwFlags[CHN_LOOP] ? chn.nLoopStart : 0;
+	int32 nInc = chn.nInc;
 
-	if ((nSamples <= 0) || (!nInc) || (!pChn->nLength)) return 0;
+	if ((nSamples <= 0) || (!nInc) || (!chn.nLength)) return 0;
 	// Under zero ?
-	if ((LONG)pChn->nPos < nLoopStart)
+	if ((int32)chn.nPos < nLoopStart)
 	{
 		if (nInc < 0)
 		{
 			// Invert loop for bidi loops
-			LONG nDelta = ((nLoopStart - pChn->nPos) << 16) - (pChn->nPosLo & 0xffff);
-			pChn->nPos = nLoopStart | (nDelta>>16);
-			pChn->nPosLo = nDelta & 0xffff;
-			if (((LONG)pChn->nPos < nLoopStart) || (pChn->nPos >= (nLoopStart+pChn->nLength)/2))
+			int32 nDelta = ((nLoopStart - chn.nPos) << 16) - (chn.nPosLo & 0xffff);
+			chn.nPos = nLoopStart | (nDelta >> 16);
+			chn.nPosLo = nDelta & 0xffff;
+			if (((int32)chn.nPos < nLoopStart) || (chn.nPos >= (nLoopStart+chn.nLength)/2))
 			{
-				pChn->nPos = nLoopStart; pChn->nPosLo = 0;
+				chn.nPos = nLoopStart; chn.nPosLo = 0;
 			}
 			nInc = -nInc;
-			pChn->nInc = nInc;
-			pChn->dwFlags.reset(CHN_PINGPONGFLAG); // go forward
-			if(!pChn->dwFlags[CHN_LOOP] || pChn->nPos >= pChn->nLength)
+			chn.nInc = nInc;
+			chn.dwFlags.reset(CHN_PINGPONGFLAG); // go forward
+			if(!chn.dwFlags[CHN_LOOP] || chn.nPos >= chn.nLength)
 			{
-				pChn->nPos = pChn->nLength;
-				pChn->nPosLo = 0;
+				chn.nPos = chn.nLength;
+				chn.nPosLo = 0;
 				return 0;
 			}
 		} else
 		{
 			// We probably didn't hit the loop end yet (first loop), so we do nothing
-			if ((LONG)pChn->nPos < 0) pChn->nPos = 0;
+			if ((int32)chn.nPos < 0) chn.nPos = 0;
 		}
 	} else
 	// Past the end
-	if (pChn->nPos >= pChn->nLength)
+	if (chn.nPos >= chn.nLength)
 	{
-		if(!pChn->dwFlags[CHN_LOOP]) return 0; // not looping -> stop this channel
-		if(pChn->dwFlags[CHN_PINGPONGLOOP])
+		if(!chn.dwFlags[CHN_LOOP]) return 0; // not looping -> stop this channel
+		if(chn.dwFlags[CHN_PINGPONGLOOP])
 		{
 			// Invert loop
 			if (nInc > 0)
 			{
 				nInc = -nInc;
-				pChn->nInc = nInc;
+				chn.nInc = nInc;
 			}
-			pChn->dwFlags.set(CHN_PINGPONGFLAG);
+			chn.dwFlags.set(CHN_PINGPONGFLAG);
 			// adjust loop position
-			LONG nDeltaHi = (pChn->nPos - pChn->nLength);
-			LONG nDeltaLo = 0x10000 - (pChn->nPosLo & 0xffff);
-			pChn->nPos = pChn->nLength - nDeltaHi - (nDeltaLo>>16);
-			pChn->nPosLo = nDeltaLo & 0xffff;
+			int32 nDeltaHi = (chn.nPos - chn.nLength);
+			int32 nDeltaLo = 0x10000 - (chn.nPosLo & 0xffff);
+			chn.nPos = chn.nLength - nDeltaHi - (nDeltaLo>>16);
+			chn.nPosLo = nDeltaLo & 0xffff;
 			// Impulse Tracker's software mixer would put a -2 (instead of -1) in the following line (doesn't happen on a GUS)
-			if ((pChn->nPos <= pChn->nLoopStart) || (pChn->nPos >= pChn->nLength)) pChn->nPos = pChn->nLength - (bITBidiMode ? 2 : 1);
+			if ((chn.nPos <= chn.nLoopStart) || (chn.nPos >= chn.nLength)) chn.nPos = chn.nLength - (ITBidiMode ? 2 : 1);
 		} else
 		{
 			if (nInc < 0) // This is a bug
 			{
 				nInc = -nInc;
-				pChn->nInc = nInc;
+				chn.nInc = nInc;
 			}
 			// Restart at loop start
-			pChn->nPos += nLoopStart - pChn->nLength;
-			if ((LONG)pChn->nPos < nLoopStart) pChn->nPos = pChn->nLoopStart;
+			chn.nPos += nLoopStart - chn.nLength;
+			if ((int32)chn.nPos < nLoopStart) chn.nPos = chn.nLoopStart;
 		}
 	}
-	LONG nPos = pChn->nPos;
+	int32 nPos = chn.nPos;
 	// too big increment, and/or too small loop length
 	if (nPos < nLoopStart)
 	{
 		if ((nPos < 0) || (nInc < 0)) return 0;
 	}
-	if ((nPos < 0) || (nPos >= (LONG)pChn->nLength)) return 0;
-	LONG nPosLo = (USHORT)pChn->nPosLo, nSmpCount = nSamples;
+	if ((nPos < 0) || (nPos >= (int32)chn.nLength)) return 0;
+	int32 nPosLo = (uint16)chn.nPosLo, nSmpCount = nSamples;
 	if (nInc < 0)
 	{
-		LONG nInv = -nInc;
-		LONG maxsamples = 16384 / ((nInv>>16)+1);
+		int32 nInv = -nInc;
+		int32 maxsamples = 16384 / ((nInv>>16)+1);
 		if (maxsamples < 2) maxsamples = 2;
 		if (nSamples > maxsamples) nSamples = maxsamples;
-		LONG nDeltaHi = (nInv>>16) * (nSamples - 1);
-		LONG nDeltaLo = (nInv&0xffff) * (nSamples - 1);
-		LONG nPosDest = nPos - nDeltaHi + ((nPosLo - nDeltaLo) >> 16);
+		int32 nDeltaHi = (nInv>>16) * (nSamples - 1);
+		int32 nDeltaLo = (nInv&0xffff) * (nSamples - 1);
+		int32 nPosDest = nPos - nDeltaHi + ((nPosLo - nDeltaLo) >> 16);
 		if (nPosDest < nLoopStart)
 		{
-			nSmpCount = (ULONG)(((((LONGLONG)nPos - nLoopStart) << 16) + nPosLo - 1) / nInv) + 1;
+			nSmpCount = (uint32)(((((int64)nPos - nLoopStart) << 16) + nPosLo - 1) / nInv) + 1;
 		}
 	} else
 	{
-		LONG maxsamples = 16384 / ((nInc>>16)+1);
+		int32 maxsamples = 16384 / ((nInc>>16)+1);
 		if (maxsamples < 2) maxsamples = 2;
 		if (nSamples > maxsamples) nSamples = maxsamples;
-		LONG nDeltaHi = (nInc>>16) * (nSamples - 1);
-		LONG nDeltaLo = (nInc&0xffff) * (nSamples - 1);
-		LONG nPosDest = nPos + nDeltaHi + ((nPosLo + nDeltaLo)>>16);
-		if (nPosDest >= (LONG)pChn->nLength)
+		int32 nDeltaHi = (nInc>>16) * (nSamples - 1);
+		int32 nDeltaLo = (nInc&0xffff) * (nSamples - 1);
+		int32 nPosDest = nPos + nDeltaHi + ((nPosLo + nDeltaLo)>>16);
+		if (nPosDest >= (int32)chn.nLength)
 		{
-			nSmpCount = (ULONG)(((((LONGLONG)pChn->nLength - nPos) << 16) - nPosLo - 1) / nInc) + 1;
+			nSmpCount = (uint32)(((((int64)chn.nLength - nPos) << 16) - nPosLo - 1) / nInc) + 1;
 		}
 	}
 #ifdef _DEBUG
 	{
-		LONG nDeltaHi = (nInc>>16) * (nSmpCount - 1);
-		LONG nDeltaLo = (nInc&0xffff) * (nSmpCount - 1);
-		LONG nPosDest = nPos + nDeltaHi + ((nPosLo + nDeltaLo)>>16);
-		if ((nPosDest < 0) || (nPosDest > (LONG)pChn->nLength))
+		int32 nDeltaHi = (nInc>>16) * (nSmpCount - 1);
+		int32 nDeltaLo = (nInc&0xffff) * (nSmpCount - 1);
+		int32 nPosDest = nPos + nDeltaHi + ((nPosLo + nDeltaLo)>>16);
+		if ((nPosDest < 0) || (nPosDest > (int32)chn.nLength))
 		{
 			Log("Incorrect delta:\n");
 			Log("nSmpCount=%d: nPos=%5d.x%04X Len=%5d Inc=%2d.x%04X\n",
-				nSmpCount, nPos, nPosLo, pChn->nLength, pChn->nInc>>16, pChn->nInc&0xffff);
+				nSmpCount, nPos, nPosLo, chn.nLength, chn.nInc>>16, chn.nInc&0xffff);
 			return 0;
 		}
 	}
@@ -1438,60 +1565,58 @@ static forceinline LONG GetSampleCount(ModChannel *pChn, LONG nSamples, bool bIT
 	return nSmpCount;
 }
 
-
-
-
+// Render count * number of channels samples
 void CSoundFile::CreateStereoMix(int count)
 //-----------------------------------------
 {
 	LPLONG pOfsL, pOfsR;
-	CHANNELINDEX nchused, nchmixed;
 
 	if (!count) return;
-	bool ITPingPongMode = IsITPingPongMode();
-	if (m_MixerSettings.gnChannels > 2) InitMixBuffer(MixRearBuffer, count*2);
-	nchused = nchmixed = 0;
-	for(CHANNELINDEX nChn=0; nChn<m_nMixChannels; nChn++)
+	if (m_MixerSettings.gnChannels > 2) InitMixBuffer(MixRearBuffer, count * 2);
+	uint32 nchused = 0, nchmixed = 0;
+
+	const bool ITPingPongMode = IsITPingPongMode();
+	const bool realtimeMix = !IsRenderingToDisc();
+
+	for(uint32 nChn = 0; nChn < m_nMixChannels; nChn++)
 	{
-		const LPMIXINTERFACE *pMixFuncTable;
-		ModChannel * const pChannel = &Chn[ChnMix[nChn]];
-		UINT nFlags;
-		LONG nSmpCount;
-		int nsamples;
+		ModChannel &chn = Chn[ChnMix[nChn]];
+		uint32 functionNdx = 0;
 		int *pbuffer;
 
-		if (!pChannel->pCurrentSample) continue;
+		if(!chn.pCurrentSample) continue;
 		pOfsR = &gnDryROfsVol;
 		pOfsL = &gnDryLOfsVol;
-		nFlags = 0;
-		if (pChannel->dwFlags[CHN_16BIT]) nFlags |= MIXNDX_16BIT;
-		if (pChannel->dwFlags[CHN_STEREO]) nFlags |= MIXNDX_STEREO;
+		if(chn.dwFlags[CHN_16BIT]) functionNdx |= MixFuncTable::ndx16Bit;
+		if(chn.dwFlags[CHN_STEREO]) functionNdx |= MixFuncTable::ndxStereo;
 	#ifndef NO_FILTER
-		if (pChannel->dwFlags[CHN_FILTER]) nFlags |= MIXNDX_FILTER;
+		if(chn.dwFlags[CHN_FILTER]) functionNdx |= MixFuncTable::ndxFilter;
 	#endif
-		//rewbs.resamplerConf
-		nFlags |= ResamplingModeToMixFlags(pChannel->resamplingMode);
-		//end rewbs.resamplerConf
-		if ((nFlags < 0x20) && (pChannel->rightVol == pChannel->leftVol)
-		 && ((!pChannel->nRampLength) || (pChannel->rightRamp == pChannel->leftRamp)))
+
+		const MixFuncTable::ResamplingIndex resamplingMode = MixFuncTable::ResamplingModeToMixFlags(chn.resamplingMode);
+		functionNdx |= resamplingMode;
+
+#ifdef MPT_INTMIXER
+		const LPMIXINTERFACE *pMixFuncTable;
+		if ((functionNdx < 0x20) && (chn.rightVol == chn.leftVol)
+		 && ((!chn.nRampLength) || (chn.rightRamp == chn.leftRamp)))
 		{
 			pMixFuncTable = gpFastMixFunctionTable;
 		} else
 		{
 			pMixFuncTable = gpMixFunctionTable;
 		}
-		nsamples = count;
-
+#endif
 		pbuffer = MixSoundBuffer;
 #ifndef NO_REVERB
 #ifdef ENABLE_MMX
-		if((m_MixerSettings.DSPMask & SNDDSP_REVERB) && (GetProcSupport() & PROCSUPPORT_MMX) && !pChannel->dwFlags[CHN_NOREVERB])
+		if((m_MixerSettings.DSPMask & SNDDSP_REVERB) && (GetProcSupport() & PROCSUPPORT_MMX) && !chn.dwFlags[CHN_NOREVERB])
 			pbuffer = MixReverbBuffer;
-		if(pChannel->dwFlags[CHN_REVERB] && (GetProcSupport() & PROCSUPPORT_MMX))
+		if(chn.dwFlags[CHN_REVERB] && (GetProcSupport() & PROCSUPPORT_MMX))
 			pbuffer = MixReverbBuffer;
 #endif
 #endif
-		if(pChannel->dwFlags[CHN_SURROUND] && m_MixerSettings.gnChannels > 2)
+		if(chn.dwFlags[CHN_SURROUND] && m_MixerSettings.gnChannels > 2)
 			pbuffer = MixRearBuffer;
 
 		//Look for plugins associated with this implicit tracker channel.
@@ -1522,73 +1647,146 @@ void CSoundFile::CreateStereoMix(int count)
 		}
 #endif
 		nchused++;
-		////////////////////////////////////////////////////
-	SampleLooping:
-		UINT nrampsamples = nsamples;
-		if (pChannel->nRampLength > 0)
+
+		// Calculate offset of loop wrap-around buffer for this sample.
+		const int8 * const samplePointer = static_cast<const int8 *>(chn.pCurrentSample);
+		const int8 * lookaheadPointer = nullptr;
+		const SmpLength lookaheadStart = chn.nLoopEnd - InterpolationMaxLookahead;
+		// We only need to apply the loop wrap-around logic if the sample is actually looping and if interpolation is applied.
+		// If there is no interpolation happening, there is no lookahead happening the sample read-out is exact.
+		if(chn.dwFlags[CHN_LOOP] && resamplingMode != MixFuncTable::ndxNoInterpolation)
 		{
-			if ((LONG)nrampsamples > pChannel->nRampLength) nrampsamples = pChannel->nRampLength;
-		}
-		if ((nSmpCount = GetSampleCount(pChannel, nrampsamples, ITPingPongMode)) <= 0)
-		{
-			// Stopping the channel
-			pChannel->pCurrentSample = NULL;
-			pChannel->nLength = 0;
-			pChannel->nPos = 0;
-			pChannel->nPosLo = 0;
-			pChannel->nRampLength = 0;
-			EndChannelOfs(pChannel, pbuffer, nsamples);
-			*pOfsR += pChannel->nROfs;
-			*pOfsL += pChannel->nLOfs;
-			pChannel->nROfs = pChannel->nLOfs = 0;
-			pChannel->dwFlags.reset(CHN_PINGPONGFLAG);
-			continue;
-		}
-		// Should we mix this channel ?
-		bool addmix;
-		if (((nchmixed >= m_MixerSettings.m_nMaxMixChannels) && !IsRenderingToDisc())
-		 || ((!pChannel->nRampLength) && (!(pChannel->rightVol|pChannel->leftVol))))
-		{
-			LONG delta = (pChannel->nInc * (LONG)nSmpCount) + (LONG)pChannel->nPosLo;
-			pChannel->nPosLo = delta & 0xFFFF;
-			pChannel->nPos += (delta >> 16);
-			pChannel->nROfs = pChannel->nLOfs = 0;
-			pbuffer += nSmpCount*2;
-			addmix = false;
-		} else
-		// Do mixing
-		{
-			// Choose function for mixing
-			LPMIXINTERFACE pMixFunc;
-			pMixFunc = (pChannel->nRampLength) ? pMixFuncTable[nFlags|MIXNDX_RAMP] : pMixFuncTable[nFlags];
-			int *pbufmax = pbuffer + (nSmpCount*2);
-			pChannel->nROfs = - *(pbufmax-2);
-			pChannel->nLOfs = - *(pbufmax-1);
-			pMixFunc(pChannel, &m_Resampler, pbuffer, pbufmax);
-			pChannel->nROfs += *(pbufmax-2);
-			pChannel->nLOfs += *(pbufmax-1);
-			pbuffer = pbufmax;
-			addmix = true;
-		}
-		nsamples -= nSmpCount;
-		if (pChannel->nRampLength)
-		{
-			pChannel->nRampLength -= nSmpCount;
-			if (pChannel->nRampLength <= 0)
+			const bool loopEndsAtSampleEnd = chn.pModSample->uFlags[CHN_LOOP] && chn.pModSample->nLoopEnd == chn.pModSample->nLength;
+
+			SmpLength lookaheadOffset = (loopEndsAtSampleEnd ? 0 : (3 * InterpolationMaxLookahead)) + chn.pModSample->nLength - chn.nLoopEnd;
+			if(chn.InSustainLoop())
 			{
-				pChannel->nRampLength = 0;
-				pChannel->leftVol = pChannel->newLeftVol;
-				pChannel->rightVol = pChannel->newRightVol;
-				pChannel->leftRamp = pChannel->rightRamp = 0;
-				if(pChannel->dwFlags[CHN_NOTEFADE] && !pChannel->nFadeOutVol)
+				lookaheadOffset += 4 * InterpolationMaxLookahead;
+			}
+			lookaheadPointer = samplePointer + lookaheadOffset * chn.pModSample->GetBytesPerSample();
+		}
+
+		////////////////////////////////////////////////////
+		uint32 naddmix = 0;
+		int nsamples = count;
+		// Keep mixing this sample until the buffer is filled.
+		do
+		{
+			uint32 nrampsamples = nsamples;
+			int32 nSmpCount;
+			if(chn.nRampLength > 0)
+			{
+				if ((int32)nrampsamples > chn.nRampLength) nrampsamples = chn.nRampLength;
+			}
+			if((nSmpCount = GetSampleCount(chn, nrampsamples, ITPingPongMode)) <= 0)
+			{
+				// Stopping the channel
+				chn.pCurrentSample = nullptr;
+				chn.nLength = 0;
+				chn.nPos = 0;
+				chn.nPosLo = 0;
+				chn.nRampLength = 0;
+				EndChannelOfs(&chn, pbuffer, nsamples);
+				*pOfsR += chn.nROfs;
+				*pOfsL += chn.nLOfs;
+				chn.nROfs = chn.nLOfs = 0;
+				chn.dwFlags.reset(CHN_PINGPONGFLAG);
+				break;
+			}
+			// Should we mix this channel ?
+			if((nchmixed >= m_MixerSettings.m_nMaxMixChannels && realtimeMix)	// Too many channels
+				|| (!chn.nRampLength && !(chn.leftVol | chn.rightVol)))			// Channel is completely silent
+			{
+				int32 delta = BufferLengthToSamples(nSmpCount, chn);
+				chn.nPosLo = delta & 0xFFFF;
+				chn.nPos += (delta >> 16);
+				chn.nROfs = chn.nLOfs = 0;
+				pbuffer += nSmpCount * 2;
+				naddmix = 0;
+			} else
+			{
+				// Do mixing
+
+				// Loop wrap-around magic.
+				if(lookaheadPointer != nullptr)
 				{
-					pChannel->nLength = 0;
-					pChannel->pCurrentSample = nullptr;
+					const int32 readLength = BufferLengthToSamples(nSmpCount, chn) >> 16;
+					
+					chn.pCurrentSample = samplePointer;
+					if(chn.nPos >= lookaheadStart)
+					{
+						const int32 oldCount = nSmpCount;
+
+						// When going backwards - we can only go back up to lookaheadStart.
+						// When going forwards - read through the whole pre-computed wrap-around buffer if possible.
+						const int32 samplesToRead = chn.nInc < 0
+							? (chn.nPos - lookaheadStart)
+							: 2 * InterpolationMaxLookahead - (chn.nPos - lookaheadStart);
+						nSmpCount = SamplesToBufferLength(samplesToRead, chn);
+						Limit(nSmpCount, 1, oldCount);
+						chn.pCurrentSample = lookaheadPointer;
+					} else if(chn.nInc > 0 && chn.nPos + readLength >= lookaheadStart && nSmpCount > 1)
+					{
+						// We shouldn't read that far if we're not using the pre-computed wrap-around buffer.
+						const int32 oldCount = nSmpCount;
+						nSmpCount = SamplesToBufferLength(lookaheadStart - chn.nPos, chn);
+						Limit(nSmpCount, 1, oldCount - 1);
+					}
+				}
+
+
+				int *pbufmax = pbuffer + (nSmpCount*2);
+				chn.nROfs = - *(pbufmax-2);
+				chn.nLOfs = - *(pbufmax-1);
+#ifdef MPT_INTMIXER
+				// Choose function for mixing
+				LPMIXINTERFACE pMixFunc = (chn.nRampLength) ? pMixFuncTable[functionNdx|MIXNDX_RAMP] : pMixFuncTable[functionNdx];
+				pMixFunc(&chn, &m_Resampler, pbuffer, pbufmax);
+#else
+				float buf[MIXBUFFERSIZE * 2];
+				float *b2 = buf;
+				int *b1 = pbuffer;
+				while(b1 < pbufmax)
+				{
+					*(b2++) = *(b1++) * (1.0f / MIXING_CLIPMAX);
+				}
+				uint32 targetpos = chn.nPos + (BufferLengthToSamples(nSmpCount, chn) >> 16);
+				MixFuncTable::Functions[functionNdx | (chn.nRampLength ? MixFuncTable::ndxRamp : 0)](chn, m_Resampler, buf, nSmpCount);
+				ASSERT(chn.nPos == targetpos);
+				b1 = pbuffer;
+				b2 = buf;
+				while(b1 < pbufmax)
+				{
+					*(b1++) = static_cast<int>(Clamp(*(b2++), -1.0f, 1.0f) * MIXING_CLIPMAX);
+				}
+#endif
+				chn.nROfs += *(pbufmax-2);
+				chn.nLOfs += *(pbufmax-1);
+				pbuffer = pbufmax;
+				naddmix = 1;
+			}
+			nsamples -= nSmpCount;
+			if (chn.nRampLength)
+			{
+				chn.nRampLength -= nSmpCount;
+				if (chn.nRampLength <= 0)
+				{
+					chn.nRampLength = 0;
+					chn.leftVol = chn.newLeftVol;
+					chn.rightVol = chn.newRightVol;
+					chn.rightRamp = chn.leftRamp = 0;
+					if(chn.dwFlags[CHN_NOTEFADE] && !chn.nFadeOutVol)
+					{
+						chn.nLength = 0;
+						chn.pCurrentSample = nullptr;
+					}
 				}
 			}
-		}
-		if (nsamples > 0) goto SampleLooping;
-		nchmixed += addmix?1:0;
+		} while(nsamples > 0);
+
+		// Restore sample pointer in case it got changed through loop wrap-around
+		chn.pCurrentSample = samplePointer;
+		nchmixed += naddmix;
 	}
 	m_nMixStat += nchused;
 }
@@ -1636,9 +1834,9 @@ void CSoundFile::ProcessPlugins(UINT nCount)
 		}
 	}
 	// Convert mix buffer
-	StereoMixToFloat(MixSoundBuffer, MixFloatBuffer, MixFloatBuffer + MIXBUFFERSIZE, nCount);
-	float *pMixL = MixFloatBuffer;
-	float *pMixR = MixFloatBuffer + MIXBUFFERSIZE;
+	StereoMixToFloat(MixSoundBuffer, MixFloatBuffer[0], MixFloatBuffer[1], nCount);
+	float *pMixL = MixFloatBuffer[0];
+	float *pMixR = MixFloatBuffer[1];
 
 	// Process Plugins
 	for(PLUGINDEX plug = 0; plug < MAX_MIXPLUGINS; plug++)
@@ -1653,8 +1851,8 @@ void CSoundFile::ProcessPlugins(UINT nCount)
 			if (pMixL == plugin.pMixState->pOutBufferL)
 			{
 				isMasterMix = true;
-				pMixL = MixFloatBuffer;
-				pMixR = MixFloatBuffer + MIXBUFFERSIZE;
+				pMixL = MixFloatBuffer[0];
+				pMixR = MixFloatBuffer[1];
 			}
 			IMixPlugin *pObject = plugin.pMixPlugin;
 			SNDMIXPLUGINSTATE *pState = plugin.pMixState;

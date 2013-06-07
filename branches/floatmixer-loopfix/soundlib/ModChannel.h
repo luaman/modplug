@@ -38,28 +38,32 @@ struct ALIGN(32) ModChannel
 	uint32 nPos;			// Current play position
 	uint32 nPosLo;			// 16-bit fractional part of play position
 	int32 nInc;				// 16.16 fixed point sample speed relative to mixing frequency (0x10000 = one sample per output sample, 0x20000 = two samples per output sample, etc...)
-	int32 leftVol;
-	int32 rightVol;
-	int32 leftRamp;
-	int32 rightRamp;
+	int32 leftVol;			// 0...4096 (12 bits, since 16 bits + 12 bits = 28 bits = 0dB in integer mixer, see MIXING_ATTENUATION)
+	int32 rightVol;			// dito
+	int32 leftRamp;			// Ramping delta, 20.12 fixed point (see VOLUMERAMPPRECISION)
+	int32 rightRamp;		// dito
+	// Up to here: 32 bytes
+	int32 rampLeftVol;		// Current ramping volume, 20.12 fixed point (see VOLUMERAMPPRECISION)
+	int32 rampRightVol;		// dito
+	float nFilter_Y[2][2];	// Filter memory
+	float nFilter_A0, nFilter_B0, nFilter_B1;	// Filter coeffs
+	union { float nFilter_HPf; int32 nFilter_HP; };
+	// Up to here: 72 bytes
 
+	// Used in the mixer, but outside the innermost loop
 	SmpLength nLength;
 	SmpLength nLoopStart;
 	SmpLength nLoopEnd;
 	FlagSet<ChannelFlags> dwFlags;
-	int32 rampLeftVol;
-	int32 rampRightVol;
-	float nFilter_Y1, nFilter_Y2;	// Mono / left channel filter memory
-	float nFilter_Y3, nFilter_Y4;	// Right channel filter memory
-	float nFilter_A0, nFilter_B0, nFilter_B1;	// Filter coeffs
-	int32 nFilter_HP;
 	int32 nROfs, nLOfs;
 	int32 nRampLength;
+	// Up to here: 100 bytes
+
+	ModSample *pModSample;				// Currently assigned sample slot
+	ModInstrument *pModInstrument;		// Currently assigned instrument slot
 
 	// Information not used in the mixer
 	const void *pSample;				// Currently playing sample, or previously played sample if no sample is playing.
-	ModSample *pModSample;				// Currently assigned sample slot
-	ModInstrument *pModInstrument;		// Currently assigned instrument slot
 	FlagSet<ChannelFlags> dwOldFlags;	// Flags from previous tick
 	int32 newLeftVol, newRightVol;
 	int32 nRealVolume, nRealPan;
@@ -171,6 +175,9 @@ struct ALIGN(32) ModChannel
 
 	// Check if the channel has a valid MIDI output. This function guarantees that pModInstrument != nullptr.
 	bool HasMIDIOutput() const { return pModInstrument != nullptr && pModInstrument->HasValidMIDIChannel(); }
+
+	// Check if currently processed loop is a sustain loop. pModSample is not checked for validity!
+	bool InSustainLoop() const { return (dwFlags & (CHN_LOOP | CHN_KEYOFF)) == CHN_LOOP && pModSample->uFlags[CHN_SUSTAINLOOP]; }
 
 	ModChannel()
 	{

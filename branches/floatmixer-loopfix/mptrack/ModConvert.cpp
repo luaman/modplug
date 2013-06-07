@@ -477,6 +477,8 @@ bool CModDoc::ChangeModType(MODTYPE nNewType)
 
 	CriticalSection cs;
 	m_SndFile.ChangeModTypeTo(nNewType);
+	// In case we need to update IT bidi loop handling pre-computation...
+	m_SndFile.PrecomputeSampleLoops(false);
 
 	// Song flags
 	if(!(CSoundFile::GetModSpecifications(nNewType).songFlags & SONG_LINEARSLIDES) && m_SndFile.m_SongFlags[SONG_LINEARSLIDES])

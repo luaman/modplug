@@ -58,6 +58,9 @@ public:
 	int16 gDownsample13x[SINC_PHASES*8];	// Downsample 1.333x
 	int16 gDownsample2x[SINC_PHASES*8];		// Downsample 2x
 #endif
+	float gKaiserSincf[SINC_PHASES*8];				// Upsampling
+	static float gDownsample13xf[SINC_PHASES*8];	// Downsample 1.333x
+	static float gDownsample2xf[SINC_PHASES*8];		// Downsample 2x
 private:
 	CResamplerSettings m_OldSettings;
 public:

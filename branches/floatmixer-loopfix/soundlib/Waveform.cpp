@@ -62,11 +62,12 @@ UINT CSoundFile::Normalize24BitBuffer(LPBYTE pbuffer, UINT dwSize, DWORD lmax24,
 //-----------------------------------------------------------------------------------------------
 {
 #ifdef ENABLE_X86
-	int * const tempbuf = MixSoundBuffer;
+	int32 tempbuf[MIXBUFFERSIZE * 2];
 	int n = dwSize / 3;
 	while (n > 0)
 	{
-		int nbuf = (n > MIXBUFFERSIZE * 2) ? MIXBUFFERSIZE * 2 : n;
+		int nbuf = n;
+		LimitMax(nbuf, MIXBUFFERSIZE * 2);
 		X86_Normalize24BitBuffer(pbuffer, nbuf, lmax24, tempbuf);
 		Dither(tempbuf, nbuf, 8 * dwByteInc);
 		switch(dwByteInc)

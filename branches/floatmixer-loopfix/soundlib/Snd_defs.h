@@ -40,8 +40,6 @@ typedef uint8 SEQUENCEINDEX;
 typedef uintptr_t SmpLength;
 
 
-#define MIXBUFFERSIZE		512
-
 
 #define MOD_AMIGAC2			0x1AB					// Period of Amiga middle-c
 const SmpLength MAX_SAMPLE_LENGTH	= 0x10000000;	// Sample length in *samples*
@@ -300,15 +298,6 @@ DECLARE_FLAGSET(SongFlags)
 //#define SNDMIX_NOBACKWARDJUMPS	0x40000		// stop when jumping back in the order (currently unused as it seems)
 #define SNDMIX_MAXDEFAULTPAN	0x80000		// Used by the MOD loader (currently unused)
 #define SNDMIX_MUTECHNMODE		0x100000	// Notes are not played on muted channels
-
-
-enum { MIXING_ATTENUATION = 4, };
-
-enum
-{
-	MIXING_CLIPMAX = ((1<<(32-MIXING_ATTENUATION-1))-1),
-	MIXING_CLIPMIN = -(MIXING_CLIPMAX),
-};
 
 
 #define MAX_GLOBAL_VOLUME 256u

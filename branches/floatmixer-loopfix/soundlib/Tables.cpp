@@ -623,8 +623,7 @@ const float ITResonanceTable[128] =
 };
 
 
-// Reversed sinc coefficients
-
+// Reversed sinc coefficients for 4x256 taps polyphase FIR resampling filter
 const int16 CResampler::FastSincTable[256*4] =
 { // Cubic Spline
     0, 16384,     0,     0,   -31, 16383,    32,     0,   -63, 16381,    65,     0,   -93, 16378,   100,    -1, 
@@ -693,9 +692,10 @@ const int16 CResampler::FastSincTable[256*4] =
    -1,   135, 16374,  -124,    -1,   100, 16378,   -93,     0,    65, 16381,   -63,     0,    32, 16383,   -31, 
 };
 
+float gFastSincf[256*4];
 
-
-
+float gLinearInterpolationForward[256];
+float gLinearInterpolationBackward[256];
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -712,7 +712,7 @@ static double izero(double y)
 	return s;
 }
 
-static void getsinc(short int *psinc, double beta, double lowpass_factor)
+static void getsinc(short int *psinc, float *psincf, double beta, double lowpass_factor)
 {
 	const double izero_beta = izero(beta);
 	const double kPi = 4.0*atan(1.0)*lowpass_factor;
@@ -730,10 +730,10 @@ static void getsinc(short int *psinc, double beta, double lowpass_factor)
 			fsinc = sin(x*kPi) * izero(beta*sqrt(1-x*x*(1.0/16.0))) / (izero_beta*x*kPi); // Kaiser window
 		}
 		int n = (int)(fsinc * lowpass_factor * (16384*256));
+		*psincf++ = float(fsinc * lowpass_factor);
 		*psinc++ = static_cast<short>((n+0x80)>>8); // force rounding
 	}
 }
-
 
 #if 0
 
@@ -775,30 +775,42 @@ static void getdownsample2x(short int *psinc)
 bool CResampler::StaticTablesInitialized = false;
 int16 CResampler::gDownsample13x[SINC_PHASES*8];	// Downsample 1.333x
 int16 CResampler::gDownsample2x[SINC_PHASES*8];		// Downsample 2x
+float CResampler::gDownsample13xf[SINC_PHASES*8];		// Downsample 1.333x
+float  CResampler::gDownsample2xf[SINC_PHASES*8];		// Downsample 2x
 #endif
 
 
 void CResampler::InitializeTables(bool force)
 {
-	#ifdef MODPLUG_TRACKER
-		if(!StaticTablesInitialized)
-		{
-			//ericus' downsampling improvement.
-			//getsinc(gDownsample13x, 8.5, 3.0/4.0);
-			//getdownsample2x(gDownsample2x);
-			getsinc(gDownsample13x, 8.5, 0.5);	   
-			getsinc(gDownsample2x, 2.7625, 0.425); 
-			//end ericus' downsampling improvement.
-			StaticTablesInitialized = true;
-		}
-	#endif
+#ifdef MODPLUG_TRACKER
+	if(!StaticTablesInitialized)
+	{
+		//ericus' downsampling improvement.
+		//getsinc(gDownsample13x, 8.5, 3.0/4.0);
+		//getdownsample2x(gDownsample2x);
+		getsinc(gDownsample13x, gDownsample13xf, 8.5, 0.5);
+		getsinc(gDownsample2x, gDownsample2xf, 2.7625, 0.425);
+		//end ericus' downsampling improvement.
+		StaticTablesInitialized = true;
+	}
+#endif // MODPLUG_TRACKER
 	if((m_OldSettings == m_Settings) && !force) return;
 	m_WindowedFIR.InitTable(m_Settings.gdWFIRCutoff, m_Settings.gbWFIRType);
-	getsinc(gKaiserSinc, 9.6377, m_Settings.gdWFIRCutoff);
-	#ifndef MODPLUG_TRACKER
-		getsinc(gDownsample13x, 8.5, 0.5);
-		getsinc(gDownsample2x, 2.7625, 0.425);
-	#endif
+	getsinc(gKaiserSinc, gKaiserSincf, 9.6377, m_Settings.gdWFIRCutoff);
+#ifndef MODPLUG_TRACKER
+	getsinc(gDownsample13x, gDownsample13xf, 8.5, 0.5);
+	getsinc(gDownsample2x, gDownsample2xf, 2.7625, 0.425);
+#endif // MODPLUG_TRACKER
+	for(size_t i = 0; i < CountOf(CResampler::FastSincTable); i++)
+	{
+		gFastSincf[i] = (float)CResampler::FastSincTable[i] * (1.0f / 16384.0f);
+	}
+
+	for(size_t i = 0; i < CountOf(gLinearInterpolationForward); i++)
+	{
+		gLinearInterpolationForward[i] = float(i) * (1.0f / CountOf(gLinearInterpolationForward));
+		gLinearInterpolationBackward[i] = float(CountOf(gLinearInterpolationForward) - i) * (1.0f / float(CountOf(gLinearInterpolationForward)));
+	}
 	m_OldSettings = m_Settings;
 }
 

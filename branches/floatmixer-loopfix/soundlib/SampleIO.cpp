@@ -392,10 +392,10 @@ size_t SampleIO::ReadSample(ModSample &sample, FileReader &file) const
 		}
 	}
 
-	if(bytesRead > 0)
-	{
-		CSoundFile::AdjustSampleLoop(sample);
-	}
+// 	if(bytesRead > 0)
+// 	{
+// 		CSoundFile::AdjustSampleLoop(sample);
+// 	}
 
 	ASSERT(filePosition + bytesRead <= file.GetLength());
 	file.Seek(filePosition + bytesRead);
