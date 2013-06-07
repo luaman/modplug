@@ -1610,10 +1610,15 @@ void CSoundFile::CreateStereoMix(int count)
 		pbuffer = MixSoundBuffer;
 #ifndef NO_REVERB
 #ifdef ENABLE_MMX
-		if((m_MixerSettings.DSPMask & SNDDSP_REVERB) && (GetProcSupport() & PROCSUPPORT_MMX) && !chn.dwFlags[CHN_NOREVERB])
-			pbuffer = MixReverbBuffer;
-		if(chn.dwFlags[CHN_REVERB] && (GetProcSupport() & PROCSUPPORT_MMX))
-			pbuffer = MixReverbBuffer;
+		if(GetProcSupport() & PROCSUPPORT_MMX)
+		{
+			if(((m_MixerSettings.DSPMask & SNDDSP_REVERB) && !chn.dwFlags[CHN_NOREVERB]) || chn.dwFlags[CHN_REVERB])
+			{
+				pbuffer = m_Reverb.GetReverbSendBuffer(count);
+				pOfsR = &m_Reverb.gnRvbROfsVol;
+				pOfsL = &m_Reverb.gnRvbLOfsVol;
+			}
+		}
 #endif
 #endif
 		if(chn.dwFlags[CHN_SURROUND] && m_MixerSettings.gnChannels > 2)
@@ -1637,15 +1642,6 @@ void CSoundFile::CreateStereoMix(int count)
 				}
 			}
 		}
-#ifndef NO_REVERB
-		if (pbuffer == MixReverbBuffer)
-		{
-			// notify reverb that there will be data in the reverb buffer to be processed
-			m_Reverb.ProcessWillSend(MixReverbBuffer, count);
-			pOfsR = &m_Reverb.gnRvbROfsVol;
-			pOfsL = &m_Reverb.gnRvbLOfsVol;
-		}
-#endif
 		nchused++;
 
 		// Calculate offset of loop wrap-around buffer for this sample.
