@@ -1926,11 +1926,7 @@ void CSoundFile::ProcessPlugins(UINT nCount)
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
-template<typename Tsample>
-forceinline Tsample ConvertSample(int val)
-{
-	STATIC_ASSERT(false); // unimplemented
-}
+template<typename Tsample> forceinline Tsample ConvertSample(int val);
 
 template<>
 forceinline uint8 ConvertSample(int val)
