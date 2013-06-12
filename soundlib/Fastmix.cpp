@@ -1748,7 +1748,7 @@ void CSoundFile::CreateStereoMix(int count)
 				int *b1 = pbuffer;
 				while(b1 < pbufmax)
 				{
-					*(b2++) = *(b1++) * (1.0f / MIXING_CLIPMAX);
+					*(b2++) = *(b1++) * (1.0f / MIXING_SCALEF);
 				}
 				uint32 targetpos = chn.nPos + (BufferLengthToSamples(nSmpCount, chn) >> 16);
 				MixFuncTable::Functions[functionNdx | (chn.nRampLength ? MixFuncTable::ndxRamp : 0)](chn, m_Resampler, buf, nSmpCount);
@@ -1757,7 +1757,7 @@ void CSoundFile::CreateStereoMix(int count)
 				b2 = buf;
 				while(b1 < pbufmax)
 				{
-					*(b1++) = static_cast<int>(Clamp(*(b2++), -1.0f, 1.0f) * MIXING_CLIPMAX);
+					*(b1++) = static_cast<int>(Clamp(*(b2++), -1.0f, 1.0f) * MIXING_SCALEF);
 				}
 #endif
 				chn.nROfs += *(pbufmax-2);
@@ -2195,7 +2195,7 @@ void Convert32ToNonInterleaved(int32 * const * const buffers, const int *mixbuff
 void Convert32ToInterleaved(float *dest, const int *mixbuffer, std::size_t count)
 //-------------------------------------------------------------------------------
 {
-	const float factor = (1.0f/(float)MIXING_CLIPMAX);
+	const float factor = (1.0f/MIXING_SCALEF);
 	for(std::size_t i=0; i<count; i++)
 	{
 		dest[i] = mixbuffer[i] * factor;
@@ -2205,7 +2205,7 @@ void Convert32ToInterleaved(float *dest, const int *mixbuffer, std::size_t count
 void Convert32ToNonInterleaved(float * const * const buffers, const int *mixbuffer, std::size_t channels, std::size_t count)
 //--------------------------------------------------------------------------------------------------------------------------
 {
-	const float factor = (1.0f/(float)MIXING_CLIPMAX);
+	const float factor = (1.0f/MIXING_SCALEF);
 	for(std::size_t i = 0; i < count; ++i)
 	{
 		for(std::size_t channel = 0; channel < channels; ++channel)

@@ -313,14 +313,14 @@ void CEQ::ProcessMono(int *pbuffer, float *MixFloatBuffer, UINT nCount)
 //---------------------------------------------------------------------
 {
 #ifdef MPT_INTMIXER
-	MonoMixToFloat(pbuffer, MixFloatBuffer, nCount, 1.0f/static_cast<float>(MIXING_CLIPMAX));
+	MonoMixToFloat(pbuffer, MixFloatBuffer, nCount, 1.0f/MIXING_SCALEF);
 #endif // MPT_INTMIXER
 	for (UINT b=0; b<MAX_EQ_BANDS; b++)
 	{
 		if ((gEQ[b].bEnable) && (gEQ[b].Gain != 1.0f)) EQFilter(&gEQ[b], MixFloatBuffer, nCount);
 	}
 #ifdef MPT_INTMIXER
-	FloatToMonoMix(MixFloatBuffer, pbuffer, nCount, static_cast<float>(MIXING_CLIPMAX));
+	FloatToMonoMix(MixFloatBuffer, pbuffer, nCount, MIXING_SCALEF);
 #endif // MPT_INTMIXER
 }
 
@@ -335,7 +335,7 @@ void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount)
 	{
 		int sse_state, sse_eqstate;
 #ifdef MPT_INTMIXER
-		MonoMixToFloat(pbuffer, MixFloatBuffer, nCount*2, 1.0f/static_cast<float>(MIXING_CLIPMAX));
+		MonoMixToFloat(pbuffer, MixFloatBuffer, nCount*2, 1.0f/MIXING_SCALEF);
 #endif // MPT_INTMIXER
 
 		_asm stmxcsr sse_state;
@@ -349,7 +349,7 @@ void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount)
 		_asm ldmxcsr sse_state;
 
 #ifdef MPT_INTMIXER
-		FloatToMonoMix(MixFloatBuffer, pbuffer, nCount*2, static_cast<float>(MIXING_CLIPMAX));
+		FloatToMonoMix(MixFloatBuffer, pbuffer, nCount*2, MIXING_SCALEF);
 #endif // MPT_INTMIXER
 
 	} else
@@ -361,7 +361,7 @@ void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount)
 	if(GetProcSupport() & PROCSUPPORT_AMD_3DNOW)
 	{ 
 #ifdef MPT_INTMIXER
-		MonoMixToFloat(pbuffer, MixFloatBuffer, nCount*2, 1.0f/static_cast<float>(MIXING_CLIPMAX));
+		MonoMixToFloat(pbuffer, MixFloatBuffer, nCount*2, 1.0f/MIXING_SCALEF);
 #endif // MPT_INTMIXER
 
 		for (UINT b=0; b<MAX_EQ_BANDS; b++)
@@ -372,7 +372,7 @@ void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount)
 		}
 
 #ifdef MPT_INTMIXER
-		FloatToMonoMix(MixFloatBuffer, pbuffer, nCount*2, static_cast<float>(MIXING_CLIPMAX));
+		FloatToMonoMix(MixFloatBuffer, pbuffer, nCount*2, MIXING_SCALEF);
 #endif // MPT_INTMIXER
 
 	} else
@@ -380,7 +380,7 @@ void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount)
 
 	{	
 #ifdef MPT_INTMIXER
-		StereoMixToFloat(pbuffer, MixFloatBuffer, MixFloatBuffer+MIXBUFFERSIZE, nCount, 1.0f/static_cast<float>(MIXING_CLIPMAX));
+		StereoMixToFloat(pbuffer, MixFloatBuffer, MixFloatBuffer+MIXBUFFERSIZE, nCount, 1.0f/MIXING_SCALEF);
 #endif // MPT_INTMIXER
 		
 		for (UINT bl=0; bl<MAX_EQ_BANDS; bl++)
@@ -392,7 +392,7 @@ void CEQ::ProcessStereo(int *pbuffer, float *MixFloatBuffer, UINT nCount)
 			if ((gEQ[br].bEnable) && (gEQ[br].Gain != 1.0f)) EQFilter(&gEQ[br], MixFloatBuffer+MIXBUFFERSIZE, nCount);
 		}
 #ifdef MPT_INTMIXER
-		FloatToStereoMix(MixFloatBuffer, MixFloatBuffer+MIXBUFFERSIZE, pbuffer, nCount, static_cast<float>(MIXING_CLIPMAX));
+		FloatToStereoMix(MixFloatBuffer, MixFloatBuffer+MIXBUFFERSIZE, pbuffer, nCount, MIXING_SCALEF);
 #endif // MPT_INTMIXER
 	}
 }
