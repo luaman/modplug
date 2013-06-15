@@ -712,7 +712,7 @@ static double izero(double y)
 	return s;
 }
 
-static void getsinc(short int *psinc, float *psincf, double beta, double lowpass_factor)
+static void getsinc(SINC_TYPE *psinc, float *psincf, double beta, double lowpass_factor)
 {
 	const double izero_beta = izero(beta);
 	const double kPi = 4.0*atan(1.0)*lowpass_factor;
@@ -729,9 +729,12 @@ static void getsinc(short int *psinc, float *psincf, double beta, double lowpass
 			double x = (double)(ix - (4*SINC_PHASES)) * (double)(1.0/SINC_PHASES);
 			fsinc = sin(x*kPi) * izero(beta*sqrt(1-x*x*(1.0/16.0))) / (izero_beta*x*kPi); // Kaiser window
 		}
-		int n = (int)(fsinc * lowpass_factor * (16384*256));
-		*psincf++ = float(fsinc * lowpass_factor);
-		*psinc++ = static_cast<short>((n+0x80)>>8); // force rounding
+		double coeff = fsinc * lowpass_factor;
+		int n = (int)std::floor(coeff * (1<<SINC_QUANTSHIFT) + 0.5);
+		ASSERT(n <= int16_max);
+		ASSERT(n > int16_min);
+		*psinc++ = static_cast<SINC_TYPE>(n);
+		*psincf++ = float(coeff);
 	}
 }
 
@@ -773,8 +776,8 @@ static void getdownsample2x(short int *psinc)
 
 #ifdef MODPLUG_TRACKER
 bool CResampler::StaticTablesInitialized = false;
-int16 CResampler::gDownsample13x[SINC_PHASES*8];	// Downsample 1.333x
-int16 CResampler::gDownsample2x[SINC_PHASES*8];		// Downsample 2x
+SINC_TYPE CResampler::gDownsample13x[SINC_PHASES*8];	// Downsample 1.333x
+SINC_TYPE CResampler::gDownsample2x[SINC_PHASES*8];		// Downsample 2x
 float CResampler::gDownsample13xf[SINC_PHASES*8];		// Downsample 1.333x
 float  CResampler::gDownsample2xf[SINC_PHASES*8];		// Downsample 2x
 #endif
