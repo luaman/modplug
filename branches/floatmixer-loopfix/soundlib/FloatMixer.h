@@ -109,7 +109,7 @@ struct PolyphaseInterpolation
 	forceinline void operator() (typename Traits::outbuf_t &outSample, const typename Traits::input_t * const inBuffer, const int32 posLo)
 	{
 		static_assert(Traits::numChannelsIn <= Traits::numChannelsOut, "Too many input channels");
-		const mixsample_t *lut = sinc + ((posLo >> 1) & ~0x1F);
+		const mixsample_t *lut = sinc + ((posLo >> (16-SINC_PHASES_BITS)) & SINC_MASK) * SINC_WIDTH;
 
 		for(int i = 0; i < Traits::numChannelsIn; i++)
 		{
