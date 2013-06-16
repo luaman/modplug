@@ -119,7 +119,17 @@ template<class T>
 inline void Binarywrite(std::ostream& oStrm, const T& data)
 //------------------------------------------------------
 {
-	oStrm.write(reinterpret_cast<const char*>(&data), sizeof(data));
+	union {
+		T t;
+		char b[sizeof(T)];
+	} conv;
+	STATIC_ASSERT(sizeof(conv) == sizeof(T));
+	STATIC_ASSERT(sizeof(conv.b) == sizeof(T));
+	conv.t = data;
+	#ifdef PLATFORM_BIG_ENDIAN
+		std::reverse(conv.b, conv.b+sizeof(T));
+	#endif
+	oStrm.write(conv.b, sizeof(data));
 }
 
 //Write only given number of bytes from the beginning.
@@ -127,7 +137,17 @@ template<class T>
 inline void Binarywrite(std::ostream& oStrm, const T& data, const Offtype bytecount)
 //--------------------------------------------------------------------------
 {
-	oStrm.write(reinterpret_cast<const char*>(&data), MIN(bytecount, sizeof(data)));
+	union {
+		T t;
+		char b[sizeof(T)];
+	} conv;
+	STATIC_ASSERT(sizeof(conv) == sizeof(T));
+	STATIC_ASSERT(sizeof(conv.b) == sizeof(T));
+	conv.t = data;
+	#ifdef PLATFORM_BIG_ENDIAN
+		std::reverse(conv.b, conv.b+sizeof(T));
+	#endif
+	oStrm.write(conv.b, MIN(bytecount, sizeof(data)));
 }
 
 template <class T>
@@ -153,7 +173,17 @@ template<class T>
 inline void Binaryread(std::istream& iStrm, T& data)
 //----------------------------------------------
 {
-	iStrm.read(reinterpret_cast<char*>(&data), sizeof(T));
+	union {
+		T t;
+		char b[sizeof(T)];
+	} conv;
+	STATIC_ASSERT(sizeof(conv) == sizeof(T));
+	STATIC_ASSERT(sizeof(conv.b) == sizeof(T));
+	iStrm.read(conv.b, sizeof(T));
+	#ifdef PLATFORM_BIG_ENDIAN
+		std::reverse(conv.b, conv.b+sizeof(T));
+	#endif
+	data = conv.t;
 }
 
 //Read only given number of bytes to the beginning of data; data bytes are memset to 0 before reading.
@@ -164,8 +194,18 @@ inline void Binaryread(std::istream& iStrm, T& data, const Offtype bytecount)
 	#ifdef HAS_TYPE_TRAITS
 		static_assert(std::is_trivial<T>::value == true, "");
 	#endif
-	memset(&data, 0, sizeof(data));
-	iStrm.read(reinterpret_cast<char*>(&data), (std::min)((size_t)bytecount, sizeof(data)));
+	union {
+		T t;
+		char b[sizeof(T)];
+	} conv;
+	STATIC_ASSERT(sizeof(conv) == sizeof(T));
+	STATIC_ASSERT(sizeof(conv.b) == sizeof(T));
+	memset(conv.b, 0, sizeof(T));
+	iStrm.read(conv.b, (std::min)((size_t)bytecount, sizeof(data)));
+	#ifdef PLATFORM_BIG_ENDIAN
+		std::reverse(conv.b, conv.b+sizeof(T));
+	#endif
+	data = conv.t;
 }
 
 
@@ -501,7 +541,12 @@ struct ArrayWriter
 //================
 {
 	ArrayWriter(size_t nCount) : m_nCount(nCount) {}
-	void operator()(std::ostream& oStrm, const T* pData) {oStrm.write(reinterpret_cast<const char*>(pData), m_nCount * sizeof(T));} 
+	void operator()(std::ostream& oStrm, const T* pData) {
+		for(std::size_t i=0; i<m_nCount; ++i)
+		{
+			Binarywrite(oStrm, pData[i]);
+		}
+	}
 	size_t m_nCount;
 };
 
@@ -510,7 +555,12 @@ struct ArrayReader
 //================
 {
 	ArrayReader(size_t nCount) : m_nCount(nCount) {}
-	void operator()(std::istream& iStrm, T* pData, const size_t) {iStrm.read(reinterpret_cast<char*>(pData), m_nCount * sizeof(T));} 
+	void operator()(std::istream& iStrm, T* pData, const size_t) {
+		for(std::size_t i=0; i<m_nCount; ++i)
+		{
+			Binaryread(iStrm, pData[i]);
+		}
+	} 
 	size_t m_nCount;
 };
 
@@ -521,7 +571,7 @@ bool StringToBinaryStream(std::ostream& oStrm, const std::string& str)
 	if(!oStrm.good()) return true;
 	if((std::numeric_limits<SIZETYPE>::max)() < str.size()) return true;
 	SIZETYPE size = static_cast<SIZETYPE>(str.size());
-	oStrm.write(reinterpret_cast<char*>(&size), sizeof(size));
+	Binarywrite(oStrm, size);
 	oStrm.write(str.c_str(), size);
 	if(oStrm.good()) return false;
 	else return true;
@@ -534,7 +584,7 @@ bool StringFromBinaryStream(std::istream& iStrm, std::string& str, const SIZETYP
 {
 	if(!iStrm.good()) return true;
 	SIZETYPE strSize;
-	iStrm.read(reinterpret_cast<char*>(&strSize), sizeof(strSize));
+	Binaryread(iStrm, strSize);
 	if(strSize > maxSize)
 		return true;
 	str.resize(strSize);
