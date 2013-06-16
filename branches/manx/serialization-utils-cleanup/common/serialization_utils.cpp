@@ -464,7 +464,7 @@ void Ssb::BeginWrite(const char* pId, const size_t nIdSize, const uint64& nVersi
 	{
 		uint8 idsize = static_cast<uint8>(nIdSize);
 		Binarywrite<uint8>(oStrm, idsize);
-		if(idsize > 0) oStrm.write(reinterpret_cast<const char*>(pId), nIdSize);
+		if(idsize > 0) oStrm.write(pId, nIdSize);
 	}
 
 	// Form header.
