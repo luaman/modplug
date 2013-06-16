@@ -115,7 +115,13 @@ void ReadAdaptive12(std::istream& iStrm, uint16& val)
 //-----------------------------------------------
 {
 	Binaryread<uint16>(iStrm, val, 1);
-	if(val & 1) iStrm.read(reinterpret_cast<char*>(&val) + 1, 1);
+	if(val & 1)
+	{
+		uint8 hi = 0;
+		Binaryread(iStrm, hi);
+		val &= 0xff;
+		val |= hi << 8;
+	}
 	val >>= 1;
 }
 
@@ -125,7 +131,14 @@ void ReadAdaptive1234(std::istream& iStrm, uint32& val)
 {
 	Binaryread<uint32>(iStrm, val, 1);
 	const uint8 bc = 1 + static_cast<uint8>(val & 3);
-	if(bc > 1) iStrm.read(reinterpret_cast<char*>(&val)+1, bc-1);
+	uint8 v2 = 0;
+	uint8 v3 = 0;
+	uint8 v4 = 0;
+	if(bc >= 2) Binaryread(iStrm, v2);
+	if(bc >= 3) Binaryread(iStrm, v3);
+	if(bc >= 4) Binaryread(iStrm, v4);
+	val &= 0xff;
+	val |= (v2 << 8) | (v3 << 16) | (v4 << 24);
 	val >>= 2;
 }
 
@@ -138,8 +151,20 @@ void ReadAdaptive1248(std::istream& iStrm, uint64& val)
 //-------------------------------------------------
 {
 	Binaryread<uint64>(iStrm, val, 1);
-	const uint8 bc = Pow2xSmall(static_cast<uint8>(val & 3));
-	if(bc > 1) iStrm.read(reinterpret_cast<char*>(&val)+1, bc-1);
+	uint8 bc = Pow2xSmall(static_cast<uint8>(val & 3));
+	int byte = 1;
+	val &= 0xff;
+	while(bc > 1)
+	{
+		uint8 v = 0;
+		Binaryread(iStrm, v);
+		if(byte < 8)
+		{
+			val |= uint64(v) << (byte*8);
+		}
+		byte++;
+		bc--;
+	}
 	val >>= 2;
 }
 
@@ -165,7 +190,17 @@ void ReadItemString(std::istream& iStrm, std::string& str, const DataSize)
 	Binaryread(iStrm, id, 1);
 	const uint8 nSizeBytes = (id & 12) >> 2; // 12 == 1100b
 	if (nSizeBytes > 0)
-		iStrm.read(reinterpret_cast<char*>(&id) + 1, MIN(3, nSizeBytes));
+	{
+		uint8 bytes = MIN(3, nSizeBytes);
+		uint8 v2 = 0;
+		uint8 v3 = 0;
+		uint8 v4 = 0;
+		if(bytes >= 1) Binaryread(iStrm, v2);
+		if(bytes >= 2) Binaryread(iStrm, v3);
+		if(bytes >= 3) Binaryread(iStrm, v4);
+		id &= 0xff;
+		id |= (v2 << 8) | (v3 << 16) | (v4 << 24);
+	}
 	// Limit to 1 MB.
 	str.resize(MIN(id >> 4, 1000000));
 	for(size_t i = 0; i < str.size(); i++)
