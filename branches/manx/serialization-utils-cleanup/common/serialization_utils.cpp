@@ -616,7 +616,7 @@ void Ssb::BeginRead(const void* pId, const size_t nLength, const uint64& nVersio
 	// Start bytes.
 	{
 		char temp[sizeof(s_EntryID)];
-		Binaryread<char[sizeof(s_EntryID)]>(iStrm, temp);
+		ArrayReader<char>(sizeof(s_EntryID))(iStrm, temp, sizeof(s_EntryID));
 		if (memcmp(temp, s_EntryID, sizeof(s_EntryID)))
 		{
 			AddReadNote(SNR_STARTBYTE_MISMATCH);
