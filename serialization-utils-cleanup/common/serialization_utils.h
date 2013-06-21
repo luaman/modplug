@@ -482,7 +482,7 @@ struct IdLE
 	IdLE(T val)
 	{
 		conv.t = val;
-		#if PLATFORM_BIG_ENDIAN
+		#ifdef PLATFORM_BIG_ENDIAN
 			std::reverse(conv.b, conv.b+sizeof(T));
 		#endif
 	}
