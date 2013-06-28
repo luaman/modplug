@@ -228,6 +228,7 @@ struct PACKED MODSampleHeader
 	void ConvertToMPT(ModSample &mptSmp) const
 	{
 		mptSmp.Initialize(MOD_TYPE_MOD);
+
 		mptSmp.nLength = length * 2;
 		mptSmp.nFineTune = MOD2XMFineTune(finetune & 0x0F);
 		mptSmp.nVolume = 4 * MIN(volume, 64);
@@ -275,6 +276,17 @@ struct PACKED MODSampleHeader
 				mptSmp.uFlags.set(CHN_LOOP);
 			}
 		}
+
+		mpt::String::Read<mpt::String::spacePadded>(mptSmp.name, name);
+		// Get rid of weird characters in sample names.
+		for(size_t i = 0; i < mptSmp.name.length(); i++)
+		{
+			if(mptSmp.name[i] < ' ')
+			{
+				mptSmp.name[i] = ' ';
+			}
+		}
+
 	}
 
 	// Convert OpenMPT's internal sample header to an MOD sample header.
@@ -310,6 +322,8 @@ struct PACKED MODSampleHeader
 			loopStart = static_cast<uint16>(mptSmp.nLoopStart / 2u);
 			loopLength = static_cast<uint16>((loopEnd - mptSmp.nLoopStart) / 2u);
 		}
+
+		mpt::String::Write<mpt::String::maybeNullTerminated>(name, mptSmp.name);
 
 		return writeLength;
 	}
@@ -376,21 +390,11 @@ static bool IsMagic(const char *magic1, const char *magic2)
 }
 
 
-static void ReadSample(FileReader &file, MODSampleHeader &sampleHeader, ModSample &sample, char (&sampleName)[MAX_SAMPLENAME])
-//----------------------------------------------------------------------------------------------------------------------------
+static void ReadSample(FileReader &file, MODSampleHeader &sampleHeader, ModSample &sample)
+//----------------------------------------------------------------------------------------
 {
 	file.ReadConvertEndianness(sampleHeader);
 	sampleHeader.ConvertToMPT(sample);
-
-	mpt::String::Read<mpt::String::spacePadded>(sampleName, sampleHeader.name);
-	// Get rid of weird characters in sample names.
-	for(size_t i = 0; i < CountOf(sampleName); i++)
-	{
-		if(sampleName[i] && sampleName[i] < ' ')
-		{
-			sampleName[i] = ' ';
-		}
-	}
 }
 
 
@@ -548,7 +552,7 @@ bool CSoundFile::ReadMod(FileReader &file, ModLoadingFlags loadFlags)
 	for(SAMPLEINDEX smp = 1; smp <= 31; smp++)
 	{
 		MODSampleHeader sampleHeader;
-		ReadSample(file, sampleHeader, Samples[smp], m_szNames[smp]);
+		ReadSample(file, sampleHeader, Samples[smp]);
 
 		totalSampleLen += Samples[smp].nLength;
 	}
@@ -801,7 +805,7 @@ bool CSoundFile::ReadM15(FileReader &file, ModLoadingFlags loadFlags)
 	for(SAMPLEINDEX smp = 1; smp <= 15; smp++)
 	{
 		MODSampleHeader sampleHeader;
-		ReadSample(file, sampleHeader, Samples[smp], m_szNames[smp]);
+		ReadSample(file, sampleHeader, Samples[smp]);
 
 		// Sanity checks
 		if(!IsValidName(sampleHeader.name, sizeof(sampleHeader.name), 14)
@@ -815,7 +819,7 @@ bool CSoundFile::ReadM15(FileReader &file, ModLoadingFlags loadFlags)
 
 		totalSampleLen += Samples[smp].nLength;
 
-		if(m_szNames[smp][0] && ((memcmp(m_szNames[smp], "st-", 3) && memcmp(m_szNames[smp], "ST-", 3)) || m_szNames[smp][0] < '0' || m_szNames[smp][0] > '9'))
+		if(!Samples[smp].name.empty() && ((Samples[smp].name.substr(0, 3) != "st-3" && Samples[smp].name.substr(0, 3) != "ST-3") || Samples[smp].name.at(0) < '0' || Samples[smp].name.at(0) > '9'))
 		{
 			// Ultimate Soundtracker 1.8 and D.O.C. SoundTracker IX always have sample names containing disk names.
 			hasDiskNames = false;
@@ -1139,7 +1143,6 @@ bool CSoundFile::SaveMod(LPCSTR lpszFileName) const
 	for(SAMPLEINDEX smp = 1; smp <= 31; smp++)
 	{
 		MODSampleHeader sampleHeader;
-		mpt::String::Write<mpt::String::maybeNullTerminated>(sampleHeader.name, m_szNames[sampleSource[smp]]);
 		sampleLength[smp] = sampleHeader.ConvertToMOD(sampleSource[smp] <= GetNumSamples() ? GetSample(sampleSource[smp]) : ModSample(MOD_TYPE_MOD));
 		sampleHeader.ConvertEndianness();
 		fwrite(&sampleHeader, sizeof(sampleHeader), 1, f);

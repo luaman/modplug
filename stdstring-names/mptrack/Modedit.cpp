@@ -306,7 +306,7 @@ SAMPLEINDEX CModDoc::ReArrangeSamples(const vector<SAMPLEINDEX> &newOrder)
 		{
 			m_SndFile.DestroySample(i);
 		}
-		sampleNames[i] = m_SndFile.m_szNames[i];
+		sampleNames[i] = m_SndFile.GetSample(i).name;
 	}
 
 	// Remove sample data references from now unused slots.
@@ -314,7 +314,7 @@ SAMPLEINDEX CModDoc::ReArrangeSamples(const vector<SAMPLEINDEX> &newOrder)
 	{
 		m_SndFile.GetSample(i).pSample = nullptr;
 		m_SndFile.GetSample(i).nLength = 0;
-		strcpy(m_SndFile.m_szNames[i], "");
+		m_SndFile.GetSample(i).name = "";
 	}
 
 	// Now, create new sample list.
@@ -333,13 +333,13 @@ SAMPLEINDEX CModDoc::ReArrangeSamples(const vector<SAMPLEINDEX> &newOrder)
 				memcpy(m_SndFile.GetSample(i + 1).pSample, sampleHeaders[origSlot].pSample, m_SndFile.GetSample(i + 1).GetSampleSizeInBytes());
 				ctrlSmp::AdjustEndOfSample(m_SndFile.GetSample(i + 1), m_SndFile);
 			}
-			strcpy(m_SndFile.m_szNames[i + 1], sampleNames[origSlot].c_str());
+			m_SndFile.GetSample(i + 1).name = sampleNames[origSlot];
 		} else
 		{
 			// Invalid sample reference.
 			m_SndFile.GetSample(i + 1).Initialize(m_SndFile.GetType());
 			m_SndFile.GetSample(i + 1).pSample = nullptr;
-			strcpy(m_SndFile.m_szNames[i + 1], "");
+			m_SndFile.GetSample(i + 1).name = "";
 		}
 	}
 
@@ -530,7 +530,7 @@ bool CModDoc::ConvertSamplesToInstruments()
 		}
 
 		InitializeInstrument(instrument);
-		mpt::String::Copy(instrument->name, m_SndFile.m_szNames[smp]);
+		mpt::String::Copy(instrument->name, m_SndFile.GetSampleName(smp));
 		MuteInstrument(smp, muted);
 	}
 
@@ -647,9 +647,9 @@ SAMPLEINDEX CModDoc::InsertSample(bool bLimit)
 		return SAMPLEINDEX_INVALID;
 	}
 	const bool newSlot = (i > m_SndFile.GetNumSamples());
-	if(newSlot || !m_SndFile.m_szNames[i][0]) strcpy(m_SndFile.m_szNames[i], "untitled");
 	if(newSlot) m_SndFile.m_nSamples = i;
 	m_SndFile.GetSample(i).Initialize(m_SndFile.GetType());
+	if(newSlot || m_SndFile.GetSample(i).name.empty()) m_SndFile.GetSample(i).name = "untitled";
 	SetModified();
 	return i;
 }
@@ -806,9 +806,9 @@ bool CModDoc::RemoveSample(SAMPLEINDEX nSmp)
 		CriticalSection cs;
 
 		m_SndFile.DestroySample(nSmp);
-		m_SndFile.m_szNames[nSmp][0] = 0;
+		m_SndFile.GetSample(nSmp).name = "";
 		while ((m_SndFile.GetNumSamples() > 1)
-			&& (!m_SndFile.m_szNames[m_SndFile.GetNumSamples()][0])
+			&& m_SndFile.GetSample(m_SndFile.GetNumSamples()).name.empty()
 			&& (!m_SndFile.GetSample(m_SndFile.GetNumSamples()).pSample))
 		{
 			m_SndFile.m_nSamples--;

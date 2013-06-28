@@ -40,6 +40,7 @@ struct PACKED STMSampleHeader
 	void ConvertToMPT(ModSample &mptSmp) const
 	{
 		mptSmp.Initialize();
+		mpt::String::Read<mpt::String::nullTerminated>(mptSmp.name, filename);
 		mpt::String::Read<mpt::String::nullTerminated>(mptSmp.filename, filename);
 
 		mptSmp.nC5Speed = sampleRate;
@@ -160,7 +161,6 @@ bool CSoundFile::ReadSTM(FileReader &file, ModLoadingFlags loadFlags)
 	{
 		fileHeader.samples[smp].ConvertEndianness();
 		fileHeader.samples[smp].ConvertToMPT(Samples[smp + 1]);
-		mpt::String::Read<mpt::String::nullTerminated>(m_szNames[smp + 1], fileHeader.samples[smp].filename);
 	}
 
 	// Read order list

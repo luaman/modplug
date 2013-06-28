@@ -455,8 +455,6 @@ bool CSoundFile::ReadXM(FileReader &file, ModLoadingFlags loadFlags)
 					sampleHeader.ConvertToMPT(Samples[mptSample]);
 					instrHeader.instrument.ApplyAutoVibratoToMPT(Samples[mptSample]);
 
-					mpt::String::Read<mpt::String::spacePadded>(m_szNames[mptSample], sampleHeader.name);
-
 					if((sampleHeader.flags & 3) == 3 && madeWith[verNewModPlug])
 					{
 						// MPT 1.09 and maybe newer / older versions set both loop flags for bidi loops.
@@ -944,8 +942,6 @@ bool CSoundFile::SaveXM(LPCSTR lpszFileName, bool compatibilityExport)
 				MemsetZero(xmSample);
 			}
 			sampleFlags[smp] = xmSample.GetSampleFormat();
-
-			mpt::String::Write<mpt::String::spacePadded>(xmSample.name, m_szNames[samples[smp]]);
 
 			xmSample.ConvertEndianness();
 			fwrite(&xmSample, 1, sizeof(xmSample), f);

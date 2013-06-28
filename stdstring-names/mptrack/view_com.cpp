@@ -275,7 +275,7 @@ void CViewComments::OnUpdate(CView *pSender, LPARAM lHint, CObject *)
 					switch(iCol)
 					{
 					case SMPLIST_SAMPLENAME:
-						mpt::String::Copy(s, pSndFile->m_szNames[iSmp + 1]);
+						mpt::String::Copy(s, sample.name);
 						break;
 					case SMPLIST_SAMPLENO:
 						wsprintf(s, "%02d", iSmp + 1);
@@ -525,7 +525,7 @@ void CViewComments::OnEndLabelEdit(LPNMHDR pnmhdr, LRESULT *)
 		{
 			if(iItem < pSndFile->GetNumSamples())
 			{
-				mpt::String::CopyN(pSndFile->m_szNames[iItem + 1], lvItem.pszText);
+				mpt::String::CopyN(pSndFile->GetSample(iItem + 1).name, lvItem.pszText);
 				pModDoc->UpdateAllViews(this, ((iItem + 1) << HINT_SHIFT_SMP) | (HINT_SMPNAMES | HINT_SAMPLEINFO), this);
 				pModDoc->SetModified();
 			}

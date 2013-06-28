@@ -275,9 +275,9 @@ bool CSoundFile::ReadDBM(const BYTE *lpStream, const DWORD dwMemLength, ModLoadi
 				}
 
 				mpt::String::Read<mpt::String::maybeNullTerminated>(pIns->name, pih->name);
-				if (psmp)
+				if(psmp)
 				{
-					mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[nsmp], pih->name);
+					mpt::String::Read<mpt::String::maybeNullTerminated>(psmp->name, pih->name);
 				}
 
 				pIns->nFadeOut = 1024;	// ???

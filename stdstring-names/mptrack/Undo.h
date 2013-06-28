@@ -111,7 +111,6 @@ protected:
 	struct UndoInfo
 	{
 		ModSample OldSample;
-		char oldName[MAX_SAMPLENAME];
 		void *samplePtr;
 		SmpLength changeStart, changeEnd;
 		sampleUndoTypes changeType;

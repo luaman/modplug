@@ -6192,7 +6192,7 @@ bool CViewPattern::BuildSetInstCtxMenu(HMENU hMenu, CInputHandler *ih) const
 				CHAR s[64];
 				for(SAMPLEINDEX i = 1; i <= sndFile->GetNumSamples(); i++) if (sndFile->GetSample(i).pSample != nullptr)
 				{
-					wsprintf(s, "%02d: %s", i, sndFile->GetSampleName(i));
+					wsprintf(s, "%02d: %s", i, sndFile->GetSampleName(i).c_str());
 					AppendMenu(instrumentChangeMenu, MF_STRING, ID_CHANGE_INSTRUMENT + i, s);
 					addSeparator = true;
 				}

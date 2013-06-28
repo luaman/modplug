@@ -1654,7 +1654,7 @@ BOOL CDLSBank::ExtractSample(CSoundFile &sndFile, SAMPLEINDEX nSample, UINT nIns
 				sample.nPan = m_Envelopes[pDlsIns->nMelodicEnv-1].nDefPan;
 			}
 		}
-		if (pDlsIns->szName[0]) memcpy(sndFile.m_szNames[nSample], pDlsIns->szName, MAX_SAMPLENAME - 1);
+		if(pDlsIns->szName[0]) mpt::String::Read<mpt::String::nullTerminated>(sample.name, pDlsIns->szName);
 		sample.Convert(MOD_TYPE_IT, sndFile.GetType());
 		bOk = TRUE;
 	}

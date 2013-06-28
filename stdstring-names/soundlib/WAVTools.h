@@ -358,5 +358,5 @@ public:
 	SmpLength GetSampleLength() const { return sampleLength; }
 
 	// Apply sample settings from file (loop points, MPT extra settings, ...) to a sample.
-	void ApplySampleSettings(ModSample &sample, char (&sampleName)[MAX_SAMPLENAME]);
+	void ApplySampleSettings(ModSample &sample);
 };

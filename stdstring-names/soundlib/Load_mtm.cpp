@@ -86,6 +86,7 @@ struct PACKED MTMSampleHeader
 				mptSmp.nLoopEnd /= 2;
 			}
 		}
+		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.name, samplename);
 	}
 };
 
@@ -131,7 +132,6 @@ bool CSoundFile::ReadMTM(FileReader &file, ModLoadingFlags loadFlags)
 		MTMSampleHeader sampleHeader;
 		file.ReadConvertEndianness(sampleHeader);
 		sampleHeader.ConvertToMPT(Samples[smp]);
-		mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[smp], sampleHeader.samplename);
 	}
 
 	// Setting Channel Pan Position
