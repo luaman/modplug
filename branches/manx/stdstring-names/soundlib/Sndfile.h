@@ -377,7 +377,6 @@ public:
 	ModInstrument *Instruments[MAX_INSTRUMENTS];		// Instrument Headers
 	MIDIMacroConfig m_MidiCfg;							// MIDI Macro config table
 	SNDMIXPLUGIN m_MixPlugins[MAX_MIXPLUGINS];			// Mix plugins
-	char m_szNames[MAX_SAMPLES][MAX_SAMPLENAME];		// Song and sample names
 	std::bitset<MAX_BASECHANNELS> m_bChannelMuteTogglePending;
 
 	DWORD m_dwCreatedWithVersion;
@@ -478,7 +477,7 @@ public:
 	void SetCurrentOrder(ORDERINDEX nOrder);
 	std::string GetTitle() const { return songName; }
 	bool SetTitle(const std::string &newTitle); // Return true if title was changed.
-	LPCTSTR GetSampleName(UINT nSample) const;
+	mpt::string GetSampleName(UINT nSample) const;
 	mpt::string GetInstrumentName(INSTRUMENTINDEX nInstr) const;
 	UINT GetMusicSpeed() const { return m_nMusicSpeed; }
 	UINT GetMusicTempo() const { return m_nMusicTempo; }

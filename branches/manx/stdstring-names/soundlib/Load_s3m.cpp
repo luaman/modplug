@@ -294,6 +294,7 @@ struct PACKED S3MSampleHeader
 	void ConvertToMPT(ModSample &mptSmp) const
 	{
 		mptSmp.Initialize(MOD_TYPE_S3M);
+		mpt::String::Read<mpt::String::nullTerminated>(mptSmp.name, name);
 		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.filename, filename);
 
 		if((sampleType == typePCM || sampleType == typeNone) && magic == idSCRS)
@@ -332,6 +333,8 @@ struct PACKED S3MSampleHeader
 	SmpLength ConvertToS3M(const ModSample &mptSmp)
 	{
 		SmpLength smpLength = 0;
+
+		mpt::String::Write<mpt::String::nullTerminated>(name, mptSmp.name);
 		mpt::String::Write<mpt::String::maybeNullTerminated>(filename, mptSmp.filename);
 
 		if(mptSmp.pSample != nullptr)
@@ -628,7 +631,6 @@ bool CSoundFile::ReadS3M(FileReader &file, ModLoadingFlags loadFlags)
 			continue;
 		}
 
-		mpt::String::Read<mpt::String::nullTerminated>(m_szNames[smp + 1], sampleHeader.name);
 		sampleHeader.ConvertToMPT(Samples[smp + 1]);
 
 		if(sampleHeader.sampleType >= S3MSampleHeader::typeAdMel)
@@ -1110,8 +1112,6 @@ bool CSoundFile::SaveS3M(LPCSTR lpszFileName) const
 		}
 
 		SmpLength smpLength = sampleHeader[smp].ConvertToS3M(Samples[realSmp]);
-
-		mpt::String::Write<mpt::String::nullTerminated>(sampleHeader[smp].name, m_szNames[realSmp]);
 
 		if(Samples[realSmp].pSample)
 		{

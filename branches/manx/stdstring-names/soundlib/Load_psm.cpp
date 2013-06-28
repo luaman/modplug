@@ -142,6 +142,7 @@ struct PACKED PSMOldSampleHeader
 	// Convert header data to OpenMPT's internal format
 	void ConvertToMPT(ModSample &mptSmp) const
 	{
+		mpt::String::Read<mpt::String::nullTerminated>(mptSmp.name, sampleName);
 		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.filename, fileName);
 
 		mptSmp.nGlobalVol = 64;
@@ -201,6 +202,7 @@ struct PACKED PSMNewSampleHeader
 	// Convert header data to OpenMPT's internal format
 	void ConvertToMPT(ModSample &mptSmp) const
 	{
+		mpt::String::Read<mpt::String::nullTerminated>(mptSmp.name, sampleName);
 		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.filename, fileName);
 
 		mptSmp.nGlobalVol = 64;
@@ -612,7 +614,6 @@ bool CSoundFile::ReadPSM(FileReader &file, ModLoadingFlags loadFlags)
 				if(smp < MAX_SAMPLES)
 				{
 					m_nSamples = MAX(m_nSamples, smp);
-					mpt::String::Read<mpt::String::nullTerminated>(m_szNames[smp], sampleHeader.sampleName);
 
 					sampleHeader.ConvertToMPT(Samples[smp]);
 					sampleHeader.GetSampleFormat().ReadSample(Samples[smp], chunk);
@@ -630,7 +631,6 @@ bool CSoundFile::ReadPSM(FileReader &file, ModLoadingFlags loadFlags)
 				if(smp < MAX_SAMPLES)
 				{
 					m_nSamples = MAX(m_nSamples, smp);
-					mpt::String::Read<mpt::String::nullTerminated>(m_szNames[smp], sampleHeader.sampleName);
 
 					sampleHeader.ConvertToMPT(Samples[smp]);
 					sampleHeader.GetSampleFormat().ReadSample(Samples[smp], chunk);
@@ -1066,6 +1066,7 @@ struct PACKED PSM16SampleHeader
 	// Convert sample header to OpenMPT's internal format
 	void ConvertToMPT(ModSample &mptSmp) const
 	{
+		mpt::String::Read<mpt::String::nullTerminated>(mptSmp.name, name);
 		mpt::String::Read<mpt::String::nullTerminated>(mptSmp.filename, filename);
 
 		mptSmp.nLength = length;
@@ -1209,7 +1210,6 @@ bool CSoundFile::ReadPSM16(FileReader &file, ModLoadingFlags loadFlags)
 			SAMPLEINDEX smp = sampleHeader.sampleNumber;
 			m_nSamples = MAX(m_nSamples, smp);
 
-			mpt::String::Read<mpt::String::nullTerminated>(m_szNames[smp], sampleHeader.name);
 			sampleHeader.ConvertToMPT(Samples[smp]);
 
 			file.Seek(sampleHeader.offset);

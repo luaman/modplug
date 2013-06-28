@@ -411,6 +411,9 @@ void XMSample::ConvertToXM(const ModSample &mptSmp, MODTYPE fromType, bool compa
 		loopStart *= 2;
 		loopLength *= 2;
 	}
+
+	mpt::String::Write<mpt::String::spacePadded>(name, mptSmp.name);
+
 }
 
 
@@ -462,6 +465,7 @@ void XMSample::ConvertToMPT(ModSample &mptSmp) const
 
 	mptSmp.SanitizeLoops();
 
+	mpt::String::Read<mpt::String::spacePadded>(mptSmp.name, name);
 	mptSmp.filename = "";
 }
 

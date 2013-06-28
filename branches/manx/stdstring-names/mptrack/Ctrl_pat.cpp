@@ -323,9 +323,9 @@ void CCtrlPatterns::UpdateView(DWORD dwHintMask, CObject *pObj)
 				for(SAMPLEINDEX i = 1; i <= nmax; i++) if (m_sndFile.GetSample(i).pSample)
 				{
 					if (m_modDoc.GetSplitKeyboardSettings().IsSplitActive())
-						wsprintf(s, szSplitFormat, nSplitIns, GetNoteStr(noteSplit), i, m_sndFile.m_szNames[nSplitIns], m_sndFile.m_szNames[i]);
+						wsprintf(s, szSplitFormat, nSplitIns, GetNoteStr(noteSplit), i, m_sndFile.GetSampleName(nSplitIns).c_str(), m_sndFile.GetSampleName(i).c_str());
 					else
-						wsprintf(s, "%02u: %s", i, m_sndFile.m_szNames[i]);
+						wsprintf(s, "%02u: %s", i, m_sndFile.GetSampleName(i).c_str());
 
 					UINT n = m_CbnInstrument.AddString(s);
 					if(n == m_nInstrument) nPos = n;

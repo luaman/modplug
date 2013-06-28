@@ -77,6 +77,8 @@ struct PACKED _669Sample
 			mptSmp.uFlags = CHN_LOOP;
 			mptSmp.SanitizeLoops();
 		}
+
+		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.name, filename);
 	}
 };
 
@@ -130,7 +132,6 @@ bool CSoundFile::Read669(FileReader &file, ModLoadingFlags loadFlags)
 			return false;
 		}
 		sampleHeader.ConvertToMPT(Samples[smp]);
-		mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[smp], sampleHeader.filename);
 	}
 
 	// Copy first song message line into song title

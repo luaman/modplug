@@ -1067,11 +1067,13 @@ bool CSoundFile::ReadDMF(FileReader &file, ModLoadingFlags loadFlags)
 
 	for(SAMPLEINDEX smp = 1; smp <= GetNumSamples(); smp++)
 	{
-		chunk.ReadString<mpt::String::spacePadded>(m_szNames[smp], chunk.ReadUint8());
+		std::string sampleName;
+		chunk.ReadString<mpt::String::spacePadded>(sampleName, chunk.ReadUint8());
 		DMFSampleHeader sampleHeader;
 		ModSample &sample = Samples[smp];
 		chunk.ReadConvertEndianness(sampleHeader);
 		sampleHeader.ConvertToMPT(sample);
+		sample.name = sampleName;
 
 		if(fileHeader.version >= 8)
 		{

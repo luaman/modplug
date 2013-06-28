@@ -531,7 +531,7 @@ bool CSoundFile::ReadMDL(const BYTE *lpStream, const DWORD dwMemLength, ModLoadi
 				}
 				ModSample &sample = Samples[info->sampleIndex];
 
-				mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[info->sampleIndex], info->name);
+				mpt::String::Read<mpt::String::maybeNullTerminated>(sample.name, info->name);
 				mpt::String::Read<mpt::String::maybeNullTerminated>(sample.filename, info->filename);
 
 				if(pmsh->version > 0)

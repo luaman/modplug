@@ -954,10 +954,11 @@ void CModTree::UpdateView(ModTreeDocInfo *pInfo, DWORD lHint)
 				if(sampleExists && pInfo->samplesPlaying[nSmp]) nImage = IMAGE_SAMPLEACTIVE;
 				if(pInfo->pModDoc->IsSampleMuted(nSmp)) nImage = IMAGE_SAMPLEMUTE;
 
-				wsprintf(s, "%3d: %s", nSmp, sndFile.m_szNames[nSmp]);
+				CString str;
+				str.Format("%3d: %s", nSmp, sndFile.GetSampleName(nSmp).c_str());
 				if (!pInfo->tiSamples[nSmp])
 				{
-					pInfo->tiSamples[nSmp] = InsertItem(s, nImage, nImage, pInfo->hSamples, TVI_LAST);
+					pInfo->tiSamples[nSmp] = InsertItem(str, nImage, nImage, pInfo->hSamples, TVI_LAST);
 				} else
 				{
 					tvi.mask = TVIF_TEXT | TVIF_HANDLE | TVIF_IMAGE;
@@ -966,9 +967,9 @@ void CModTree::UpdateView(ModTreeDocInfo *pInfo, DWORD lHint)
 					tvi.cchTextMax = sizeof(stmp);
 					tvi.iImage = tvi.iSelectedImage = nImage;
 					GetItem(&tvi);
-					if ((strcmp(s, stmp)) || (tvi.iImage != nImage))
+					if((str != stmp) || (tvi.iImage != nImage))
 					{
-						SetItem(pInfo->tiSamples[nSmp], TVIF_TEXT|TVIF_IMAGE|TVIF_SELECTEDIMAGE, s, nImage, nImage, 0, 0, 0);
+						SetItem(pInfo->tiSamples[nSmp], TVIF_TEXT|TVIF_IMAGE|TVIF_SELECTEDIMAGE, str, nImage, nImage, 0, 0, 0);
 					}
 				}
 			} else
@@ -1607,13 +1608,14 @@ void CModTree::FillInstrumentLibrary()
 //------------------------------------
 {
 	TV_INSERTSTRUCT tvis;
-	char s[_MAX_PATH+32], szPath[_MAX_PATH] = "";
 
 	if (!m_hInsLib) return;
 	SetRedraw(FALSE);
 	if(m_szSongName[0] && !m_pDataTree && m_SongFile)
 	{
-		wsprintf(s, "%s", m_szSongName);
+		CString s;
+		CString path;
+		s = m_szSongName;
 		SetItemText(m_hInsLib, s);
 		SetItemImage(m_hInsLib, IMAGE_FOLDERSONG, IMAGE_FOLDERSONG);
 		for(INSTRUMENTINDEX iIns = 1; iIns <= m_SongFile->GetNumInstruments(); iIns++)
@@ -1621,8 +1623,8 @@ void CModTree::FillInstrumentLibrary()
 			ModInstrument *pIns = m_SongFile->Instruments[iIns];
 			if(pIns)
 			{
-				mpt::String::Copy(szPath, pIns->name);
-				wsprintf(s, "%3d: %s", iIns, szPath);
+				path = pIns->name;
+				s.Format("%3d: %s", iIns, path.GetString());
 				ModTreeBuildTVIParam(tvis, s, IMAGE_INSTRUMENTS);
 				InsertItem(&tvis);
 			}
@@ -1630,16 +1632,17 @@ void CModTree::FillInstrumentLibrary()
 		for(SAMPLEINDEX iSmp = 1; iSmp <= m_SongFile->GetNumSamples(); iSmp++)
 		{
 			const ModSample &sample = m_SongFile->GetSample(iSmp);
-			strcpy(szPath, m_SongFile->m_szNames[iSmp]);
+			path = m_SongFile->GetSampleName(iSmp);
 			if (sample.pSample)
 			{
-				wsprintf(s, "%3d: %s", iSmp, szPath);
+				s.Format("%3d: %s", iSmp, path.GetString());
 				ModTreeBuildTVIParam(tvis, s, IMAGE_SAMPLES);
 				InsertItem(&tvis);
 			}
 		}
 	} else
 	{
+		char s[_MAX_PATH+32], szPath[_MAX_PATH] = "";
 		CHAR szFileName[_MAX_PATH];
 		WIN32_FIND_DATA wfd;
 		HANDLE hFind;
@@ -3484,7 +3487,7 @@ void CModTree::OnBeginLabelEdit(NMHDR *nmhdr, LRESULT *result)
 	{
 		const CSoundFile *sndFile = modDoc->GetSoundFile();
 		const CModSpecifications &modSpecs = sndFile->GetModSpecifications();
-		char const *text = nullptr;
+		CString text;
 		CString tempText;
 
 		switch(modItemType)
@@ -3520,7 +3523,7 @@ void CModTree::OnBeginLabelEdit(NMHDR *nmhdr, LRESULT *result)
 		case MODITEM_SAMPLE:
 			if(modItemID <= sndFile->GetNumSamples())
 			{
-				text = sndFile->m_szNames[modItemID];
+				text = sndFile->GetSampleName(modItemID);
 				editCtrl->SetLimitText(modSpecs.sampleNameLengthMax);
 			}
 			break;
@@ -3614,9 +3617,9 @@ void CModTree::OnEndLabelEdit(NMHDR *nmhdr, LRESULT *result)
 			break;
 
 		case MODITEM_SAMPLE:
-			if(modItemID <= sndFile.GetNumSamples() && strcmp(sndFile.m_szNames[modItemID], info->item.pszText))
+			if(modItemID <= sndFile.GetNumSamples() && sndFile.GetSample(modItemID).name != info->item.pszText)
 			{
-				mpt::String::CopyN(sndFile.m_szNames[modItemID], info->item.pszText, modSpecs.sampleNameLengthMax);
+				mpt::String::CopyN(sndFile.GetSample(modItemID).name, info->item.pszText, modSpecs.sampleNameLengthMax);
 				modDoc->SetModified();
 				modDoc->UpdateAllViews(NULL, (UINT(modItemID) << HINT_SHIFT_SMP) | HINT_SMPNAMES | HINT_SAMPLEDATA | HINT_SAMPLEINFO);
 			}

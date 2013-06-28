@@ -68,6 +68,8 @@ struct PACKED AsylumSampleHeader
 			mptSmp.nLoopStart = loopStart;
 			mptSmp.nLoopEnd = loopStart + loopLength;
 		}
+
+		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.name, name);
 	}
 };
 
@@ -138,7 +140,6 @@ bool CSoundFile::ReadAMF_Asylum(FileReader &file, ModLoadingFlags loadFlags)
 		AsylumSampleHeader sampleHeader;
 		file.ReadConvertEndianness(sampleHeader);
 		sampleHeader.ConvertToMPT(Samples[smp]);
-		mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[smp], sampleHeader.name);
 	}
 
 	file.Skip((64 - fileHeader.numSamples) * sizeof(AsylumSampleHeader));
@@ -463,7 +464,7 @@ bool CSoundFile::ReadAMF_DSMI(FileReader &file, ModLoadingFlags loadFlags)
 		sample.Initialize();
 
 		uint8 type = file.ReadUint8();
-		file.ReadString<mpt::String::maybeNullTerminated>(m_szNames[smp], 32);
+		file.ReadString<mpt::String::maybeNullTerminated>(sample.name, 32);
 		file.ReadString<mpt::String::nullTerminated>(sample.filename, 13);
 		samplePos[smp - 1] = file.ReadUint32LE();
 		if(fileHeader.version < 10)

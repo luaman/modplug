@@ -561,9 +561,9 @@ bool CSoundFile::ReadMT2(LPCBYTE lpStream, DWORD dwMemLength, ModLoadingFlags lo
 	#ifdef MT2DEBUG
 		if (iSmp <= m_nSamples) Log("  Sample #%d at offset %04X: %d bytes\n", iSmp, dwMemPos, pms->dwDataLen);
 	#endif
-		if (iSmp < MAX_SAMPLES)
+		if(iSmp < MAX_SAMPLES)
 		{
-			mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[iSmp], pms->szName);
+			mpt::String::Read<mpt::String::maybeNullTerminated>(Samples[iSmp].name, pms->szName);
 		}
 		if (pms->dwDataLen > 0)
 		{
@@ -572,6 +572,7 @@ bool CSoundFile::ReadMT2(LPCBYTE lpStream, DWORD dwMemLength, ModLoadingFlags lo
 			{
 				ModSample *psmp = &Samples[iSmp];
 				psmp->Initialize(MOD_TYPE_XM);
+				mpt::String::Read<mpt::String::maybeNullTerminated>(psmp->name, pms->szName);
 				psmp->nGlobalVol = 64;
 				psmp->nVolume = (pms->wVolume >> 7);
 				psmp->nPan = (pms->nPan == 0x80) ? 128 : (pms->nPan^0x80);

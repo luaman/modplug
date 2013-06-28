@@ -553,9 +553,9 @@ void TestLoadXMFile(const CSoundFile &sndFile)
 
 	// Samples
 	VERIFY_EQUAL_NONCONT(sndFile.GetNumSamples(), 3);
-	VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[1], "Pulse Sample"), 0);
-	VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[2], "Empty Sample"), 0);
-	VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[3], "Unassigned Sample"), 0);
+	VERIFY_EQUAL_NONCONT(sndFile.GetSampleName(1), "Pulse Sample");
+	VERIFY_EQUAL_NONCONT(sndFile.GetSampleName(2), "Empty Sample");
+	VERIFY_EQUAL_NONCONT(sndFile.GetSampleName(3), "Unassigned Sample");
 #ifdef MODPLUG_TRACKER
 	VERIFY_EQUAL_NONCONT(pModDoc->FindSampleParent(1), 1);
 	VERIFY_EQUAL_NONCONT(pModDoc->FindSampleParent(2), 1);
@@ -813,7 +813,7 @@ void TestLoadMPTMFile(const CSoundFile &sndFile)
 
 	{
 		const ModSample &sample = sndFile.GetSample(2);
-		VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[2], "Stereo / 16-Bit"), 0);
+		VERIFY_EQUAL_NONCONT(sample.name, "Stereo / 16-Bit");
 		VERIFY_EQUAL_NONCONT(sample.GetBytesPerSample(), 4);
 		VERIFY_EQUAL_NONCONT(sample.GetNumChannels(), 2);
 		VERIFY_EQUAL_NONCONT(sample.GetElementarySampleSize(), 2);
@@ -1007,7 +1007,7 @@ void TestLoadS3MFile(const CSoundFile &sndFile, bool resaved)
 	VERIFY_EQUAL_NONCONT(sndFile.GetNumSamples(), 3);
 	{
 		const ModSample &sample = sndFile.GetSample(1);
-		VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[1], "Sample_1__________________X"), 0);
+		VERIFY_EQUAL_NONCONT(sample.name, "Sample_1__________________X");
 		VERIFY_EQUAL_NONCONT(sample.filename, "Filename_1_X");
 		VERIFY_EQUAL_NONCONT(sample.GetBytesPerSample(), 1);
 		VERIFY_EQUAL_NONCONT(sample.GetNumChannels(), 1);
@@ -1035,14 +1035,14 @@ void TestLoadS3MFile(const CSoundFile &sndFile, bool resaved)
 
 	{
 		const ModSample &sample = sndFile.GetSample(2);
-		VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[2], "Empty"), 0);
+		VERIFY_EQUAL_NONCONT(sample.name, "Empty");
 		VERIFY_EQUAL_NONCONT(sample.GetSampleRate(MOD_TYPE_S3M), 16384);
 		VERIFY_EQUAL_NONCONT(sample.nVolume, 2 * 4);
 	}
 
 	{
 		const ModSample &sample = sndFile.GetSample(3);
-		VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[3], "Stereo / 16-Bit"), 0);
+		VERIFY_EQUAL_NONCONT(sample.name, "Stereo / 16-Bit");
 		VERIFY_EQUAL_NONCONT(sample.filename, "Filename_3_X");
 		VERIFY_EQUAL_NONCONT(sample.GetBytesPerSample(), 4);
 		VERIFY_EQUAL_NONCONT(sample.GetNumChannels(), 2);

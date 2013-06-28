@@ -211,7 +211,7 @@ bool CSoundFile::ReadGDM(FileReader &file, ModLoadingFlags loadFlags)
 
 		ModSample &sample = Samples[smp];
 		sample.Initialize();
-		mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[smp], gdmSample.name);
+		mpt::String::Read<mpt::String::maybeNullTerminated>(sample.name, gdmSample.name);
 		mpt::String::Read<mpt::String::maybeNullTerminated>(sample.filename, gdmSample.fileName);
 
 		sample.nC5Speed = gdmSample.c4Hertz;

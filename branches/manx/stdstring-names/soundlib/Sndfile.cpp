@@ -586,7 +586,6 @@ CSoundFile::CSoundFile() :
 
 	MemsetZero(ChnMix);
 	MemsetZero(Instruments);
-	MemsetZero(m_szNames);
 	MemsetZero(m_MixPlugins);
 	Order.Init();
 	Patterns.ClearPatterns();
@@ -701,7 +700,6 @@ BOOL CSoundFile::Create(FileReader file, ModLoadingFlags loadFlags)
 	m_nMaxOrderPosition = 0;
 	MemsetZero(ChnMix);
 	MemsetZero(Instruments);
-	MemsetZero(m_szNames);
 	MemsetZero(m_MixPlugins);
 
 	if(file.IsValid())
@@ -817,9 +815,6 @@ BOOL CSoundFile::Create(FileReader file, ModLoadingFlags loadFlags)
 	ModSample *pSmp = Samples;
 	for(SAMPLEINDEX nSmp = 0; nSmp < MAX_SAMPLES; nSmp++, pSmp++)
 	{
-		// Adjust song / sample names
-		mpt::String::SetNullTerminator(m_szNames[nSmp]);
-
 		if(pSmp->pSample)
 		{
 			pSmp->SanitizeLoops();
@@ -1388,13 +1383,13 @@ MODTYPE CSoundFile::GetBestSaveFormat() const
 }
 
 
-LPCTSTR CSoundFile::GetSampleName(UINT nSample) const
-//---------------------------------------------------
+mpt::string CSoundFile::GetSampleName(UINT nSample) const
+//-------------------------------------------------------
 {
 	ASSERT(nSample <= GetNumSamples());
 	if (nSample < MAX_SAMPLES)
 	{
-		return m_szNames[nSample];
+		return Samples[nSample].name;
 	} else
 	{
 		return "";
@@ -1619,7 +1614,7 @@ SAMPLEINDEX CSoundFile::RemoveSelectedSamples(const vector<bool> &keepSamples)
 
 			if(DestroySample(nSmp))
 			{
-				strcpy(m_szNames[nSmp], "");
+				Samples[nSmp].name = "";
 				nRemoved++;
 			}
 			if((nSmp == GetNumSamples()) && (nSmp > 1)) m_nSamples--;
@@ -1967,7 +1962,7 @@ SAMPLEINDEX CSoundFile::GetNextFreeSample(INSTRUMENTINDEX targetInstrument, SAMP
 		{
 			// When loading into an instrument, ignore non-empty sample names. Else, only use this slot if the sample name is empty or we're in second pass.
 			if((i > GetNumSamples() && passes == 1)
-				|| (Samples[i].pSample == nullptr && (!m_szNames[i][0] || passes == 1 || targetInstrument != INSTRUMENTINDEX_INVALID))
+				|| (Samples[i].pSample == nullptr && (Samples[i].name.empty() || passes == 1 || targetInstrument != INSTRUMENTINDEX_INVALID))
 				|| (targetInstrument != INSTRUMENTINDEX_INVALID && IsSampleReferencedByInstrument(i, targetInstrument)))	// Not empty, but already used by this instrument.
 			{
 				// Empty slot, so it's a good candidate already.

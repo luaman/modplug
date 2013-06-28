@@ -244,7 +244,7 @@ bool CSoundFile::ReadDSM(const LPCBYTE lpStream, const DWORD dwMemLength, ModLoa
 			ModSample &sample = Samples[nSmp];
 			sample.Initialize();
 
-			mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[nSmp], pSmp->samplename);
+			mpt::String::Read<mpt::String::maybeNullTerminated>(sample.name, pSmp->samplename);
 			mpt::String::Read<mpt::String::nullTerminated>(sample.filename, pSmp->filename);
 
 			sample.nC5Speed = pSmp->c2spd;

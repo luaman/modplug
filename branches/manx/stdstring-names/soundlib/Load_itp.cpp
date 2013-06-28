@@ -206,8 +206,7 @@ bool CSoundFile::ReadITProject(FileReader &file, ModLoadingFlags loadFlags)
 
 		if(realSample >= 1 && realSample < MAX_SAMPLES && sampleHeader.id == ITSample::magic)
 		{
-			sampleHeader.ConvertToMPT(Samples[realSample]);
-			mpt::String::Read<mpt::String::nullTerminated>(m_szNames[realSample], sampleHeader.name);
+			sampleHeader.ConvertToMPT(Samples[realSample], mpt::String::nullTerminated);
 
 			// Read sample data
 			sampleHeader.GetSampleFormat().ReadSample(Samples[realSample], file);
@@ -485,8 +484,6 @@ bool CSoundFile::SaveITProject(LPCSTR lpszFileName)
 		{
 			ITSample itss;
 			itss.ConvertToIT(Samples[nsmp], GetType(), false, false);
-
-			mpt::String::Write<mpt::String::nullTerminated>(itss.name, m_szNames[nsmp]);
 
 			id = nsmp;
 			fwrite(&id, 1, sizeof(id), f);

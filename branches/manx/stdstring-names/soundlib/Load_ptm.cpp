@@ -123,7 +123,7 @@ bool CSoundFile::ReadPTM(const BYTE *lpStream, const DWORD dwMemLength, ModLoadi
 		PTMSAMPLE *psmp = (PTMSAMPLE *)(lpStream+dwMemPos);
 
 		sample.Initialize();
-		mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[ismp + 1], psmp->samplename);
+		mpt::String::Read<mpt::String::maybeNullTerminated>(sample.name, psmp->samplename);
 		mpt::String::Read<mpt::String::maybeNullTerminated>(sample.filename, psmp->filename);
 
 		sample.nVolume = psmp->volume * 4;
