@@ -1720,11 +1720,6 @@ void ReadInstrumentExtensionField(ModInstrument* pIns, const uint32 code, const 
 		return;
 	}
 
-	if(code == MULTICHAR4_LE_MSVC('n','[','.','.'))
-		mpt::String::SetNullTerminator(pIns->name);
-	if(code == MULTICHAR4_LE_MSVC('f','n','[','.'))
-		mpt::String::SetNullTerminator(pIns->filename);
-
 	if(code == MULTICHAR4_LE_MSVC('d','F','.','.')) // 'dF..' field requires additional processing.
 		ConvertReadExtendedFlags(pIns);
 }

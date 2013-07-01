@@ -413,8 +413,7 @@ void CViewComments::OnUpdate(CView *pSender, LPARAM lHint, CObject *)
 					case INSLIST_FILENAME:
 						if (pIns)
 						{
-							memcpy(s, pIns->filename, sizeof(pIns->filename));
-							s[CountOf(pIns->filename)] = 0;
+							mpt::String::Copy(s, pIns->filename);
 						}
 						break;
 					case INSLIST_PLUGIN:
