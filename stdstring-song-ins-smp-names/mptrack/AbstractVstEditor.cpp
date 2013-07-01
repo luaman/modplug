@@ -609,7 +609,7 @@ void CAbstractVstEditor::UpdateInputMenu()
 		{
 			m_InputMenu.AppendMenu(MF_SEPARATOR);
 		}
-		name.Format("Ins%02d: %s", inputInstruments[nIns], pSndFile->GetInstrumentName(inputInstruments[nIns]));
+		name.Format("Ins%02d: %s", inputInstruments[nIns], pSndFile->GetInstrumentName(inputInstruments[nIns]).c_str());
 		if(inputInstruments[nIns] == m_nInstrument)	checked = true;
 		m_InputMenu.AppendMenu(MF_STRING | (checked ? MF_CHECKED : 0), ID_SELECTINST + inputInstruments[nIns], name);
 	}
@@ -866,7 +866,7 @@ bool CAbstractVstEditor::CreateInstrument()
 	ModInstrument *pIns = sndFile.Instruments[nIns];
 	m_nInstrument = nIns;
 
-	_snprintf(pIns->name, CountOf(pIns->name) - 1, _T("%d: %s"), m_VstPlugin.GetSlot() + 1, sndFile.m_MixPlugins[m_VstPlugin.GetSlot()].GetName());
+	pIns->name = mpt::String::Format("%d: %s", m_VstPlugin.GetSlot() + 1, sndFile.m_MixPlugins[m_VstPlugin.GetSlot()].GetName());
 	mpt::String::CopyN(pIns->filename, sndFile.m_MixPlugins[m_VstPlugin.GetSlot()].GetLibraryName());
 	pIns->nMixPlug = (PLUGINDEX)m_VstPlugin.GetSlot() + 1;
 	pIns->nMidiChannel = 1;

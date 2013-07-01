@@ -1441,11 +1441,11 @@ BOOL CCtrlInstruments::OpenInstrument(LPCSTR lpszFileName)
 			_tsplitpath(lpszFileName, nullptr, nullptr, szName, szExt);
 			TrackerSettings::Instance().SetWorkingDirectory(lpszFileName, DIR_INSTRUMENTS, true);
 	
-			if (!pIns->name[0] && m_sndFile.GetModSpecifications().instrNameLengthMax > 0)
+			if (pIns->name.empty() && m_sndFile.GetModSpecifications().instrNameLengthMax > 0)
 			{
 				mpt::String::CopyN(pIns->name, szName, m_sndFile.GetModSpecifications().instrNameLengthMax);
 			}
-			if (!pIns->filename[0] && m_sndFile.GetModSpecifications().instrFilenameLengthMax > 0)
+			if (pIns->filename.empty() && m_sndFile.GetModSpecifications().instrFilenameLengthMax > 0)
 			{
 				strcat(szName, szExt);
 				mpt::String::CopyN(pIns->filename, szName, m_sndFile.GetModSpecifications().instrFilenameLengthMax);
@@ -1725,7 +1725,7 @@ void CCtrlInstruments::OnInstrumentSave()
 	ModInstrument *pIns = m_sndFile.Instruments[m_nInstrument];
 	
 	if (!pIns) return;
-	if (pIns->filename[0])
+	if(!pIns->filename.empty())
 	{
 		mpt::String::Copy(szFileName, pIns->filename);
 	} else
@@ -1798,13 +1798,12 @@ void CCtrlInstruments::OnNameChanged()
 {
 	if (!IsLocked())
 	{
-		CHAR s[64];
-		s[0] = 0;
-		m_EditName.GetWindowText(s, sizeof(s));
+		CString s;
+		m_EditName.GetWindowText(s);
 		ModInstrument *pIns = m_sndFile.Instruments[m_nInstrument];
-		if ((pIns) && (strncmp(s, pIns->name, MAX_INSTRUMENTNAME)))
+		if ((pIns) && (s != pIns->name))
 		{
-			mpt::String::Copy(pIns->name, s);
+			pIns->name = s;
 			SetInstrumentModified(true);
 		}
 	}
@@ -1816,14 +1815,12 @@ void CCtrlInstruments::OnFileNameChanged()
 {
 	if (!IsLocked())
 	{
-		CHAR s[64];
-		s[0] = 0;
-		m_EditFileName.GetWindowText(s, sizeof(s));
-		for (UINT i=strlen(s); i<=12; i++) s[i] = 0;
+		CString s;
+		m_EditFileName.GetWindowText(s);
 		ModInstrument *pIns = m_sndFile.Instruments[m_nInstrument];
-		if ((pIns) && (strncmp(s, pIns->filename, 12)))
+		if ((pIns) && (s != pIns->filename))
 		{
-			memcpy(pIns->filename, s, 12);
+			pIns->filename = s;
 			SetInstrumentModified(true);
 		}
 	}
