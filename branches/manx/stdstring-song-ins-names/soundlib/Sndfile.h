@@ -526,7 +526,7 @@ public:
 	std::string GetTitle() const { return songName; }
 	bool SetTitle(const std::string &newTitle); // Return true if title was changed.
 	LPCTSTR GetSampleName(UINT nSample) const;
-	const char *GetInstrumentName(INSTRUMENTINDEX nInstr) const;
+	mpt::string GetInstrumentName(INSTRUMENTINDEX nInstr) const;
 	UINT GetMusicSpeed() const { return m_nMusicSpeed; }
 	UINT GetMusicTempo() const { return m_nMusicTempo; }
 	bool IsFirstTick() const { return (m_lTotalSampleCount == 0); }
