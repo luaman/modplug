@@ -1011,10 +1011,10 @@ void CModTree::UpdateView(ModTreeDocInfo *pInfo, DWORD lHint)
 					// path info for ITP instruments
 					const bool pathOk = !sndFile.m_szInstrumentPath[nIns - 1].empty();
 					const bool instMod = pDoc->m_bsInstrumentModified.test(nIns - 1);
-					wsprintf(s, pathOk ? (instMod ? "%3d: * %s" : "%3d: %s") : "%3d: ? %s", nIns, sndFile.GetInstrumentName(nIns));
+					wsprintf(s, pathOk ? (instMod ? "%3d: * %s" : "%3d: %s") : "%3d: ? %s", nIns, sndFile.GetInstrumentName(nIns).c_str());
 				} else
 				{
-					wsprintf(s, "%3d: %s", nIns, sndFile.GetInstrumentName(nIns));
+					wsprintf(s, "%3d: %s", nIns, sndFile.GetInstrumentName(nIns).c_str());
 				}
 
 				int nImage = IMAGE_INSTRUMENTS;
@@ -3622,7 +3622,7 @@ void CModTree::OnEndLabelEdit(NMHDR *nmhdr, LRESULT *result)
 			break;
 
 		case MODITEM_INSTRUMENT:
-			if(modItemID <= sndFile.GetNumInstruments() && sndFile.Instruments[modItemID] != nullptr && strcmp(sndFile.Instruments[modItemID]->name, info->item.pszText))
+			if(modItemID <= sndFile.GetNumInstruments() && sndFile.Instruments[modItemID] != nullptr && sndFile.Instruments[modItemID]->name != info->item.pszText)
 			{
 				mpt::String::CopyN(sndFile.Instruments[modItemID]->name, info->item.pszText, modSpecs.instrNameLengthMax);
 				modDoc->SetModified();
