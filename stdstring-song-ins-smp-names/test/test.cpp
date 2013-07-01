@@ -1116,7 +1116,7 @@ void TestLoadS3MFile(const CSoundFile &sndFile, bool resaved)
 	{
 		const ModSample &sample = sndFile.GetSample(1);
 		VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[1], "Sample_1__________________X"), 0);
-		VERIFY_EQUAL_NONCONT(strcmp(sample.filename, "Filename_1_X"), 0);
+		VERIFY_EQUAL_NONCONT(sample.filename, "Filename_1_X");
 		VERIFY_EQUAL_NONCONT(sample.GetBytesPerSample(), 1);
 		VERIFY_EQUAL_NONCONT(sample.GetNumChannels(), 1);
 		VERIFY_EQUAL_NONCONT(sample.GetElementarySampleSize(), 1);
@@ -1151,7 +1151,7 @@ void TestLoadS3MFile(const CSoundFile &sndFile, bool resaved)
 	{
 		const ModSample &sample = sndFile.GetSample(3);
 		VERIFY_EQUAL_NONCONT(strcmp(sndFile.m_szNames[3], "Stereo / 16-Bit"), 0);
-		VERIFY_EQUAL_NONCONT(strcmp(sample.filename, "Filename_3_X"), 0);
+		VERIFY_EQUAL_NONCONT(sample.filename, "Filename_3_X");
 		VERIFY_EQUAL_NONCONT(sample.GetBytesPerSample(), 4);
 		VERIFY_EQUAL_NONCONT(sample.GetNumChannels(), 2);
 		VERIFY_EQUAL_NONCONT(sample.GetElementarySampleSize(), 2);

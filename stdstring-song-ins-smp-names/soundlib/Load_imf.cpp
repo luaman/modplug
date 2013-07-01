@@ -605,7 +605,7 @@ bool CSoundFile::ReadIMF(FileReader &file, ModLoadingFlags loadFlags)
 			ModSample &sample = Samples[firstSample + smp];
 
 			sampleHeader.ConvertToMPT(sample);
-			strcpy(m_szNames[m_nSamples], sample.filename);
+			mpt::String::Copy(m_szNames[m_nSamples], sample.filename);
 
 			if(sampleHeader.length)
 			{

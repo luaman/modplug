@@ -115,7 +115,7 @@ void ModSample::Initialize(MODTYPE type)
 	nVibSweep = 0;
 	nVibDepth = 0;
 	nVibRate = 0;
-	filename[0] = '\0';
+	filename = "";
 }
 
 
