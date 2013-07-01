@@ -383,7 +383,6 @@ bool CSoundFile::ReadS3M(FileReader &file, ModLoadingFlags loadFlags)
 		}
 
 		sampleHeader.ConvertToMPT(Samples[smp + 1]);
-		mpt::String::Read<mpt::String::nullTerminated>(m_szNames[smp + 1], sampleHeader.name);
 
 		if(sampleHeader.sampleType >= S3MSampleHeader::typeAdMel)
 		{
@@ -864,8 +863,6 @@ bool CSoundFile::SaveS3M(LPCSTR lpszFileName) const
 		}
 
 		SmpLength smpLength = sampleHeader[smp].ConvertToS3M(Samples[realSmp]);
-
-		mpt::String::Write<mpt::String::nullTerminated>(sampleHeader[smp].name, m_szNames[realSmp]);
 
 		if(Samples[realSmp].pSample)
 		{

@@ -334,11 +334,9 @@ void CNoteMapWnd::OnRButtonDown(UINT, CPoint pt)
 				{
 					if(*sample <= sndFile.GetNumSamples())
 					{
-						wsprintf(s, "%d: ", *sample);
-						size_t l = strlen(s);
-						memcpy(s + l, sndFile.m_szNames[*sample], MAX_SAMPLENAME);
-						s[l + MAX_SAMPLENAME] = '\0';
-						AppendMenu(hSubMenu, MF_STRING, ID_NOTEMAP_EDITSAMPLE + *sample, s);
+						CString str;
+						str.Format("%d: %s", *sample, sndFile.GetSampleName(*sample).c_str());
+						AppendMenu(hSubMenu, MF_STRING, ID_NOTEMAP_EDITSAMPLE + *sample, str);
 					}
 				}
 

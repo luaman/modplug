@@ -1565,7 +1565,7 @@ void CViewPattern::UpdateIndicator()
 	{
 		EffectInfo effectInfo(*pSndFile);
 
-		CHAR s[128];
+		CHAR s[256];
 		CHANNELINDEX nChn;
 		wsprintf(s, "Row %d, Col %d", GetCurrentRow(), GetCurrentChannel() + 1);
 		pMainFrm->SetUserText(s);
@@ -1613,9 +1613,9 @@ void CViewPattern::UpdateIndicator()
 										const SAMPLEINDEX nsmp = pIns->Keyboard[m->note - 1];
 										if ((nsmp) && (nsmp <= pSndFile->GetNumSamples()))
 										{
-											if (pSndFile->m_szNames[nsmp][0])
+											if(!pSndFile->GetSampleName(nsmp).empty())
 											{
-												wsprintf(sztmp + strlen(sztmp), " (%d: %s)", nsmp, pSndFile->m_szNames[nsmp]);
+												wsprintf(sztmp + strlen(sztmp), " (%d: %s)", nsmp, pSndFile->GetSampleName(nsmp).c_str());
 											}
 										}
 									}
@@ -1624,7 +1624,7 @@ void CViewPattern::UpdateIndicator()
 							{
 								if (m->instr <= pSndFile->GetNumSamples())
 								{
-									mpt::String::Copy(sztmp, pSndFile->m_szNames[m->instr]);
+									mpt::String::Copy(sztmp, pSndFile->GetSampleName(m->instr));
 								}
 							}
 

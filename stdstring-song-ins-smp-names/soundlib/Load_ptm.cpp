@@ -93,6 +93,7 @@ struct PACKED PTMSampleHeader
 		mptSmp.nVolume = std::min(volume, uint8(64)) * 4;
 		mptSmp.nC5Speed = c4speed * 2;
 
+		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.name, samplename);
 		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.filename, filename);
 
 		SampleIO sampleIO(
@@ -176,7 +177,6 @@ bool CSoundFile::ReadPTM(FileReader &file, ModLoadingFlags loadFlags)
 		sampleHeaderChunk.ReadConvertEndianness(sampleHeader);
 
 		ModSample &sample = Samples[smp + 1];
-		mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[smp + 1], sampleHeader.samplename);
 		SampleIO sampleIO = sampleHeader.ConvertToMPT(sample);
 
 		if((loadFlags & loadSampleData) && sample.nLength && sampleHeader.dataOffset && file.Seek(sampleHeader.dataOffset))

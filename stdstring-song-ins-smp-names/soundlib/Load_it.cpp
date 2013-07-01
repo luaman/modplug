@@ -662,9 +662,7 @@ bool CSoundFile::ReadIT(FileReader &file, ModLoadingFlags loadFlags)
 		{
 			if(sampleHeader.id == ITSample::magic)
 			{
-				size_t sampleOffset = sampleHeader.ConvertToMPT(Samples[i + 1]);
-
-				mpt::String::Read<mpt::String::spacePadded>(m_szNames[i + 1], sampleHeader.name);
+				size_t sampleOffset = sampleHeader.ConvertToMPT(Samples[i + 1], mpt::String::spacePadded);
 
 				if((loadFlags & loadSampleData) && file.Seek(sampleOffset))
 				{
@@ -1565,8 +1563,6 @@ bool CSoundFile::SaveIT(LPCSTR lpszFileName, bool compatibilityExport)
 #endif // MODPLUG_TRACKER
 		// Old MPT will only consider the IT2.15 compression flag if the header version also indicates IT2.15.
 		itss.ConvertToIT(Samples[nsmp], GetType(), compress, itHeader.cmwt >= 0x215);
-
-		mpt::String::Write<mpt::String::nullTerminated>(itss.name, m_szNames[nsmp]);
 
 		itss.samplepointer = dwPos;
 		itss.ConvertEndianness();

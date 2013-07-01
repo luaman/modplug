@@ -45,6 +45,7 @@ void S3MSampleHeader::ConvertToMPT(ModSample &mptSmp) const
 //---------------------------------------------------------
 {
 	mptSmp.Initialize(MOD_TYPE_S3M);
+	mpt::String::Read<mpt::String::nullTerminated>(mptSmp.name, name);
 	mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.filename, filename);
 
 	if((sampleType == typePCM || sampleType == typeNone) && magic == idSCRS)
@@ -85,6 +86,8 @@ SmpLength S3MSampleHeader::ConvertToS3M(const ModSample &mptSmp)
 //--------------------------------------------------------------
 {
 	SmpLength smpLength = 0;
+
+	mpt::String::Write<mpt::String::nullTerminated>(name, mptSmp.name);
 	mpt::String::Write<mpt::String::maybeNullTerminated>(filename, mptSmp.filename);
 
 	if(mptSmp.pSample != nullptr)

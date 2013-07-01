@@ -90,7 +90,7 @@ void ReadOKTSamples(FileReader &chunk, std::vector<bool> &sample7bit, CSoundFile
 		oktSmp.type = oktSmp.type;
 
 		mptSmp.Initialize();
-		mpt::String::Read<mpt::String::maybeNullTerminated>(pSndFile->m_szNames[nSmp], oktSmp.name);
+		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.name, oktSmp.name);
 
 		mptSmp.nC5Speed = 8287;
 		mptSmp.nGlobalVol = 64;

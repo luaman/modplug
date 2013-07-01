@@ -762,7 +762,7 @@ bool CSoundFile::ReadMed(const BYTE *lpStream, const DWORD dwMemLength, ModLoadi
 				LPCSTR psznames = (LPCSTR)(lpStream + iinfoptr);
 				for (UINT i=0; i<ientries; i++) if (i < m_nSamples)
 				{
-					mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[i + 1], reinterpret_cast<const char *>(psznames + i * ientrysz), ientrysz);
+					mpt::String::Read<mpt::String::maybeNullTerminated>(Samples[i + 1].name, reinterpret_cast<const char *>(psznames + i * ientrysz), ientrysz);
 				}
 			}
 		}

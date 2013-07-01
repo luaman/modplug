@@ -476,8 +476,8 @@ void ITSample::ConvertToIT(const ModSample &mptSmp, MODTYPE fromType, bool compr
 	// Header
 	id = ITSample::magic;
 
+	mpt::String::Write<mpt::String::nullTerminated>(name, mptSmp.name);
 	mpt::String::Write<mpt::String::nullTerminated>(filename, mptSmp.filename);
-	//mpt::String::Write<mpt::String::nullTerminated>(name, m_szNames[nsmp]);
 
 	// Volume / Panning
 	gvl = static_cast<uint8>(mptSmp.nGlobalVol);
@@ -543,8 +543,8 @@ void ITSample::ConvertToIT(const ModSample &mptSmp, MODTYPE fromType, bool compr
 
 
 // Convert an ITSample to OpenMPT's internal sample representation.
-size_t ITSample::ConvertToMPT(ModSample &mptSmp) const
-//----------------------------------------------------
+size_t ITSample::ConvertToMPT(ModSample &mptSmp, mpt::String::ReadWriteMode nameReadMode) const
+//---------------------------------------------------------------------------------------------
 {
 	if(id != ITSample::magic)
 	{
@@ -552,6 +552,25 @@ size_t ITSample::ConvertToMPT(ModSample &mptSmp) const
 	}
 
 	mptSmp.Initialize(MOD_TYPE_IT);
+
+	switch(nameReadMode)
+	{
+	case mpt::String::nullTerminated:
+		mpt::String::Read<mpt::String::nullTerminated>(mptSmp.name, name);
+		break;
+	case mpt::String::maybeNullTerminated:
+		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.name, name);
+		break;
+	case mpt::String::spacePadded:
+		mpt::String::Read<mpt::String::spacePadded>(mptSmp.name, name);
+		break;
+	case mpt::String::spacePaddedNull:
+		mpt::String::Read<mpt::String::spacePaddedNull>(mptSmp.name, name);
+		break;
+	default:
+		mpt::String::Read<mpt::String::spacePaddedNull>(mptSmp.name, name);
+		break;
+	}
 	mpt::String::Read<mpt::String::nullTerminated>(mptSmp.filename, filename);
 
 	// Volume / Panning

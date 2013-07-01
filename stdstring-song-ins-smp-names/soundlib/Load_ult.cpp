@@ -63,6 +63,7 @@ struct PACKED UltSample
 	{
 		mptSmp.Initialize();
 
+		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.name, name);
 		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.filename, filename);
 
 		if(sizeEnd <= sizeStart)
@@ -427,7 +428,6 @@ bool CSoundFile::ReadUlt(FileReader &file, ModLoadingFlags loadFlags)
 		}
 
 		sampleHeader.ConvertToMPT(Samples[smp]);
-		mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[smp], sampleHeader.name);
 	}
 
 	// ult just so happens to use 255 for its end mark, so there's no need to fiddle with this

@@ -1958,17 +1958,17 @@ void CViewSample::OnEditCopy()
 				pxh->nVibSweep = 255 - pxh->nVibSweep;
 			}
 		
-			if((pSndFile->m_szNames[m_nSample][0]) || !sample.filename.empty())
-		{
+			if(!sample.name.empty() || !sample.filename.empty())
+			{
 				LPSTR pszText = (LPSTR)(pxh+1);
-				mpt::String::Write<mpt::String::nullTerminated>(pszText, MAX_SAMPLENAME, pSndFile->m_szNames[m_nSample]);
+				mpt::String::Write<mpt::String::nullTerminated>(pszText, MAX_SAMPLENAME, sample.name);
 				pxh->xtra_len += MAX_SAMPLENAME;
 				if(!sample.filename.empty())
 				{
 					mpt::String::Write<mpt::String::nullTerminated>(pszText + MAX_SAMPLENAME, MAX_SAMPLEFILENAME, sample.filename);
 					pxh->xtra_len += MAX_SAMPLEFILENAME;
 				}
-		}
+			}
 			phdr->filesize += (psh->smpl_len + 8) + (pxh->xtra_len + 8);
 		}
 		GlobalUnlock(hCpy);
@@ -2000,13 +2000,13 @@ void CViewSample::OnEditPaste()
 
 			std::string oldSampleName;
 			std::string oldSampleFilename;
-			mpt::String::Copy(oldSampleName, pSndFile->m_szNames[m_nSample]);
+			mpt::String::Copy(oldSampleName, sample.name);
 			mpt::String::Copy(oldSampleFilename, sample.filename);
 			FileReader file(p, dwMemSize);
 			pSndFile->ReadSampleFromFile(m_nSample, file);
-			if(!pSndFile->m_szNames[m_nSample][0])
+			if(sample.name.empty())
 			{
-				mpt::String::Copy(pSndFile->m_szNames[m_nSample], oldSampleName);
+				mpt::String::Copy(sample.name, oldSampleName);
 			}
 			if(sample.filename.empty())
 			{

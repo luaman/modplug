@@ -904,7 +904,7 @@ VOID CSampleMapDlg::OnUpdateSamples()
 		if (isUsed)
 		{
 			CString sampleName;
-			sampleName.Format("%d: %s", i, sndFile.GetSampleName(i));
+			sampleName.Format("%d: %s", i, sndFile.GetSampleName(i).c_str());
 			nInsertPos = m_CbnSample.AddString(sampleName);
 			
 			m_CbnSample.SetItemData(nInsertPos, i);

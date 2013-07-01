@@ -658,7 +658,7 @@ void CCtrlSamples::UpdateView(DWORD dwHintMask, CObject *pObj)
 		wsprintf(s, "%d-bit %s, len: %d", sample.GetElementarySampleSize() * 8, (sample.uFlags & CHN_STEREO) ? "stereo" : "mono", sample.nLength);
 		SetDlgItemText(IDC_TEXT5, s);
 		// Name
-		mpt::String::Copy(s, m_sndFile.m_szNames[m_nSample]);
+		mpt::String::Copy(s, m_sndFile.GetSampleName(m_nSample));
 		SetDlgItemText(IDC_SAMPLE_NAME, s);
 		// File Name
 		mpt::String::Copy(s, sample.filename);
@@ -799,8 +799,8 @@ bool CCtrlSamples::OpenSample(LPCSTR lpszFileName)
 				sample.nVolume = 256;
 				sample.nPan = 128;
 				sample.uFlags.reset(CHN_LOOP | CHN_SUSTAINLOOP);
+				sample.name = "";
 				sample.filename = "";
-				m_sndFile.m_szNames[m_nSample][0] = '\0';
 				if(!sample.nC5Speed) sample.nC5Speed = 22050;
 			} else
 			{
@@ -820,25 +820,22 @@ OpenError:
 		TrackerSettings::Instance().SetWorkingDirectory(lpszFileName, DIR_SAMPLES, true);
 		if(sample.filename.empty())
 		{
-			CHAR szFullFilename[_MAX_PATH];
+			CString fullFilename;
 			_splitpath(lpszFileName, 0, 0, szName, szExt);
 
-			memset(szFullFilename, 0, 32);
-			strcpy(szFullFilename, szName);
+			fullFilename.Append(szName);
 			if (m_sndFile.GetType() & (MOD_TYPE_MOD | MOD_TYPE_XM))
 			{
 				// MOD/XM
-				strcat(szFullFilename, szExt);
-				szFullFilename[31] = 0;
-				memcpy(m_sndFile.m_szNames[m_nSample], szFullFilename, MAX_SAMPLENAME);
+				fullFilename.Append(szExt);
+				sample.name = fullFilename;
 			} else
 			{
 				// S3M/IT
-				szFullFilename[31] = 0;
-				if (!m_sndFile.m_szNames[m_nSample][0]) mpt::String::Copy(m_sndFile.m_szNames[m_nSample], szFullFilename);
-				if (strlen(szFullFilename) < 9) strcat(szFullFilename, szExt);
+				if(sample.name.empty()) sample.name = fullFilename;
+				if(fullFilename.GetLength() < 9) fullFilename.Append(szExt);
 			}
-			mpt::String::Copy(sample.filename, szFullFilename);
+			sample.filename = fullFilename;
 		}
 		if ((m_sndFile.GetType() & MOD_TYPE_XM) && (!(sample.uFlags & CHN_PANNING)))
 		{
@@ -996,7 +993,7 @@ void CCtrlSamples::OnSampleOpen()
 void CCtrlSamples::OnSampleSave()
 //-------------------------------
 {
-	TCHAR szFileName[_MAX_PATH] = "";
+	CString fileName;
 	bool doBatchSave = CMainFrame::GetInputHandler()->ShiftPressed();
 	bool defaultFLAC = false;
 
@@ -1010,14 +1007,14 @@ void CCtrlSamples::OnSampleSave()
 		}
 		if(m_sndFile.GetType() & (MOD_TYPE_S3M|MOD_TYPE_IT|MOD_TYPE_MPT))
 		{
-			mpt::String::Copy(szFileName, m_sndFile.GetSample(m_nSample).filename);
+			fileName = m_sndFile.GetSample(m_nSample).filename;
 		}
-		if(!szFileName[0])
+		if(fileName.IsEmpty())
 		{
-			mpt::String::Copy(szFileName, m_sndFile.m_szNames[m_nSample]);
+			fileName = m_sndFile.GetSample(m_nSample).name;
 		}
-		if(!szFileName[0]) strcpy(szFileName, "untitled");
-		if(strlen(szFileName) >= 5 && !_strcmpi(szFileName + strlen(szFileName) - 5, ".flac"))
+		if(fileName.IsEmpty()) fileName = "untitled";
+		if(strlen(fileName.GetString()) >= 5 && !_strcmpi(fileName.GetString() + strlen(fileName.GetString()) - 5, ".flac"))
 		{
 			defaultFLAC = true;
 		}
@@ -1033,10 +1030,11 @@ void CCtrlSamples::OnSampleSave()
 		else
 			sPath += "%sample_filename%.wav";
 		sPath += ".wav";
-		_splitpath(sPath, NULL, NULL, szFileName, NULL);
+		char tmpFileName[_MAX_PATH];
+		_splitpath(sPath, NULL, NULL, tmpFileName, NULL);
+		fileName = tmpFileName;
 	}
-	mpt::String::SetNullTerminator(szFileName);
-	SanitizeFilename(szFileName);
+	SanitizeFilename(fileName);
 
 	CString format = CMainFrame::GetPrivateProfileCString("Sample Editor", "DefaultFormat", defaultFLAC ? "flac" : "wav", theApp.GetConfigFileName());
 	int filter = 1;
@@ -1045,7 +1043,7 @@ void CCtrlSamples::OnSampleSave()
 	else if(!format.CompareNoCase("raw"))
 		filter = 3;
 
-	FileDlgResult files = CTrackApp::ShowOpenSaveFileDialog(false, std::string(format), szFileName,
+	FileDlgResult files = CTrackApp::ShowOpenSaveFileDialog(false, std::string(format), fileName.GetString(),
 		"Wave File (*.wav)|*.wav|"
 		"FLAC File (*.flac)|*.flac|"
 		"RAW Audio (*.raw)|*.raw||",
@@ -1074,12 +1072,12 @@ void CCtrlSamples::OnSampleSave()
 			if(doBatchSave)
 			{
 				CString sSampleNumber;
-				TCHAR sSampleName[64];
+				CString sSampleName;
 				std::string sampleFilename;
 				sSampleNumber.Format(sNumberFormat, iSmp);
 
-				strcpy(sSampleName, (m_sndFile.m_szNames[iSmp]) ? m_sndFile.m_szNames[iSmp] : "untitled");
-				sampleFilename = !m_sndFile.GetSample(iSmp).filename.empty() ? m_sndFile.GetSample(iSmp).filename : m_sndFile.m_szNames[iSmp];
+				sSampleName = !m_sndFile.GetSample(iSmp).name.empty() ? m_sndFile.GetSample(iSmp).name : "untitled";
+				sampleFilename = !m_sndFile.GetSample(iSmp).filename.empty() ? m_sndFile.GetSample(iSmp).filename : m_sndFile.GetSample(iSmp).name;
 				SanitizeFilename(sSampleName);
 				SanitizeFilename(sampleFilename);
 
@@ -2322,16 +2320,13 @@ void CCtrlSamples::OnNextInstrument()
 void CCtrlSamples::OnNameChanged()
 //--------------------------------
 {
-	CHAR s[64];
+	CString s;
 
 	if(IsLocked() || !m_nSample) return;
-	s[0] = 0;
-	m_EditName.GetWindowText(s, sizeof(s));
-	for (UINT i=strlen(s); i<32; i++) s[i] = 0;
-	s[31] = 0;
-	if (strncmp(s, m_sndFile.m_szNames[m_nSample], MAX_SAMPLENAME))
+	m_EditName.GetWindowText(s);
+	if(s.GetString() != m_sndFile.GetSample(m_nSample).name)
 	{
-		mpt::String::Copy(m_sndFile.m_szNames[m_nSample], s);
+		m_sndFile.GetSample(m_nSample).name = s;
 		m_modDoc.UpdateAllViews(NULL, (m_nSample << HINT_SHIFT_SMP) | (HINT_SMPNAMES|HINT_SAMPLEINFO), this);
 		m_modDoc.UpdateAllViews(NULL, HINT_INSNAMES, this);
 		m_modDoc.SetModified();
