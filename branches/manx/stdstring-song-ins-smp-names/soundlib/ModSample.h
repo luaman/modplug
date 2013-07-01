@@ -28,7 +28,8 @@ struct ModSample
 	uint8  nVibSweep;						// Auto vibrato sweep (i.e. how long it takes until the vibrato effect reaches its full strength)
 	uint8  nVibDepth;						// Auto vibrato depth
 	uint8  nVibRate;						// Auto vibrato rate (speed)
-	//char name[MAX_SAMPLENAME];			// Maybe it would be nicer to have sample names here, but that would require some refactoring.
+
+	mpt::string name;
 	mpt::string filename;
 
 	ModSample(MODTYPE type = MOD_TYPE_NONE)

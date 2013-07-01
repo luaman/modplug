@@ -95,6 +95,8 @@ struct PACKED FARSampleHeader
 	{
 		mptSmp.Initialize();
 
+		mpt::String::Read<mpt::String::nullTerminated>(mptSmp.name, name);
+
 		mptSmp.nLength = length;
 		mptSmp.nLoopStart = loopStart;
 		mptSmp.nLoopEnd = loopEnd;
@@ -313,7 +315,6 @@ bool CSoundFile::ReadFAR(FileReader &file, ModLoadingFlags loadFlags)
 
 		m_nSamples = smp + 1;
 		ModSample &sample = Samples[m_nSamples];
-		mpt::String::Read<mpt::String::nullTerminated>(m_szNames[m_nSamples], sampleHeader.name);
 		sampleHeader.ConvertToMPT(sample);
 		sampleHeader.GetSampleFormat().ReadSample(sample, file);
 	}

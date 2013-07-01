@@ -317,6 +317,9 @@ struct PACKED AMFFSampleHeader
 	void ConvertToMPT(AMFFInstrumentHeader &instrHeader, ModSample &mptSmp) const
 	{
 		mptSmp.Initialize();
+
+		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.name, name);
+
 		mptSmp.nPan = pan * 4;
 		mptSmp.nVolume = volume * 4;
 		mptSmp.nGlobalVol = 64;
@@ -534,6 +537,9 @@ struct PACKED AMSampleHeader
 	void ConvertToMPT(AMInstrumentHeader &instrHeader, ModSample &mptSmp) const
 	{
 		mptSmp.Initialize();
+
+		mpt::String::Read<mpt::String::maybeNullTerminated>(mptSmp.name, name);
+
 		mptSmp.nPan = std::min(pan, static_cast<uint16>(32767)) * 256 / 32767;
 		mptSmp.nVolume = std::min(volume, static_cast<uint16>(32767)) * 256 / 32767;
 		mptSmp.nGlobalVol = 64;
@@ -883,7 +889,6 @@ bool CSoundFile::ReadAM(FileReader &file, ModLoadingFlags loadFlags)
 					continue;
 				}
 
-				mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[smp], sampleHeader.name);
 				sampleHeader.ConvertToMPT(instrHeader, Samples[smp]);
 				sampleHeader.GetSampleFormat().ReadSample(Samples[smp], chunk);
 			}
@@ -962,8 +967,6 @@ bool CSoundFile::ReadAM(FileReader &file, ModLoadingFlags loadFlags)
 				{
 					break;
 				}
-
-				mpt::String::Read<mpt::String::maybeNullTerminated>(m_szNames[smp], sampleHeader.name);
 
 				sampleHeader.ConvertToMPT(instrHeader, Samples[smp]);
 

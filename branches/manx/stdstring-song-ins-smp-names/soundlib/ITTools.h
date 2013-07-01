@@ -13,6 +13,7 @@
 #include "../soundlib/ModInstrument.h"
 #include "../soundlib/ModSample.h"
 #include "../soundlib/SampleIO.h"
+#include "../common/StringFixer.h"
 
 #ifdef NEEDS_PRAGMA_PACK
 #pragma pack(push, 1)
@@ -294,7 +295,7 @@ struct PACKED ITSample
 	// Convert OpenMPT's internal sample representation to an ITSample.
 	void ConvertToIT(const ModSample &mptSmp, MODTYPE fromType, bool compress, bool compressIT215);
 	// Convert an ITSample to OpenMPT's internal sample representation.
-	size_t ConvertToMPT(ModSample &mptSmp) const;
+	size_t ConvertToMPT(ModSample &mptSmp, mpt::String::ReadWriteMode nameReadMode) const;
 	// Retrieve the internal sample format flags for this instrument.
 	SampleIO GetSampleFormat(uint16 cwtv = 0x214) const;
 };

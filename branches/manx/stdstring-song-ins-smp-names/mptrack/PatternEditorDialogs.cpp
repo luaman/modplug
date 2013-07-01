@@ -187,14 +187,15 @@ BOOL CFindReplaceTab::OnInitDialog()
 		}
 		for(INSTRUMENTINDEX n = 1; n < MAX_INSTRUMENTS; n++)
 		{
+			CString str;
 			if(sndFile.GetNumInstruments())
 			{
-				wsprintf(s, "%03d:%s", n, sndFile.GetInstrumentName(n).c_str());
+				str.Format("%03d:%s", n, sndFile.GetInstrumentName(n).c_str());
 			} else
 			{
-				wsprintf(s, "%03d:%s", n, sndFile.m_szNames[n]);
+				str.Format("%03d:%s", n, sndFile.GetSampleName(n).c_str());
 			}
-			combo->SetItemData(combo->AddString(s), n);
+			combo->SetItemData(combo->AddString(str), n);
 		}
 		UINT ncount = combo->GetCount();
 		for (UINT i=0; i<ncount; i++)
@@ -911,7 +912,7 @@ void CPageEditNote::UpdateDialog()
 					if (sndFile.Instruments[i])
 						s.Append(sndFile.Instruments[i]->name);
 				} else
-					s.Append(sndFile.m_szNames[i]);
+					s.Append(sndFile.GetSampleName(i));
 				combo->SetItemData(combo->AddString(s), i);
 			}
 		}
@@ -1520,8 +1521,9 @@ BOOL CSplitKeyboadSettings::OnInitDialog()
 		{
 			if(sndFile.GetSample(nSmp).pSample)
 			{
-				wsprintf(s, "%02d: %s", nSmp, sndFile.m_szNames[nSmp]);
-				int n = m_CbnSplitInstrument.AddString(s);
+				CString str;
+				str.Format("%02d: %s", nSmp, sndFile.GetSampleName(nSmp));
+				int n = m_CbnSplitInstrument.AddString(str);
 				m_CbnSplitInstrument.SetItemData(n, nSmp);
 			}
 		}

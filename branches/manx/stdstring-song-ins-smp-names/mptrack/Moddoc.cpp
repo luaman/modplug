@@ -716,7 +716,6 @@ BOOL CModDoc::InitializeMod()
 			m_SndFile.Patterns.Insert(0, 64);
 		}
 
-		MemsetZero(m_SndFile.m_szNames);
 		//m_SndFile.SetTitle("untitled");
 
 		m_SndFile.m_nMusicTempo = m_SndFile.m_nDefaultTempo = 125;
@@ -751,12 +750,12 @@ BOOL CModDoc::InitializeMod()
 	}
 	if (!m_SndFile.m_nSamples)
 	{
-		strcpy(m_SndFile.m_szNames[1], "untitled");
 		m_SndFile.m_nSamples = (GetModType() == MOD_TYPE_MOD) ? 31 : 1;
 
 		ctrlSmp::ResetSamples(m_SndFile, ctrlSmp::SmpResetInit);
 
 		m_SndFile.GetSample(1).Initialize(m_SndFile.GetType());
+		m_SndFile.GetSample(1).name = "untitled";
 
 		if ((!m_SndFile.m_nInstruments) && (m_SndFile.GetType() & MOD_TYPE_XM))
 		{
@@ -1742,7 +1741,7 @@ void CModDoc::OnFileWaveConvert(ORDERINDEX nMinOrder, ORDERINDEX nMaxOrder)
 	for(int i = 0 ; i < nRenderPasses ; i++)
 	{
 		CString thisName = fileName;
-		char fileNameAdd[_MAX_FNAME] = "";
+		CString fileNameAdd;
 
 		// Channel mode
 		if(wsdlg.m_bChannelMode)
@@ -1755,9 +1754,9 @@ void CModDoc::OnFileWaveConvert(ORDERINDEX nMinOrder, ORDERINDEX nMaxOrder)
 				continue;
 			// Add channel number & name (if available) to path string
 			if(strcmp(m_SndFile.ChnSettings[i].szName, ""))
-				sprintf(fileNameAdd, "-%03d_%s", i + 1, m_SndFile.ChnSettings[i].szName);
+				fileNameAdd.Format("-%03d_%s", i + 1, m_SndFile.ChnSettings[i].szName);
 			else
-				sprintf(fileNameAdd, "-%03d", i + 1);
+				fileNameAdd.Format("-%03d", i + 1);
 			// Unmute channel to process
 			m_SndFile.ChnSettings[i].dwFlags.reset(CHN_MUTE);
 		}
@@ -1772,10 +1771,10 @@ void CModDoc::OnFileWaveConvert(ORDERINDEX nMinOrder, ORDERINDEX nMaxOrder)
 				if(m_SndFile.GetSample((SAMPLEINDEX)(i + 1)).pSample == nullptr || !m_SndFile.IsSampleUsed((SAMPLEINDEX)(i + 1)))
 					continue;
 				// Add sample number & name (if available) to path string
-				if(strcmp(m_SndFile.m_szNames[i + 1], ""))
-					sprintf(fileNameAdd, "-%03d_%s", i + 1, m_SndFile.m_szNames[i + 1]);
+				if(!m_SndFile.GetSampleName(i + 1).empty())
+					fileNameAdd.Format("-%03d_%s", i + 1, m_SndFile.GetSampleName(i + 1).c_str());
 				else
-					sprintf(fileNameAdd, "-%03d", i + 1);
+					fileNameAdd.Format("-%03d", i + 1);
 				// Unmute sample to process
 				MuteSample((SAMPLEINDEX)(i + 1), false);
 			} else
@@ -1786,18 +1785,19 @@ void CModDoc::OnFileWaveConvert(ORDERINDEX nMinOrder, ORDERINDEX nMaxOrder)
 				if(m_SndFile.Instruments[i + 1] == nullptr || !m_SndFile.IsInstrumentUsed((INSTRUMENTINDEX)(i + 1)))
 					continue;
 				if(!m_SndFile.Instruments[i + 1]->name.empty())
-					sprintf(fileNameAdd, "-%03d_%s", i + 1, m_SndFile.Instruments[i + 1]->name.c_str());
+					fileNameAdd.Format("-%03d_%s", i + 1, m_SndFile.Instruments[i + 1]->name.c_str());
 				else
-					sprintf(fileNameAdd, "-%03d", i + 1);
+					fileNameAdd.Format("-%03d", i + 1);
 				// Unmute instrument to process
 				MuteInstrument((INSTRUMENTINDEX)(i + 1), false);
 			}
 		}
 		
-		if(strcmp(fileNameAdd, ""))
+		if(!fileNameAdd.IsEmpty())
 		{
-			SanitizeFilename(fileNameAdd);
-			thisName += CString(fileNameAdd);
+			std::string sanitizedFileNameAdd = fileNameAdd.GetString();
+			SanitizeFilename(sanitizedFileNameAdd);
+			thisName += sanitizedFileNameAdd.c_str();
 		}
 		thisName += fileExt;
 
@@ -2827,7 +2827,7 @@ CString CModDoc::GetPatternViewInstrumentName(INSTRUMENTINDEX nInstr,
 	{
 		const SAMPLEINDEX nSmp = m_SndFile.Instruments[nInstr]->Keyboard[NOTE_MIDDLEC - 1];
 		if (nSmp <= m_SndFile.GetNumSamples() && m_SndFile.GetSample(nSmp).pSample)
-			instrumentName.Format(TEXT("s: %s"), m_SndFile.GetSampleName(nSmp));
+			instrumentName.Format(TEXT("s: %s"), m_SndFile.GetSampleName(nSmp).c_str());
 	}
 
 	// Get plugin name.
@@ -2885,7 +2885,7 @@ void CModDoc::FixNullStrings()
 	// Sample names + filenames
 	for(SAMPLEINDEX nSmp = 1; nSmp <= m_SndFile.GetNumSamples(); nSmp++)
 	{
-		mpt::String::FixNullString(m_SndFile.m_szNames[nSmp]);
+		mpt::String::FixNullString(m_SndFile.GetSample(nSmp).name);
 		mpt::String::FixNullString(m_SndFile.GetSample(nSmp).filename);
 	}
 

@@ -208,8 +208,9 @@ BOOL CModToMidi::OnInitDialog()
 			if ((m_pSndFile->GetSample(nSmp).pSample)
 			 && (m_pSndFile->IsSampleUsed(nSmp)))
 			{
-				wsprintf(s, "%02d: %s", nSmp, m_pSndFile->m_szNames[nSmp]);
-				m_CbnInstrument.SetItemData(m_CbnInstrument.AddString(s), nSmp);
+				CString str;
+				str.Format("%02d: %s", nSmp, m_pSndFile->GetSampleName(nSmp).c_str());
+				m_CbnInstrument.SetItemData(m_CbnInstrument.AddString(str), nSmp);
 			}
 		}
 	}

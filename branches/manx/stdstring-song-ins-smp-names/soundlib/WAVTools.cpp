@@ -117,19 +117,19 @@ void WAVReader::FindMetadataChunks(ChunkReader::ChunkList<RIFFChunk> &chunks)
 }
 
 
-void WAVReader::ApplySampleSettings(ModSample &sample, char (&sampleName)[MAX_SAMPLENAME])
-//----------------------------------------------------------------------------------------
+void WAVReader::ApplySampleSettings(ModSample &sample)
+//----------------------------------------------------
 {
 	// Read sample name
 	FileReader textChunk = infoChunk.GetChunk(RIFFChunk::idINAM);
 	if(textChunk.IsValid())
 	{
-		textChunk.ReadString<mpt::String::nullTerminated>(sampleName, textChunk.GetLength());
+		textChunk.ReadString<mpt::String::nullTerminated>(sample.name, textChunk.GetLength());
 	}
 	if(isDLS)
 	{
 		// DLS sample -> sample filename
-		mpt::String::Copy(sample.filename, sampleName);
+		mpt::String::Copy(sample.filename, sample.name);
 	}
 
 	// Read software name
@@ -172,7 +172,7 @@ void WAVReader::ApplySampleSettings(ModSample &sample, char (&sampleName)[MAX_SA
 		if(xtraChunk.CanRead(MAX_SAMPLENAME))
 		{
 			// Name present (clipboard only)
-			xtraChunk.ReadString<mpt::String::nullTerminated>(sampleName, MAX_SAMPLENAME);
+			xtraChunk.ReadString<mpt::String::nullTerminated>(sample.name, MAX_SAMPLENAME);
 			xtraChunk.ReadString<mpt::String::nullTerminated>(sample.filename, xtraChunk.BytesLeft());
 		}
 	}

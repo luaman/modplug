@@ -330,7 +330,6 @@ bool CSoundFile::ReadSampleFromSong(SAMPLEINDEX targetSample, const CSoundFile &
 	if(GetNumSamples() < targetSample) m_nSamples = targetSample;
 	Samples[targetSample] = sourceSmp;
 	Samples[targetSample].Convert(srcSong.GetType(), GetType());
-	strcpy(m_szNames[targetSample], srcSong.m_szNames[sourceSample]);
 
 	if(sourceSmp.pSample)
 	{
@@ -368,12 +367,11 @@ bool CSoundFile::ReadWAVSample(SAMPLEINDEX nSample, FileReader &file, FileReader
 	}
 
 	DestroySampleThreadsafe(nSample);
-	strcpy(m_szNames[nSample], "");
 	ModSample &sample = Samples[nSample];
 	sample.Initialize();
 	sample.nLength = wavFile.GetSampleLength();
 	sample.nC5Speed = wavFile.GetSampleRate();
-	wavFile.ApplySampleSettings(sample, m_szNames[nSample]);
+	wavFile.ApplySampleSettings(sample);
 	sample.Convert(MOD_TYPE_IT, GetType());
 
 	FileReader sampleChunk = wavFile.GetSampleData();
@@ -523,18 +521,21 @@ bool CSoundFile::SaveWAVSample(SAMPLEINDEX nSample, const LPCSTR lpszFileName) c
 	}
 	fwrite(&smpl, 1, smpl.wsiHdr.smpl_len + 8, f);
 	
+	std::string sampleNameString = sample.name;
+	size_t sampleNameLength = sampleNameString.length() + 1;
+
 	// "LIST" field
 	list.list_id = LittleEndian(IFFID_LIST);
 	list.list_len = LittleEndian(sizeof(list) - 8	// LIST
-					+ 8 + 32						// "INAM".dwLen.szSampleName
+					+ 8 + sampleNameLength						// "INAM".dwLen.szSampleName
 					+ 8 + softwareIdLength);		// "ISFT".dwLen.softwareId.0
 	list.info = LittleEndian(IFFID_INFO);
 	fwrite(&list, 1, sizeof(list), f);
 
 	list.list_id = LittleEndian(IFFID_INAM);		// "INAM"
-	list.list_len = LittleEndian(32);
+	list.list_len = LittleEndian(sampleNameLength);
 	fwrite(&list, 1, 8, f);
-	fwrite(m_szNames[nSample], 1, 32, f);
+	fwrite(sample.name.c_str(), 1, sampleNameLength, f);
 
 	list.list_id = LittleEndian(IFFID_ISFT);		// "ISFT"
 	list.list_len = LittleEndian(softwareIdLength);
@@ -727,7 +728,7 @@ void PatchToSample(CSoundFile *that, SAMPLEINDEX nSample, LPBYTE lpStream, DWORD
 	if(dwMemLength < sizeof(GF1SAMPLEHEADER)) return;
 	if(psh->name[0])
 	{
-		mpt::String::Read<mpt::String::maybeNullTerminated>(that->m_szNames[nSample], psh->name);
+		mpt::String::Read<mpt::String::maybeNullTerminated>(sample.name, psh->name);
 	}
 	sample.Initialize();
 	if(psh->flags & 4) sample.uFlags |= CHN_LOOP;
@@ -784,8 +785,7 @@ bool CSoundFile::ReadPATSample(SAMPLEINDEX nSample, LPBYTE lpStream, DWORD dwMem
 	PatchToSample(this, nSample, lpStream + dwMemPos, dwMemLength - dwMemPos);
 	if (pinshdr->name[0] > ' ')
 	{
-		memcpy(m_szNames[nSample], pinshdr->name, 16);
-		m_szNames[nSample][16] = 0;
+		mpt::String::Read<mpt::String::maybeNullTerminated>(Samples[nSample].name, pinshdr->name);
 	}
 	return true;
 }
@@ -927,7 +927,6 @@ bool CSoundFile::ReadS3ISample(SAMPLEINDEX nSample, FileReader &file)
 
 	ModSample &sample = Samples[nSample];
 	sampleHeader.ConvertToMPT(sample);
-	mpt::String::Read<mpt::String::nullTerminated>(m_szNames[nSample], sampleHeader.name);
 	sampleHeader.GetSampleFormat(false).ReadSample(sample, file);
 	sample.Convert(MOD_TYPE_S3M, GetType());
 	return true;
@@ -1022,7 +1021,7 @@ bool CSoundFile::ReadXIInstrument(INSTRUMENTINDEX nInstr, FileReader &file)
 		}
 
 		mpt::String::Read<mpt::String::spacePadded>(mptSample.filename, sampleHeader.name);
-		mpt::String::Read<mpt::String::spacePadded>(m_szNames[sampleMap[i]], sampleHeader.name);
+		mpt::String::Read<mpt::String::spacePadded>(mptSample.name, sampleHeader.name);
 
 		sampleFlags[i] = sampleHeader.GetSampleFormat();
 	}
@@ -1090,8 +1089,6 @@ bool CSoundFile::SaveXIInstrument(INSTRUMENTINDEX nInstr, const LPCSTR lpszFileN
 		}
 		sampleFlags[i] = xmSample.GetSampleFormat();
 
-		mpt::String::Write<mpt::String::spacePadded>(xmSample.name, m_szNames[samples[i]]);
-
 		xmSample.ConvertEndianness();
 		fwrite(&xmSample, 1, sizeof(xmSample), f);
 	}
@@ -1157,7 +1154,7 @@ bool CSoundFile::ReadXISample(SAMPLEINDEX nSample, FileReader &file)
 	mptSample.Convert(MOD_TYPE_XM, GetType());
 
 	mpt::String::Read<mpt::String::spacePadded>(mptSample.filename, sampleHeader.name);
-	mpt::String::Read<mpt::String::spacePadded>(m_szNames[nSample], sampleHeader.name);
+	mpt::String::Read<mpt::String::spacePadded>(mptSample.name, sampleHeader.name);
 
 	// Read sample data
 	sampleHeader.GetSampleFormat().ReadSample(Samples[nSample], file);
@@ -1496,10 +1493,10 @@ bool CSoundFile::ReadAIFFSample(SAMPLEINDEX nSample, FileReader &file)
 	FileReader nameChunk(chunks.GetChunk(AIFFChunk::idNAME));
 	if(nameChunk.IsValid())
 	{
-		nameChunk.ReadString<mpt::String::spacePadded>(m_szNames[nSample], nameChunk.GetLength());
+		nameChunk.ReadString<mpt::String::spacePadded>(mptSample.name, nameChunk.GetLength());
 	} else
 	{
-		strcpy(m_szNames[nSample], "");
+		mptSample.name = "";
 	}
 
 	mptSample.Convert(MOD_TYPE_IT, GetType());
@@ -1527,8 +1524,8 @@ bool CSoundFile::ReadITSSample(SAMPLEINDEX nSample, FileReader &file, bool rewin
 	}
 	DestroySampleThreadsafe(nSample);
 
-	file.Seek(sampleHeader.ConvertToMPT(Samples[nSample]));
-	mpt::String::Read<mpt::String::spacePaddedNull>(m_szNames[nSample], sampleHeader.name);
+	file.Seek(sampleHeader.ConvertToMPT(Samples[nSample], mpt::String::spacePaddedNull));
+
 	Samples[nSample].Convert(MOD_TYPE_IT, GetType());
 
 	sampleHeader.GetSampleFormat().ReadSample(Samples[nSample], file);
@@ -1675,8 +1672,6 @@ bool CSoundFile::SaveITIInstrument(INSTRUMENTINDEX nInstr, const LPCSTR lpszFile
 	{
 		ITSample itss;
 		itss.ConvertToIT(Samples[*iter], GetType(), compress, compress);
-
-		mpt::String::Write<mpt::String::nullTerminated>(itss.name, m_szNames[*iter]);
 
 		itss.samplepointer = filePos;
 		itss.ConvertEndianness();
@@ -1865,9 +1860,7 @@ bool CSoundFile::Read8SVXSample(SAMPLEINDEX nSample, LPBYTE lpMemFile, DWORD dwF
 		{
 		case IFFID_NAME:
 			{
-				const UINT len = MIN(dwChunkLen, MAX_SAMPLENAME - 1);
-				MemsetZero(m_szNames[nSample]);
-				memcpy(m_szNames[nSample], pChunkData, len);
+				mpt::String::CopyN(sample.name, reinterpret_cast<const char*>(pChunkData), dwChunkLen);
 			}
 			break;
 		case IFFID_BODY:
@@ -2029,7 +2022,6 @@ struct FLACDecoder
 		{
 			// Init sample information
 			client.sndFile.DestroySampleThreadsafe(client.sample);
-			strcpy(client.sndFile.m_szNames[client.sample], "");
 			sample.Initialize();
 			sample.uFlags.set(CHN_16BIT, metadata->data.stream_info.bits_per_sample > 8);
 			sample.uFlags.set(CHN_STEREO, metadata->data.stream_info.channels > 1);
@@ -2045,7 +2037,7 @@ struct FLACDecoder
 			// We're not really going to read a WAV file here because there will be only one RIFF chunk per metadata event, but we can still re-use the code for parsing RIFF metadata...
 			WAVReader riffReader(data);
 			riffReader.FindMetadataChunks(chunks);
-			riffReader.ApplySampleSettings(sample, client.sndFile.m_szNames[client.sample]);
+			riffReader.ApplySampleSettings(sample);
 		} else if(metadata->type == FLAC__METADATA_TYPE_VORBIS_COMMENT && client.ready)
 		{
 			// Try reading Vorbis Comments for sample title
@@ -2055,7 +2047,7 @@ struct FLACDecoder
 				const FLAC__uint32 length = metadata->data.vorbis_comment.comments[i].length;
 				if(length > 6 && !mpt::strnicmp(tag, "TITLE=", 6))
 				{
-					mpt::String::Read<mpt::String::maybeNullTerminated>(client.sndFile.m_szNames[client.sample], tag + 6, length - 6);
+					mpt::String::Read<mpt::String::maybeNullTerminated>(sample.name, tag + 6, length - 6);
 					break;
 				}
 			}
@@ -2159,7 +2151,7 @@ bool CSoundFile::SaveFLACSample(SAMPLEINDEX nSample, const LPCSTR lpszFileName) 
 	{
 		// Store sample name
 		FLAC__StreamMetadata_VorbisComment_Entry entry;
-		FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&entry, "TITLE", m_szNames[nSample]);
+		FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&entry, "TITLE", sample.name.c_str());
 		FLAC__metadata_object_vorbiscomment_append_comment(metadata[0], entry, false);
 		FLAC__metadata_object_vorbiscomment_entry_from_name_value_pair(&entry, "ENCODER", MptVersion::GetOpenMPTVersionStr().c_str());
 		FLAC__metadata_object_vorbiscomment_append_comment(metadata[0], entry, false);
@@ -2429,7 +2421,6 @@ bool CSoundFile::ReadMP3Sample(SAMPLEINDEX sample, FileReader &file)
 	}
 
 	DestroySampleThreadsafe(sample);
-	strcpy(m_szNames[sample], "");
 	Samples[sample].Initialize();
 	Samples[sample].nLength = length;
 

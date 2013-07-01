@@ -208,6 +208,7 @@ struct PACKED IMFSample
 	{
 		mptSmp.Initialize();
 		mpt::String::Read<mpt::String::nullTerminated>(mptSmp.filename, filename);
+		mptSmp.name = mptSmp.filename;
 
 		mptSmp.nLength = length;
 		mptSmp.nLoopStart = loopStart;
@@ -605,7 +606,6 @@ bool CSoundFile::ReadIMF(FileReader &file, ModLoadingFlags loadFlags)
 			ModSample &sample = Samples[firstSample + smp];
 
 			sampleHeader.ConvertToMPT(sample);
-			mpt::String::Copy(m_szNames[m_nSamples], sample.filename);
 
 			if(sampleHeader.length)
 			{

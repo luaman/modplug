@@ -430,7 +430,7 @@ bool CSoundFile::ReadAMS(FileReader &file, ModLoadingFlags loadFlags)
 	// Read sample names
 	for(SAMPLEINDEX smp = 1; smp <= GetNumSamples(); smp++)
 	{
-		ReadAMSString(m_szNames[smp], file);
+		ReadAMSString(Samples[smp].name, file);
 	}
 
 	// Read channel names
@@ -856,7 +856,7 @@ bool CSoundFile::ReadAMS2(FileReader &file, ModLoadingFlags loadFlags)
 				file.Skip(sizeof(AMS2SampleHeader));
 				break;
 			}
-			ReadAMSString(m_szNames[firstSmp + smp], file);
+			ReadAMSString(Samples[firstSmp + smp].name, file);
 
 			AMS2SampleHeader sampleHeader;
 			file.ReadConvertEndianness(sampleHeader);
