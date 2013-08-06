@@ -119,8 +119,8 @@ public:
 
 public:
 	UINT GetDeviceType() { return SNDDEV_WAVEOUT; }
-	bool InternalOpen(UINT nDevice);
-	bool InternalClose();
+	BOOL Open(UINT nDevice, LPWAVEFORMATEX pwfx);
+	BOOL Close();
 	void FillAudioBuffer();
 	void ResetFromOutsideSoundThread();
 	void StartFromSoundThread();
@@ -166,8 +166,8 @@ public:
 
 public:
 	UINT GetDeviceType() { return SNDDEV_DSOUND; }
-	bool InternalOpen(UINT nDevice);
-	bool InternalClose();
+	BOOL Open(UINT nDevice, LPWAVEFORMATEX pwfx);
+	BOOL Close();
 	void FillAudioBuffer();
 	void ResetFromOutsideSoundThread();
 	void StartFromSoundThread();
@@ -206,6 +206,7 @@ protected:
 	BOOL m_bMixRunning;
 	BOOL m_bPostOutput;
 	UINT m_nCurrentDevice;
+	ULONG m_nSamplesPerSec;
 	LONG m_RenderSilence;
 	LONG m_RenderingSilence;
 	ASIOCallbacks m_Callbacks;
@@ -225,8 +226,8 @@ public:
 
 public:
 	UINT GetDeviceType() { return SNDDEV_ASIO; }
-	bool InternalOpen(UINT nDevice);
-	bool InternalClose();
+	BOOL Open(UINT nDevice, LPWAVEFORMATEX pwfx);
+	BOOL Close();
 	void FillAudioBuffer();
 	void InternalReset();
 	void InternalStart();
@@ -234,7 +235,7 @@ public:
 	bool IsOpen() const { return (m_pAsioDrv != NULL); }
 	UINT HasFixedBitsPerSample() { return m_nBitsPerSample; }
 	UINT GetNumBuffers() { return 2; }
-	float GetCurrentRealLatencyMS() { return m_nAsioBufferLen * 2 * 1000.0f / m_Settings.Samplerate; }
+	float GetCurrentRealLatencyMS() { return m_nAsioBufferLen * 2 * 1000.0f / m_nSamplesPerSec;; }
 
 	bool CanSampleRate(UINT nDevice, std::vector<UINT> &samplerates, std::vector<bool> &result);
 	UINT GetCurrentSampleRate(UINT nDevice);
@@ -302,8 +303,8 @@ public:
 
 public:
 	UINT GetDeviceType() { return HostApiToSndDevType(m_HostApi); }
-	bool InternalOpen(UINT nDevice);
-	bool InternalClose();
+	BOOL Open(UINT nDevice, LPWAVEFORMATEX pwfx);
+	BOOL Close();
 	void FillAudioBuffer();
 	void InternalReset();
 	void InternalStart();

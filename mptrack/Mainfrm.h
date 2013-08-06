@@ -16,7 +16,6 @@
 #include "../common/mutex.h"
 #include "../sounddev/SoundDevice.h"
 #include "../soundlib/Sndfile.h"
-#include "../soundlib/Dither.h"
 
 class CInputHandler;
 class CModDoc;
@@ -273,7 +272,6 @@ public:
 	// Low-Level Audio
 	mutable Util::mutex m_SoundDeviceMutex;
 	ISoundDevice *gpSoundDevice;
-	Dither m_Dither;
 	HANDLE m_hNotifyWakeUp;
 	HANDLE m_hNotifyThread;
 	DWORD m_dwNotifyThreadId;
@@ -330,7 +328,7 @@ public:
 	void AudioDone(ULONG NumSamples, ULONG SamplesLatency);
 	void AudioDone(ULONG NumSamples);
 	
-	bool audioTryOpeningDevice(UINT channels, SampleFormat sampleFormat, UINT samplespersec);
+	bool audioTryOpeningDevice(UINT channels, UINT bits, UINT samplespersec);
 	bool audioOpenDevice();
 	bool audioReopenDevice();
 	void audioCloseDevice();

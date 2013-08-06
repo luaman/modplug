@@ -41,7 +41,6 @@ public:
 
 private:
 	void UpdateSampleRates(int dev);
-	void UpdateChannelsFormat(int dev);
 	void UpdateControls(int dev);
 	void SetPreAmpSliderPosition();
 
