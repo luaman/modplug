@@ -13,14 +13,8 @@
 #include "StreamEncoder.h"
 
 
-struct VorbisDynBind;
-
 class VorbisEncoder : public EncoderFactoryBase
 {
-
-private:
-
-	VorbisDynBind *m_Vorbis;
 
 public:
 

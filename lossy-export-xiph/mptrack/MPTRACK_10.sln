@@ -20,6 +20,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MIDI Input Output", "..\plu
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "portmidi", "..\include\portmidi\portmidi.vcxproj", "{2512E2CA-578A-4F10-9363-4BFC9A5EF960}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ogg", "..\include\ogg\ogg.vcxproj", "{AF40FE42-9999-4625-AD51-B1CEE39C1796}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vorbis", "..\include\vorbis\vorbis.vcxproj", "{EF71FEC3-22EC-4FB0-AC76-59ED642FDE61}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opus", "..\include\opus\opus.vcxproj", "{059F458F-BBAE-440F-B3AB-CF6788E4ACC2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -87,6 +93,24 @@ Global
 		{2512E2CA-578A-4F10-9363-4BFC9A5EF960}.Release|Win32.Build.0 = ReleaseLib|Win32
 		{2512E2CA-578A-4F10-9363-4BFC9A5EF960}.ReleaseNoLTCG|Win32.ActiveCfg = NormalLib|Win32
 		{2512E2CA-578A-4F10-9363-4BFC9A5EF960}.ReleaseNoLTCG|Win32.Build.0 = NormalLib|Win32
+		{AF40FE42-9999-4625-AD51-B1CEE39C1796}.Debug|Win32.ActiveCfg = DebugLib|Win32
+		{AF40FE42-9999-4625-AD51-B1CEE39C1796}.Debug|Win32.Build.0 = DebugLib|Win32
+		{AF40FE42-9999-4625-AD51-B1CEE39C1796}.Release|Win32.ActiveCfg = ReleaseLib|Win32
+		{AF40FE42-9999-4625-AD51-B1CEE39C1796}.Release|Win32.Build.0 = ReleaseLib|Win32
+		{AF40FE42-9999-4625-AD51-B1CEE39C1796}.ReleaseNoLTCG|Win32.ActiveCfg = NormalLib|Win32
+		{AF40FE42-9999-4625-AD51-B1CEE39C1796}.ReleaseNoLTCG|Win32.Build.0 = NormalLib|Win32
+		{EF71FEC3-22EC-4FB0-AC76-59ED642FDE61}.Debug|Win32.ActiveCfg = DebugLib|Win32
+		{EF71FEC3-22EC-4FB0-AC76-59ED642FDE61}.Debug|Win32.Build.0 = DebugLib|Win32
+		{EF71FEC3-22EC-4FB0-AC76-59ED642FDE61}.Release|Win32.ActiveCfg = ReleaseLib|Win32
+		{EF71FEC3-22EC-4FB0-AC76-59ED642FDE61}.Release|Win32.Build.0 = ReleaseLib|Win32
+		{EF71FEC3-22EC-4FB0-AC76-59ED642FDE61}.ReleaseNoLTCG|Win32.ActiveCfg = NormalLib|Win32
+		{EF71FEC3-22EC-4FB0-AC76-59ED642FDE61}.ReleaseNoLTCG|Win32.Build.0 = NormalLib|Win32
+		{059F458F-BBAE-440F-B3AB-CF6788E4ACC2}.Debug|Win32.ActiveCfg = DebugLib|Win32
+		{059F458F-BBAE-440F-B3AB-CF6788E4ACC2}.Debug|Win32.Build.0 = DebugLib|Win32
+		{059F458F-BBAE-440F-B3AB-CF6788E4ACC2}.Release|Win32.ActiveCfg = ReleaseLib|Win32
+		{059F458F-BBAE-440F-B3AB-CF6788E4ACC2}.Release|Win32.Build.0 = ReleaseLib|Win32
+		{059F458F-BBAE-440F-B3AB-CF6788E4ACC2}.ReleaseNoLTCG|Win32.ActiveCfg = NormalLib|Win32
+		{059F458F-BBAE-440F-B3AB-CF6788E4ACC2}.ReleaseNoLTCG|Win32.Build.0 = NormalLib|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

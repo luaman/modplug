@@ -77,7 +77,7 @@
     <ClCompile>
       <AdditionalOptions>/EHsc %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\common;..\soundlib;..\include;..\include\msinttypes\inttypes;..\include\vstsdk2.4\;..\include\ASIOSDK2\common\;..\include\lhasa\lib\public;..\include\zlib;..\;..\common\svn_version_subwcrev;..\common\svn_version_default;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common;..\soundlib;..\include;..\include\msinttypes\inttypes;..\include\vstsdk2.4\;..\include\ASIOSDK2\common\;..\include\lhasa\lib\public;..\include\zlib;..\include\ogg\include;..\include\vorbis\include;..\include\opus\include;..\;..\common\svn_version_subwcrev;..\common\svn_version_default;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;MODPLUG_TRACKER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -136,7 +136,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\common;..\soundlib;..\include;..\include\msinttypes\inttypes;..\include\vstsdk2.4\;..\include\ASIOSDK2\common\;..\include\lhasa\lib\public;..\include\zlib;..\;..\common\svn_version_subwcrev;..\common\svn_version_default;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common;..\soundlib;..\include;..\include\msinttypes\inttypes;..\include\vstsdk2.4\;..\include\ASIOSDK2\common\;..\include\lhasa\lib\public;..\include\zlib;..\include\ogg\include;..\include\vorbis\include;..\include\opus\include;..\;..\common\svn_version_subwcrev;..\common\svn_version_default;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;MODPLUG_TRACKER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -199,7 +199,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\common;..\soundlib;..\include;..\include\msinttypes\inttypes;..\include\vstsdk2.4\;..\include\ASIOSDK2\common\;..\include\lhasa\lib\public;..\include\zlib;..\;..\common\svn_version_subwcrev;..\common\svn_version_default;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\common;..\soundlib;..\include;..\include\msinttypes\inttypes;..\include\vstsdk2.4\;..\include\ASIOSDK2\common\;..\include\lhasa\lib\public;..\include\zlib;..\include\ogg\include;..\include\vorbis\include;..\include\opus\include;..\;..\common\svn_version_subwcrev;..\common\svn_version_default;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;MODPLUG_TRACKER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -656,6 +656,12 @@
     <ProjectReference Include="..\include\lhasa\lhasa.vcxproj">
       <Project>{6b11f6a8-b131-4d2b-80ef-5731a9016436}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\include\ogg\ogg.vcxproj">
+      <Project>{af40fe42-9999-4625-ad51-b1cee39c1796}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\include\opus\opus.vcxproj">
+      <Project>{059f458f-bbae-440f-b3ab-cf6788e4acc2}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\include\portaudio\portaudio.vcxproj">
       <Project>{189b867f-ff4b-45a1-b741-a97492ee69af}</Project>
     </ProjectReference>
@@ -664,6 +670,9 @@
     </ProjectReference>
     <ProjectReference Include="..\include\soundtouch\soundtouch.vcxproj">
       <Project>{f5f8f6de-84cf-4e9d-91ea-d9b5e2aa36cd}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\include\vorbis\vorbis.vcxproj">
+      <Project>{ef71fec3-22ec-4fb0-ac76-59ed642fde61}</Project>
     </ProjectReference>
     <ProjectReference Include="..\include\zlib\minizip.vcxproj">
       <Project>{63af9025-a6ce-4147-a05d-6e2ccfd3a0d7}</Project>

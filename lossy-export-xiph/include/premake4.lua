@@ -293,7 +293,100 @@ solution "include"
   dofile "premake4-defaults.lua"
   
 
+  
+ project "ogg"
+  uuid "AF40FE42-9999-4625-AD51-B1CEE39C1796"
+  language "C"
+  location "ogg"
+  includedirs { "ogg/include" }
+  files {
+   "ogg/src/bitwise.c",
+   "ogg/src/framing.c",
+  }
+  files {
+   "ogg/include/ogg/ogg.h",
+   "ogg/include/ogg/os_types.h",
+  }
+  dofile "premake4-defaults.lua"
+  
+ project "vorbis"
+  uuid "EF71FEC3-22EC-4FB0-AC76-59ED642FDE61"
+  language "C"
+  location "vorbis"
+  includedirs { "vorbis/include" }
+  includedirs { "ogg/include" }
+  files {
+   "vorbis/lib/analysis.c",
+   "vorbis/lib/bitrate.c",
+   "vorbis/lib/block.c",
+   "vorbis/lib/codebook.c",
+   "vorbis/lib/envelope.c",
+   "vorbis/lib/floor0.c",
+   "vorbis/lib/floor1.c",
+   "vorbis/lib/info.c",
+   "vorbis/lib/lookup.c",
+   "vorbis/lib/lpc.c",
+   "vorbis/lib/lsp.c",
+   "vorbis/lib/mapping0.c",
+   "vorbis/lib/mdct.c",
+   "vorbis/lib/psy.c",
+   "vorbis/lib/registry.c",
+   "vorbis/lib/res0.c",
+   "vorbis/lib/sharedbook.c",
+   "vorbis/lib/smallft.c",
+   "vorbis/lib/synthesis.c",
+   "vorbis/lib/vorbisenc.c",
+   "vorbis/lib/window.c",
+   "vorbis/lib/vorbisenc.c",
+   "vorbis/lib/vorbisfile.c",
+  }
+  files {
+   "vorbis/include/vorbis/codec.h",
+   "vorbis/include/vorbis/vorbisenc.h",
+   "vorbis/include/vorbis/vorbisfile.h",
+  }
+  buildoptions { "/wd4101", "/wd4244" }
+  dofile "premake4-defaults.lua"
 
+ project "opus"
+  uuid "059F458F-BBAE-440F-B3AB-CF6788E4ACC2"
+  language "C"
+  location "opus"
+  includedirs { "opus", "opus/include", "opus/src", "opus/celt", "opus/silk", "opus/silk/float", "opus/win32" }
+  includedirs { "ogg/include" }
+  files {
+   "opus/src/analysis.c",
+   "opus/src/analysis.h",
+   "opus/src/mlp.c",
+   "opus/src/mlp.h",
+   "opus/src/mlp_data.c",
+   "opus/src/opus.c",
+   "opus/src/opus_decoder.c",
+   "opus/src/opus_encoder.c",
+   "opus/src/opus_multistream.c",
+   "opus/src/opus_multistream_decoder.c",
+   "opus/src/opus_multistream_encoder.c",
+   "opus/src/repacketizer.c",
+   "opus/celt/*.c",
+   "opus/celt/*.h",
+   "opus/silk/*.c",
+   "opus/silk/*.h",
+   "opus/silk/float/*.c",
+   "opus/silk/float/*.h",
+   "opus/win32/*.h",
+  }
+  files {
+   "opus/include/opus.h",
+   "opus/include/opus_custom.h",
+   "opus/include/opus_defines.h",
+   "opus/include/opus_multistream.h",
+   "opus/include/opus_types.h",
+  }
+  defines { "HAVE_CONFIG_H" }
+  buildoptions { "/wd4244" }
+  dofile "premake4-defaults.lua"
+
+  
   
   
 solution "includeDLL"

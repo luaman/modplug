@@ -341,6 +341,10 @@ std::string GetFullCreditsString()
 		"Josh Coalson for libFLAC\n"
 		"http://flac.sourceforge.net/\n"
 #endif
+#ifdef MODPLUG_TRACKER
+		"Xiph.Org for libOgg, libVorbis and libOpus\n"
+		"http://xiph.org/\n"
+#endif
 #ifndef NO_MP3_SAMPLES
 		"The mpg123 project for libmpg123\n"
 		"http://mpg123.de/\n"
