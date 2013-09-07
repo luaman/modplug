@@ -1866,19 +1866,6 @@ void CModDoc::OnFileMP3Convert()
 	if(opusencoder.IsAvailable())   encoders.push_back(&opusencoder);
 	if(flacencoder.IsAvailable())   encoders.push_back(&flacencoder);
 	if(wavencoder.IsAvailable())    encoders.push_back(&wavencoder);
-	if(encoders.empty())
-	{
-		Reporting::Error(
-			"No MP3/Vorbis/Opus codec found.\n"
-			"Please copy\n"
-			" - libmp3lame.dll or Lame_Enc.dll\n"
-			" - Ogg Vorbis libraries\n"
-			" - Xipg.Org Opus libraries\n"
-			"into OpenMPT's root directory.\n"
-			"Alternatively, you can install a MP3 ACM codec.",
-			"OpenMPT - Export");
-		return;
-	}
 	OnFileWaveConvert(ORDERINDEX_INVALID, ORDERINDEX_INVALID, encoders);
 }
 
