@@ -49,7 +49,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\common;..\soundlib;..\include\msinttypes\stdint;..\include\msinttypes\inttypes;..\include;..\include\vstsdk2.4\;..\include\ASIOSDK2\common\;..\include\lhasa\lib\public;..\include\zlib;..\;..\common\svn_version_subwcrev;..\common\svn_version_default"
+				AdditionalIncludeDirectories="..\common;..\soundlib;..\include\msinttypes\stdint;..\include\msinttypes\inttypes;..\include;..\include\vstsdk2.4\;..\include\ASIOSDK2\common\;..\include\lhasa\lib\public;..\include\zlib;..\include\ogg\include;..\include\opus\include;..\include\vorbis\include;..\;..\common\svn_version_subwcrev;..\common\svn_version_default"
 				PreprocessorDefinitions="_DEBUG,WIN32,_WINDOWS,MODPLUG_TRACKER"
 				StringPooling="true"
 				ExceptionHandling="2"
@@ -158,7 +158,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="2"
-				AdditionalIncludeDirectories="..\common;..\soundlib;..\include\msinttypes\stdint;..\include\msinttypes\inttypes;..\include;..\include\vstsdk2.4\;..\include\ASIOSDK2\common\;..\include\lhasa\lib\public;..\include\zlib;..\;..\common\svn_version_subwcrev;..\common\svn_version_default"
+				AdditionalIncludeDirectories="..\common;..\soundlib;..\include\msinttypes\stdint;..\include\msinttypes\inttypes;..\include;..\include\vstsdk2.4\;..\include\ASIOSDK2\common\;..\include\lhasa\lib\public;..\include\zlib;..\include\ogg\include;..\include\opus\include;..\include\vorbis\include;..\;..\common\svn_version_subwcrev;..\common\svn_version_default"
 				PreprocessorDefinitions="NDEBUG,WIN32,_WINDOWS,MODPLUG_TRACKER"
 				StringPooling="true"
 				ExceptionHandling="2"
@@ -1157,10 +1157,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\sounddev\SoundDevices.h"
-				>
-			</File>
-			<File
 				RelativePath="..\sounddev\SoundDeviceASIO.h"
 				>
 			</File>
@@ -1170,6 +1166,10 @@
 			</File>
 			<File
 				RelativePath="..\sounddev\SoundDevicePortAudio.h"
+				>
+			</File>
+			<File
+				RelativePath="..\sounddev\SoundDevices.h"
 				>
 			</File>
 			<File
