@@ -13,14 +13,8 @@
 #include "StreamEncoder.h"
 
 
-struct OpusDynBind;
-
 class OggOpusEncoder : public EncoderFactoryBase
 {
-
-private:
-
-	OpusDynBind *m_Opus;
 
 public:
 

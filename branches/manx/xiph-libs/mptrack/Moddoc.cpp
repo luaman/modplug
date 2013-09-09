@@ -1851,34 +1851,21 @@ void CModDoc::OnFileWaveConvert(ORDERINDEX nMinOrder, ORDERINDEX nMaxOrder, cons
 void CModDoc::OnFileMP3Convert()
 //------------------------------
 {
+	OggOpusEncoder opusencoder;
+	VorbisEncoder vorbisencoder;
 	MP3Encoder mp3lame(MP3EncoderLame);
 	MP3Encoder mp3blade(MP3EncoderBlade);
 	MP3Encoder mp3acm(MP3EncoderACM);
-	VorbisEncoder vorbisencoder;
-	OggOpusEncoder opusencoder;
 	FLACEncoder flacencoder;
 	WAVEncoder wavencoder;
 	std::vector<EncoderFactoryBase*> encoders;
+	if(opusencoder.IsAvailable())   encoders.push_back(&opusencoder);
+	if(vorbisencoder.IsAvailable()) encoders.push_back(&vorbisencoder);
 	if(mp3lame.IsAvailable())       encoders.push_back(&mp3lame);
 	if(mp3blade.IsAvailable())      encoders.push_back(&mp3blade);
 	if(mp3acm.IsAvailable())        encoders.push_back(&mp3acm);
-	if(vorbisencoder.IsAvailable()) encoders.push_back(&vorbisencoder);
-	if(opusencoder.IsAvailable())   encoders.push_back(&opusencoder);
 	if(flacencoder.IsAvailable())   encoders.push_back(&flacencoder);
 	if(wavencoder.IsAvailable())    encoders.push_back(&wavencoder);
-	if(encoders.empty())
-	{
-		Reporting::Error(
-			"No MP3/Vorbis/Opus codec found.\n"
-			"Please copy\n"
-			" - libmp3lame.dll or Lame_Enc.dll\n"
-			" - Ogg Vorbis libraries\n"
-			" - Xipg.Org Opus libraries\n"
-			"into OpenMPT's root directory.\n"
-			"Alternatively, you can install a MP3 ACM codec.",
-			"OpenMPT - Export");
-		return;
-	}
 	OnFileWaveConvert(ORDERINDEX_INVALID, ORDERINDEX_INVALID, encoders);
 }
 
