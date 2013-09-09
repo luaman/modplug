@@ -24,7 +24,7 @@ static Encoder::Traits BuildTraits()
 	traits.fileExtension = "ogg";
 	traits.fileShortDescription = "Vorbis";
 	traits.fileDescription = "Ogg Vorbis";
-	traits.name = "Ogg Vorbis";
+	traits.encoderName = "libVorbis";
 	traits.description += "Version: ";
 	traits.description += vorbis_version_string() ? vorbis_version_string() : "unknown";
 	traits.description += "\n";
