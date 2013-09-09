@@ -1,2 +1,0 @@
-The only modification made to the vanilla libopus sourcecode, is the hardcoded version number in win32/version.h .
-This should be updated by hand every time the libopus sourcecode is updated.
