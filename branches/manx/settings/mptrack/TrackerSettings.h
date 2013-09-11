@@ -17,6 +17,8 @@
 #include "../sounddsp/EQ.h"
 #include "../sounddsp/DSP.h"
 #include "../sounddsp/Reverb.h"
+#include "Settings.h"
+
 #include <bitset>
 
 /////////////////////////////////////////////////////////////////////////
@@ -133,6 +135,15 @@ struct PACKED EQPreset
 #pragma pack(pop)
 #endif
 STATIC_ASSERT(sizeof(EQPreset) == 60);
+
+template<> inline SettingValue ToSettingValue(const EQPreset &val) {
+	return SettingValue(EncodeBinarySetting<EQPreset>(val), "EQPreset");
+}
+template<> inline EQPreset FromSettingValue(const SettingValue &val) {
+	ASSERT(val.GetTypeTag() == "EQPreset");
+	return DecodeBinarySetting<EQPreset>(val.as<std::string>());
+}
+
 
 
 // Chords
@@ -278,7 +289,7 @@ public:
 
 protected:
 
-	void LoadINISettings(const CString &iniFile);
+	void LoadINISettings(SettingsContainer &conf);
 
 	void LoadRegistryEQ(HKEY key, LPCSTR pszName, EQPreset *pEqSettings);
 	bool LoadRegistrySettings();
