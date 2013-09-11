@@ -11,6 +11,7 @@
 #pragma once
 
 #include "resource.h"       // main symbols
+#include "Settings.h"
 #include <windows.h>
 #include "../mptrack/MpTrackUtil.h"
 #include "../mptrack/Reporting.h"
@@ -109,6 +110,9 @@ public:
 #endif
 
 protected:
+
+	DeferredSettingsContainer<IniFileSettingsContainer> m_Settings;
+	DeferredSettingsContainer<IniFileSettingsContainer> m_PluginCache;
 	CMultiDocTemplate *m_pModTemplate;
 	CVstPluginManager *m_pPluginManager;
 	BOOL m_bInitialized;
@@ -138,6 +142,8 @@ public:
 	static LPMIDILIBSTRUCT GetMidiLibrary() { return glpMidiLibrary; }
 	static BOOL ImportMidiConfig(LPCSTR lpszFileName, BOOL bNoWarning=FALSE);
 	static BOOL ExportMidiConfig(LPCSTR lpszFileName);
+	static BOOL ImportMidiConfig(SettingsContainer &file);
+	static BOOL ExportMidiConfig(SettingsContainer &file);
 	static void RegisterExtensions();
 	static BOOL LoadDefaultDLSBanks();
 	static BOOL SaveDefaultDLSBanks();
@@ -157,9 +163,10 @@ public:
 	CVstPluginManager *GetPluginManager() const { return m_pPluginManager; }
 	void GetDefaultMidiMacro(MIDIMacroConfig &cfg) const { cfg = m_MidiCfg; }
 	void SetDefaultMidiMacro(const MIDIMacroConfig &cfg) { m_MidiCfg = cfg; }
-	LPCTSTR GetConfigFileName() const { return m_szConfigFileName; }
+	std::string GetConfigFileName() const { return m_szConfigFileName; }
+	SettingsContainer & GetSettings() { return m_Settings; }
 	bool IsPortableMode() { return m_bPortableMode; }
-	LPCTSTR GetPluginCacheFileName() const { return m_szPluginCacheFileName; }
+	SettingsContainer & GetPluginCache() { return m_PluginCache; }
 
 	/// Returns path to config folder including trailing '\'.
 	LPCTSTR GetConfigPath() const { return m_szConfigDirectory; }

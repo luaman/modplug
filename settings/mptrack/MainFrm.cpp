@@ -497,77 +497,6 @@ void CMainFrame::OnClose()
 }
 
 
-bool CMainFrame::WritePrivateProfileBool(const CString section, const CString key, const bool value, const CString iniFile)
-{
-	CHAR valueBuffer[INIBUFFERSIZE];
-	wsprintf(valueBuffer, "%li", value?1:0);
-	return (WritePrivateProfileString(section, key, valueBuffer, iniFile) != 0);
-}
-
-
-bool CMainFrame::GetPrivateProfileBool(const CString section, const CString key, const bool defaultValue, const CString iniFile)
-{
-	CHAR defaultValueBuffer[INIBUFFERSIZE];
-	wsprintf(defaultValueBuffer, "%li", defaultValue?1:0);
-
-	CHAR valueBuffer[INIBUFFERSIZE];
-	GetPrivateProfileString(section, key, defaultValueBuffer, valueBuffer, INIBUFFERSIZE, iniFile);
-
-	return atol(valueBuffer)?true:false;
-}
-
-
-bool CMainFrame::WritePrivateProfileLong(const CString section, const CString key, const long value, const CString iniFile)
-{
-	CHAR valueBuffer[INIBUFFERSIZE];
-	wsprintf(valueBuffer, "%li", value);
-	return (WritePrivateProfileString(section, key, valueBuffer, iniFile) != 0);
-}
-
-
-long CMainFrame::GetPrivateProfileLong(const CString section, const CString key, const long defaultValue, const CString iniFile)
-{
-	CHAR defaultValueBuffer[INIBUFFERSIZE];
-	wsprintf(defaultValueBuffer, "%li", defaultValue);
-
-	CHAR valueBuffer[INIBUFFERSIZE];
-	GetPrivateProfileString(section, key, defaultValueBuffer, valueBuffer, INIBUFFERSIZE, iniFile);
-
-	return ConvertStrTo<long>(valueBuffer);
-}
-
-
-bool CMainFrame::WritePrivateProfileDWord(const CString section, const CString key, const DWORD value, const CString iniFile)
-{
-	CHAR valueBuffer[INIBUFFERSIZE];
-	wsprintf(valueBuffer, "%lu", value);
-	return (WritePrivateProfileString(section, key, valueBuffer, iniFile) != 0);
-}
-
-DWORD CMainFrame::GetPrivateProfileDWord(const CString section, const CString key, const DWORD defaultValue, const CString iniFile)
-{
-	CHAR defaultValueBuffer[INIBUFFERSIZE];
-	wsprintf(defaultValueBuffer, "%lu", defaultValue);
-
-	CHAR valueBuffer[INIBUFFERSIZE];
-	GetPrivateProfileString(section, key, defaultValueBuffer, valueBuffer, INIBUFFERSIZE, iniFile);
-	return ConvertStrTo<uint32>(valueBuffer);
-}
-
-bool CMainFrame::WritePrivateProfileCString(const CString section, const CString key, const CString value, const CString iniFile)
-{
-	return (WritePrivateProfileString(section, key, value, iniFile) != 0);
-}
-
-CString CMainFrame::GetPrivateProfileCString(const CString section, const CString key, const CString defaultValue, const CString iniFile)
-{
-	CHAR defaultValueBuffer[INIBUFFERSIZE];
-	strcpy(defaultValueBuffer, defaultValue);
-	CHAR valueBuffer[INIBUFFERSIZE];
-	GetPrivateProfileString(section, key, defaultValueBuffer, valueBuffer, INIBUFFERSIZE, iniFile);
-	return valueBuffer;
-}
-
 
 
 LRESULT CALLBACK CMainFrame::KeyboardProc(int code, WPARAM wParam, LPARAM lParam)
@@ -1953,6 +1882,9 @@ void CMainFrame::OnViewOptions()
 #endif
 	CAutoSaverGUI autosavedlg(m_pAutoSaver); //rewbs.AutoSaver
 	CUpdateSetupDlg updatedlg;
+#if defined(MPT_SETTINGS_CACHE) && defined(MPT_SETTINGS_PANEL)
+	COptionsAdvanced advanced;
+#endif // MPT_SETTINGS_CACHE && MPT_SETTINGS_PANEL
 	dlg.AddPage(&general);
 	dlg.AddPage(&sounddlg);
 	dlg.AddPage(&playerdlg);
@@ -1964,6 +1896,9 @@ void CMainFrame::OnViewOptions()
 	dlg.AddPage(&mididlg);
 	dlg.AddPage(&autosavedlg);
 	dlg.AddPage(&updatedlg);
+#if defined(MPT_SETTINGS_CACHE) && defined(MPT_SETTINGS_PANEL)
+	dlg.AddPage(&advanced);
+#endif // MPT_SETTINGS_CACHE && MPT_SETTINGS_PANEL
 	m_bOptionsLocked=true;	//rewbs.customKeys
 	m_SoundCardOptionsDialog = &sounddlg;
 	dlg.DoModal();
@@ -2641,10 +2576,9 @@ void CMainFrame::OnShowWindow(BOOL bShow, UINT /*nStatus*/)
 	{
 		firstShow = false;
 		WINDOWPLACEMENT wpl;
-		if (GetPrivateProfileStruct("Display", "WindowPlacement", &wpl, sizeof(WINDOWPLACEMENT), theApp.GetConfigFileName()))
-		{
-			SetWindowPlacement(&wpl);
-		}
+		GetWindowPlacement(&wpl);
+		wpl = theApp.GetSettings().Read<WINDOWPLACEMENT>("Display", "WindowPlacement", wpl);
+		SetWindowPlacement(&wpl);
 	}
 }
 

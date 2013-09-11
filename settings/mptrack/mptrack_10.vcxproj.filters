@@ -511,6 +511,9 @@
     <ClCompile Include="StreamEncoderFLAC.cpp">
       <Filter>Source Files\mptrack</Filter>
     </ClCompile>
+    <ClCompile Include="Settings.cpp">
+      <Filter>Source Files\mptrack</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\soundlib\Loaders.h">
@@ -955,6 +958,9 @@
       <Filter>Header Files\mptrack</Filter>
     </ClInclude>
     <ClInclude Include="StreamEncoderFLAC.h">
+      <Filter>Header Files\mptrack</Filter>
+    </ClInclude>
+    <ClInclude Include="Settings.h">
       <Filter>Header Files\mptrack</Filter>
     </ClInclude>
   </ItemGroup>
