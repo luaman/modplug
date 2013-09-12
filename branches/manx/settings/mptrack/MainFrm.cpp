@@ -214,8 +214,6 @@ CMainFrame::CMainFrame()
 	MemsetZero(g_csAudio);
 	InitializeCriticalSection(&g_csAudio);
 
-	TrackerSettings::Instance().LoadSettings();
-
 	m_InputHandler = new CInputHandler(this); 	//rewbs.customKeys
 
 	//Loading static tunings here - probably not the best place to do that but anyway.
