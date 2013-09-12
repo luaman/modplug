@@ -871,6 +871,8 @@ BOOL CTrackApp::InitInstance()
 	// Load Midi Library
 	ImportMidiConfig(theApp.GetSettings());
 
+	TrackerSettings::Instance().LoadSettings();
+
 	// create main MDI Frame window
 	CMainFrame* pMainFrame = new CMainFrame(/*cmdInfo.m_csExtension*/);
 	if (!pMainFrame->LoadFrame(IDR_MAINFRAME)) return FALSE;
