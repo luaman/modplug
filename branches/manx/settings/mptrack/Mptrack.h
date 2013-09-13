@@ -111,8 +111,8 @@ public:
 
 protected:
 
-	DeferredSettingsContainer<IniFileSettingsContainer> m_Settings;
-	DeferredSettingsContainer<IniFileSettingsContainer> m_PluginCache;
+	IniFileSettingsContainer *m_pSettings;
+	IniFileSettingsContainer *m_pPluginCache;
 	CMultiDocTemplate *m_pModTemplate;
 	CVstPluginManager *m_pPluginManager;
 	BOOL m_bInitialized;
@@ -164,9 +164,17 @@ public:
 	void GetDefaultMidiMacro(MIDIMacroConfig &cfg) const { cfg = m_MidiCfg; }
 	void SetDefaultMidiMacro(const MIDIMacroConfig &cfg) { m_MidiCfg = cfg; }
 	std::string GetConfigFileName() const { return m_szConfigFileName; }
-	SettingsContainer & GetSettings() { return m_Settings; }
+	SettingsContainer & GetSettings()
+	{
+		ASSERT(m_pSettings);
+		return *m_pSettings;
+	}
 	bool IsPortableMode() { return m_bPortableMode; }
-	SettingsContainer & GetPluginCache() { return m_PluginCache; }
+	SettingsContainer & GetPluginCache()
+	{
+		ASSERT(m_pPluginCache);
+		return *m_pPluginCache;
+	}
 
 	/// Returns path to config folder including trailing '\'.
 	LPCTSTR GetConfigPath() const { return m_szConfigDirectory; }

@@ -635,6 +635,8 @@ END_MESSAGE_MAP()
 
 CTrackApp::CTrackApp()
 //--------------------
+	: m_pSettings(nullptr)
+	, m_pPluginCache(nullptr)
 {
 	#if MPT_COMPILER_MSVC
 		_CrtSetDebugFillThreshold(0); // Disable buffer filling in secure enhanced CRT functions.
@@ -647,6 +649,7 @@ CTrackApp::CTrackApp()
 	m_pPluginManager = NULL;
 	m_bInitialized = FALSE;
 	m_szConfigFileName[0] = 0;
+	m_szPluginCacheFileName[0] = 0;
 }
 
 
@@ -854,10 +857,10 @@ BOOL CTrackApp::InitInstance()
 	// Set up paths to store configuration in
 	SetupPaths(cmdInfo.m_bPortable);
 
-	m_Settings.Construct(m_szConfigFileName);
-	m_PluginCache.Construct(m_szPluginCacheFileName);
+	m_pSettings = new IniFileSettingsContainer(m_szConfigFileName);
+	m_pPluginCache = new IniFileSettingsContainer(m_szPluginCacheFileName);
 
-	int mruListLength = m_Settings.Read<int32>("Misc", "MRUListLength", 10);
+	int mruListLength = GetSettings().Read<int32>("Misc", "MRUListLength", 10);
 	Limit(mruListLength, 0, 15);
 	LoadStdProfileSettings((UINT)mruListLength);  // Load standard INI file options (including MRU)
 
@@ -971,8 +974,10 @@ int CTrackApp::ExitInstance()
 	// Uninitialize Plugins
 	UninitializeDXPlugins();
 
-	m_PluginCache.Destruct();
-	m_Settings.Destruct();
+	delete m_pPluginCache;
+	m_pPluginCache = nullptr;
+	delete m_pSettings;
+	m_pSettings = nullptr;
 
 	return CWinApp::ExitInstance();
 }
