@@ -855,6 +855,7 @@ BOOL CTrackApp::InitInstance()
 	SetupPaths(cmdInfo.m_bPortable);
 
 	m_Settings.Construct(m_szConfigFileName);
+	m_PluginCache.Construct(m_szPluginCacheFileName);
 
 	int mruListLength = m_Settings.Read<int32>("Misc", "MRUListLength", 10);
 	Limit(mruListLength, 0, 15);
@@ -970,6 +971,7 @@ int CTrackApp::ExitInstance()
 	// Uninitialize Plugins
 	UninitializeDXPlugins();
 
+	m_PluginCache.Destruct();
 	m_Settings.Destruct();
 
 	return CWinApp::ExitInstance();
