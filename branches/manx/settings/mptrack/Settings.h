@@ -388,14 +388,18 @@ class SettingPath
 private:
 	std::string section;
 	std::string key;
+	std::string oldSection;
+	std::string oldKey;
 public:
 	SettingPath()
 	{
 		return;
 	}
-	SettingPath(const std::string &section_, const std::string &key_)
+	SettingPath(const std::string &section_, const std::string &key_, const std::string &oldSection_ = std::string(), const std::string &oldKey_ = std::string())
 		: section(section_)
 		, key(key_)
+		, oldSection(oldSection_)
+		, oldKey(oldKey_)
 	{
 		return;
 	}
@@ -406,6 +410,18 @@ public:
 	std::string GetKey() const
 	{
 		return key;
+	}
+	bool HasOldPaths() const
+	{
+		return !oldSection.empty() || !oldKey.empty();
+	}
+	std::string GetOldSection() const
+	{
+		return HasOldPaths() ? oldSection : section;
+	}
+	std::string GetOldKey() const
+	{
+		return HasOldPaths() ? oldKey : key;
 	}
 	int compare(const SettingPath &other) const
 	{
@@ -474,7 +490,8 @@ class SettingsContainer
 	#endif // MPT_SETTINGS_CACHE
 
 private:
-	std::vector<ISettingsBackend*> backends;
+	ISettingsBackend *backend;
+	ISettingsBackend *oldBackend;
 	SettingValue BackendsReadSetting(const SettingPath &path, const SettingValue &def) const;
 	void BackendsWriteSetting(const SettingPath &path, const SettingValue &val);
 	void BackendsRemoveSetting(const SettingPath &path);
@@ -504,7 +521,7 @@ private:
 	SettingsContainer(const SettingsContainer &other); // disable
 	SettingsContainer& operator = (const SettingsContainer &other); // disable
 public:
-	SettingsContainer(ISettingsBackend *backend1 = nullptr, ISettingsBackend *backend2 = nullptr);
+	SettingsContainer(ISettingsBackend *backend, ISettingsBackend *oldBackend = nullptr);
 	template <typename T>
 	T Read(const SettingPath &path, const T &def, const SettingMetadata &metadata = SettingMetadata()) const
 	{
@@ -640,6 +657,7 @@ class RegistrySettingsBackend : public ISettingsBackend
 private:
 	const HKEY baseKey;
 	const std::string basePath;
+	const bool oldPaths;
 private:
 	std::string BuildKeyName(const SettingPath &path) const;
 	std::string BuildValueName(const SettingPath &path) const;
@@ -648,7 +666,7 @@ private:
 	int32 ReadSettingRaw(const SettingPath &path, int32 def) const;
 	bool ReadSettingRaw(const SettingPath &path, bool def) const;
 public:
-	RegistrySettingsBackend(HKEY baseKey, const std::string &basePath);
+	RegistrySettingsBackend(HKEY baseKey, const std::string &basePath, bool oldPaths = false);
 	~RegistrySettingsBackend();
 	virtual SettingValue ReadSetting(const SettingPath &path, const SettingValue &def) const;
 	virtual void WriteSetting(const SettingPath &path, const SettingValue &val);

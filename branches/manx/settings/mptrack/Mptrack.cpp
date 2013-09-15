@@ -842,7 +842,7 @@ BOOL CTrackApp::InitInstance()
 	const std::string storedVersion = m_pSettingsIniFile->ReadSetting(SettingPath("Version", "Version"), "");
 	if(storedVersion < "1.17.02.40")
 	{
-		m_pSettingsRegistry = new RegistrySettingsBackend(HKEY_CURRENT_USER, "Software\\Olivier Lapicque\\ModPlug Tracker");
+		m_pSettingsRegistry = new RegistrySettingsBackend(HKEY_CURRENT_USER, "Software\\Olivier Lapicque\\ModPlug Tracker", true);
 	}
 	
 	m_pSettings = new SettingsContainer(m_pSettingsIniFile, m_pSettingsRegistry);
