@@ -107,6 +107,12 @@ public:
 		type = SettingTypeFloat;
 		valueFloat = val;
 	}
+	SettingValue(const char *val)
+	{
+		Init();
+		type = SettingTypeString;
+		valueString = val;
+	}
 	SettingValue(const std::string &val)
 	{
 		Init();
@@ -133,6 +139,13 @@ public:
 		type = SettingTypeFloat;
 		typeTag = typeTag_;
 		valueFloat = val;
+	}
+	SettingValue(const char *val, const std::string &typeTag_)
+	{
+		Init();
+		type = SettingTypeString;
+		typeTag = typeTag_;
+		valueString = val;
 	}
 	SettingValue(const std::string &val, const std::string &typeTag_)
 	{
