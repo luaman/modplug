@@ -17,6 +17,7 @@
 #include "../sounddsp/EQ.h"
 #include "../sounddsp/DSP.h"
 #include "../sounddsp/Reverb.h"
+#include "../common/version.h"
 #include "Settings.h"
 
 #include <bitset>
@@ -167,7 +168,18 @@ class TrackerSettings
 //===================
 {
 
+private:
+	SettingsContainer &conf;
+
 public:
+
+	Setting<uint32> RegVersion;
+	Setting<std::string> IniVersion;
+	const MptVersion::VersionNum gcsPreviousVersion;
+
+	Setting<CString> gcsInstallGUID;
+
+	Setting<bool> m_ShowSplashScreen;
 
 	// MIDI recording
 	enum RecordAftertouchOptions
@@ -177,14 +189,11 @@ public:
 		atRecordAsMacro,
 	};
 
-	bool m_ShowSplashScreen;
 	BOOL gbMdiMaximize;
 	bool gbShowHackControls;
 	LONG glTreeWindowWidth, glTreeSplitRatio;
 	LONG glGeneralWindowHeight, glPatternWindowHeight, glSampleWindowHeight, 
 		glInstrumentWindowHeight, glCommentsWindowHeight, glGraphWindowHeight; //rewbs.varWindowSize
-	/*MptVersion::VersionNum*/ uint32 gcsPreviousVersion;
-	CString gcsInstallGUID;
 	MODTYPE defaultModType;
 	DWORD VuMeterUpdateInterval;
 
@@ -260,7 +269,8 @@ public:
 
 public:
 
-	TrackerSettings();
+	TrackerSettings(SettingsContainer &conf);
+
 	void LoadSettings();
 	void SaveSettings();
 	static void GetDefaultColourScheme(COLORREF (&colours)[MAX_MODCOLORS]);

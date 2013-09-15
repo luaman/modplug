@@ -578,6 +578,10 @@ public:
 	{
 		return conf.Read(path, defaultValue);
 	}
+	T Get() const
+	{
+		return conf.Read(path, defaultValue);
+	}
 };
 
 template <typename T>
