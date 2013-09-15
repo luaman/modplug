@@ -20,6 +20,7 @@
 #define MPT_SETTINGS_CACHE
 #define MPT_SETTINGS_CACHE_STORE_DEFAULTS
 #define MPT_SETTINGS_PANEL
+//#define MPT_SETTINGS_IMMEDIATE_FLUSH
 
 
 enum SettingType
@@ -460,15 +461,37 @@ class SettingsContainer
 	#endif // MPT_SETTINGS_CACHE
 
 private:
-	ISettingsBackend &backend;
-	SettingValue ReadSetting(const SettingPath &path, const SettingValue &def, const SettingMetadata &metadata) const;
-	void WriteSetting(const SettingPath &path, const SettingValue &val);
-	void RemoveSetting(const SettingPath &path);
+	std::vector<ISettingsBackend*> backends;
+	SettingValue BackendsReadSetting(const SettingPath &path, const SettingValue &def) const;
+	void BackendsWriteSetting(const SettingPath &path, const SettingValue &val);
+	void BackendsRemoveSetting(const SettingPath &path);
+	SettingValue ReadSetting(const SettingPath &path, const SettingValue &def, const SettingMetadata &metadata) const
+	{
+		if(map.find(path) == map.end())
+		{
+			map[path] = SettingState(def).assign(BackendsReadSetting(path, def), false);
+			mapMetadata[path] = metadata;
+		}
+		return map[path];
+	}
+	void WriteSetting(const SettingPath &path, const SettingValue &val)
+	{
+		map[path] = val;
+#if defined(MPT_SETTINGS_IMMEDIATE_FLUSH)
+		BackendsWriteSetting(path, val);
+		map[path].Clean();
+#endif
+	}
+	void RemoveSetting(const SettingPath &path)
+	{
+		map.erase(path);
+		BackendsRemoveSetting(path);
+	}
 private:
 	SettingsContainer(const SettingsContainer &other); // disable
 	SettingsContainer& operator = (const SettingsContainer &other); // disable
 public:
-	SettingsContainer(ISettingsBackend &backend);
+	SettingsContainer(ISettingsBackend *backend1 = nullptr, ISettingsBackend *backend2 = nullptr);
 	template <typename T>
 	T Read(const SettingPath &path, const T &def, const SettingMetadata &metadata = SettingMetadata()) const
 	{
@@ -590,6 +613,26 @@ private:
 public:
 	IniFileSettingsBackend(const std::string &filename_);
 	~IniFileSettingsBackend();
+	virtual SettingValue ReadSetting(const SettingPath &path, const SettingValue &def) const;
+	virtual void WriteSetting(const SettingPath &path, const SettingValue &val);
+	virtual void RemoveSetting(const SettingPath &path);
+};
+
+class RegistrySettingsBackend : public ISettingsBackend
+{
+private:
+	const HKEY baseKey;
+	const std::string basePath;
+private:
+	std::string BuildKeyName(const SettingPath &path) const;
+	std::string BuildValueName(const SettingPath &path) const;
+	std::string ReadSettingRaw(const SettingPath &path, const std::string &def) const;
+	float ReadSettingRaw(const SettingPath &path, float def) const;
+	int32 ReadSettingRaw(const SettingPath &path, int32 def) const;
+	bool ReadSettingRaw(const SettingPath &path, bool def) const;
+public:
+	RegistrySettingsBackend(HKEY baseKey, const std::string &basePath);
+	~RegistrySettingsBackend();
 	virtual SettingValue ReadSetting(const SettingPath &path, const SettingValue &def) const;
 	virtual void WriteSetting(const SettingPath &path, const SettingValue &val);
 	virtual void RemoveSetting(const SettingPath &path);

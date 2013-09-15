@@ -111,7 +111,9 @@ public:
 
 protected:
 
-	IniFileSettingsContainer *m_pSettings;
+	IniFileSettingsBackend *m_pSettingsIniFile;
+	RegistrySettingsBackend *m_pSettingsRegistry;
+	SettingsContainer *m_pSettings;
 	IniFileSettingsContainer *m_pPluginCache;
 	CMultiDocTemplate *m_pModTemplate;
 	CVstPluginManager *m_pPluginManager;
