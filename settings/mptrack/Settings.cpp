@@ -110,27 +110,22 @@ void DecodeBinarySettingRaw(void *dst, std::size_t size, const std::string &src)
 SettingValue SettingsContainer::BackendsReadSetting(const SettingPath &path, const SettingValue &def) const
 {
 	SettingValue result = def;
-	for(std::vector<ISettingsBackend*>::const_iterator it = backends.begin(); it != backends.end(); ++it)
+	if(oldBackend)
 	{
-		result = (*it)->ReadSetting(path, result);
+		result = oldBackend->ReadSetting(path, result);
 	}
+	result = backend->ReadSetting(path, result);
 	return result;
 }
 
 void SettingsContainer::BackendsWriteSetting(const SettingPath &path, const SettingValue &val)
 {
-	if(!backends.empty())
-	{
-		backends.back()->WriteSetting(path, val);
-	}
+	backend->WriteSetting(path, val);
 }
 
 void SettingsContainer::BackendsRemoveSetting(const SettingPath &path)
 {
-	for(std::vector<ISettingsBackend*>::const_iterator it = backends.begin(); it != backends.end(); ++it)
-	{
-		(*it)->RemoveSetting(path);
-	}
+	backend->RemoveSetting(path);
 }
 
 void SettingsContainer::WriteSettings()
@@ -161,26 +156,24 @@ SettingsContainer::~SettingsContainer()
 
 SettingValue SettingsContainer::ReadSetting(const SettingPath &path, const SettingValue &def, const SettingMetadata & /*metadata*/ ) const
 {
-	return backend.ReadSetting(path, def);
+	return backend->ReadSetting(path, def);
 }
 
 void SettingsContainer::WriteSetting(const SettingPath &path, const SettingValue &val)
 {
-	backend.WriteSetting(path, val);
+	backend->WriteSetting(path, val);
 }
 
 void SettingsContainer::RemoveSetting(const SettingPath &path)
 {
-	backend.RemoveSetting(path);
+	backend->RemoveSetting(path);
 }
 
 SettingsContainer::SettingsContainer(ISettingsBackend *backend)
+	: backend(backend)
+	, oldBackend(nullptr)
 {
-	if(backend)
-	{
-
-	}
-	backends.push_back(backend);
+	ASSERT(backend);
 }
 
 void SettingsContainer::Flush()
@@ -196,17 +189,11 @@ SettingsContainer::~SettingsContainer()
 #endif // MPT_SETTINGS_CACHE
 
 
-SettingsContainer::SettingsContainer(ISettingsBackend *backend1, ISettingsBackend *backend2)
+SettingsContainer::SettingsContainer(ISettingsBackend *backend, ISettingsBackend *oldBackend)
+	: backend(backend)
+	, oldBackend(oldBackend)
 {
-	// backwards!
-	if(backend2)
-	{
-		backends.push_back(backend2);
-	}
-	if(backend1)
-	{
-		backends.push_back(backend1);
-	}
+	ASSERT(backend);
 }
 
 
@@ -318,12 +305,18 @@ void IniFileSettingsBackend::RemoveSetting(const SettingPath &path)
 
 std::string RegistrySettingsBackend::BuildKeyName(const SettingPath &path) const
 {
-	return basePath + "\\" + path.GetSection();
+	if((oldPaths?path.GetOldSection():path.GetSection()).empty())
+	{
+		return basePath;
+	} else
+	{
+		return basePath + "\\" + (oldPaths?path.GetOldSection():path.GetSection());
+	}
 }
 
 std::string RegistrySettingsBackend::BuildValueName(const SettingPath &path) const
 {
-	return path.GetKey();
+	return oldPaths?path.GetOldKey():path.GetKey();
 }
 
 std::string RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, const std::string &def) const
@@ -377,9 +370,10 @@ bool RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, bool def) 
 
 
 
-RegistrySettingsBackend::RegistrySettingsBackend(HKEY baseKey, const std::string &basePath)
+RegistrySettingsBackend::RegistrySettingsBackend(HKEY baseKey, const std::string &basePath, bool oldPaths)
 	: baseKey(baseKey)
 	, basePath(basePath)
+	, oldPaths(oldPaths)
 {
 	return;
 }
