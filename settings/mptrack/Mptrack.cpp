@@ -849,6 +849,8 @@ BOOL CTrackApp::InitInstance()
 
 	m_pTrackerSettings = new TrackerSettings(*m_pSettings);
 
+	TrackerSettings::Instance().LoadSettings();
+
 	m_pPluginCache = new IniFileSettingsContainer(m_szPluginCacheFileName);
 
 	int mruListLength = GetSettings().Read<int32>("Misc", "MRUListLength", 10);
@@ -865,8 +867,6 @@ BOOL CTrackApp::InitInstance()
 
 	// Load Midi Library
 	ImportMidiConfig(theApp.GetSettings());
-
-	TrackerSettings::Instance().LoadSettings();
 
 	// create main MDI Frame window
 	CMainFrame* pMainFrame = new CMainFrame(/*cmdInfo.m_csExtension*/);

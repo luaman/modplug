@@ -69,7 +69,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 {
 
 	// Fixups:
-	conf.Remove("Settings", "Version");
 	if(gcsInstallGUID == "")
 	{
 		// No GUID found - generate one.
@@ -83,6 +82,7 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	
 	// Last fixup: update config version
 	IniVersion = MptVersion::str;
+	conf.Remove("Settings", "Version");
 
 	// Write updated settings
 	conf.Flush();
