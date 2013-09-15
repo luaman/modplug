@@ -46,11 +46,49 @@ TrackerSettings &TrackerSettings::Instance()
 }
 
 
-TrackerSettings::TrackerSettings()
-//--------------------------------
+static MptVersion::VersionNum GetStoredVersion(const std::string &iniVersion, uint32 regVersion = 0)
+//--------------------------------------------------------------------------------------------------
+{
+	MptVersion::VersionNum result = regVersion;
+	if(!iniVersion.empty())
+	{
+		result = std::max(result, MptVersion::ToNum(iniVersion));
+	}
+	return result;
+}
+
+
+TrackerSettings::TrackerSettings(SettingsContainer &conf)
+//-------------------------------------------------------
+	: conf(conf)
+	, RegVersion(conf, "Settings", "Version", 0)
+	, IniVersion(conf, "Version", "Version", "")
+	, gcsPreviousVersion(GetStoredVersion(IniVersion, RegVersion))
+	, gcsInstallGUID(conf, "Version", "InstallGUID", "")
+	, m_ShowSplashScreen(conf, "Display", "ShowSplashScreen", true)
 {
 
-	m_ShowSplashScreen = true;
+	// Fixups:
+	conf.Remove("Settings", "Version");
+	if(gcsInstallGUID == "")
+	{
+		// No GUID found - generate one.
+		GUID guid;
+		CoCreateGuid(&guid);
+		BYTE* Str;
+		UuidToString((UUID*)&guid, &Str);
+		gcsInstallGUID = Str;
+		RpcStringFree(&Str);
+	}
+	
+	// Last fixup: update config version
+	IniVersion = MptVersion::str;
+
+	// Write updated settings
+	conf.Flush();
+
+
+
 	gnPatternSpacing = 0;
 	gbPatternRecord = TRUE;
 	gbPatternVUMeters = FALSE;
@@ -69,8 +107,6 @@ TrackerSettings::TrackerSettings()
 	glTreeSplitRatio = 128;
 	VuMeterUpdateInterval = 15;
 
-	gcsPreviousVersion = 0;
-	gcsInstallGUID = "";
 	// Audio Setup
 	gnAutoChordWaitTime = 60;
 	gnMsgBoxVisiblityFlags = uint32_max;
@@ -243,7 +279,8 @@ void TrackerSettings::LoadSettings()
 {
 	SettingsContainer & conf = theApp.GetSettings();
 
-	CString storedVersion = conf.Read<CString>("Version", "Version", "");
+	CString storedVersion = IniVersion.Get().c_str();
+
 	// If version number stored in INI is 1.17.02.40 or later, always load setting from INI file.
 	// If it isn't, try loading from Registry first, then from the INI file.
 	if (storedVersion >= "1.17.02.40" || !LoadRegistrySettings())
@@ -292,26 +329,9 @@ void TrackerSettings::LoadSettings()
 void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 //------------------------------------------------------------
 {
-	MptVersion::VersionNum vIniVersion;
-
-	vIniVersion = gcsPreviousVersion = MptVersion::ToNum(conf.Read<std::string>("Version", "Version", ""));
-	if(vIniVersion == 0)
-		vIniVersion = MptVersion::num;
-
-	gcsInstallGUID = conf.Read<CString>("Version", "InstallGUID", "");
-	if(gcsInstallGUID == "")
-	{
-		// No GUID found in INI file - generate one.
-		GUID guid;
-		CoCreateGuid(&guid);
-		BYTE* Str;
-		UuidToString((UUID*)&guid, &Str);
-		gcsInstallGUID.Format("%s", (LPTSTR)Str);
-		RpcStringFree(&Str);
-	}
+	MptVersion::VersionNum vIniVersion = gcsPreviousVersion;
 
 	// GUI Stuff
-	m_ShowSplashScreen = conf.Read<bool>("Display", "ShowSplashScreen", m_ShowSplashScreen);
 	gbMdiMaximize = conf.Read<int32>("Display", "MDIMaximize", gbMdiMaximize);
 	glTreeWindowWidth = conf.Read<int32>("Display", "MDITreeWidth", glTreeWindowWidth);
 	glTreeSplitRatio = conf.Read<int32>("Display", "MDITreeRatio", glTreeSplitRatio);
@@ -583,7 +603,6 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 #define SETTINGS_REGKEY_BASE		"Software\\Olivier Lapicque\\"
 #define SETTINGS_REGKEY_DEFAULT		"ModPlug Tracker"
 #define SETTINGS_REGEXT_WINDOW		"\\Window"
-#define SETTINGS_REGEXT_SETTINGS	"\\Settings"
 #define SETTINGS_REGEXT_PATTERNEDITOR	"\\Pattern Editor"
 
 void TrackerSettings::LoadRegistryEQ(HKEY key, LPCSTR pszName, EQPreset *pEqSettings)
@@ -606,11 +625,9 @@ bool TrackerSettings::LoadRegistrySettings()
 {
 	CString m_csRegKey;
 	CString m_csRegExt;
-	CString m_csRegSettings;
 	CString m_csRegWindow;
 	CString m_csRegPatternEditor;
 	m_csRegKey.Format("%s%s", SETTINGS_REGKEY_BASE, SETTINGS_REGKEY_DEFAULT);
-	m_csRegSettings.Format("%s%s", m_csRegKey, SETTINGS_REGEXT_SETTINGS);
 	m_csRegWindow.Format("%s%s", m_csRegKey, SETTINGS_REGEXT_WINDOW);
 	m_csRegPatternEditor.Format("%s%s", m_csRegKey, SETTINGS_REGEXT_PATTERNEDITOR);
 
@@ -619,7 +636,6 @@ bool TrackerSettings::LoadRegistrySettings()
 	DWORD dwREG_SZ = REG_SZ;
 	DWORD dwDWORDSize = sizeof(UINT);
 	DWORD dwCRSIZE = sizeof(COLORREF);
-
 
 	bool asEnabled=true;
 	int asInterval=10;
@@ -793,15 +809,6 @@ bool TrackerSettings::LoadRegistrySettings()
 		return false;
 	}
 
-	if (RegOpenKeyEx(HKEY_CURRENT_USER,	m_csRegSettings, 0, KEY_READ, &key) == ERROR_SUCCESS)
-	{
-		// Version
-		dwDWORDSize = sizeof(DWORD);
-		DWORD dwPreviousVersion;
-		RegQueryValueEx(key, "Version", NULL, &dwREG_DWORD, (LPBYTE)&dwPreviousVersion, &dwDWORDSize);
-		gcsPreviousVersion = dwPreviousVersion;
-		RegCloseKey(key);
-	}
 	CMainFrame::m_pAutoSaver = new CAutoSaver(asEnabled, asInterval, asBackupHistory, asUseOriginalPath, asPath, asFileNameTemplate);
 
 	if(RegOpenKeyEx(HKEY_CURRENT_USER, m_csRegPatternEditor, 0, KEY_READ, &key) == ERROR_SUCCESS)
@@ -823,10 +830,6 @@ void TrackerSettings::SaveSettings()
 //----------------------------------
 {
 	SettingsContainer & conf = theApp.GetSettings();
-
-	CString version = MptVersion::str;
-	conf.Write<CString>("Version", "Version", version);
-	conf.Write<CString>("Version", "InstallGUID", gcsInstallGUID);
 
 	WINDOWPLACEMENT wpl;
 	wpl.length = sizeof(WINDOWPLACEMENT);

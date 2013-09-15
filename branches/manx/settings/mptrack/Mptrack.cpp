@@ -847,7 +847,7 @@ BOOL CTrackApp::InitInstance()
 	
 	m_pSettings = new SettingsContainer(m_pSettingsIniFile, m_pSettingsRegistry);
 
-	m_pTrackerSettings = new TrackerSettings();
+	m_pTrackerSettings = new TrackerSettings(*m_pSettings);
 
 	m_pPluginCache = new IniFileSettingsContainer(m_szPluginCacheFileName);
 
