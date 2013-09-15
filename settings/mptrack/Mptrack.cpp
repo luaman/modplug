@@ -638,6 +638,7 @@ CTrackApp::CTrackApp()
 	: m_pSettingsIniFile(nullptr)
 	, m_pSettingsRegistry(nullptr)
 	, m_pSettings(nullptr)
+	, m_pTrackerSettings(nullptr)
 	, m_pPluginCache(nullptr)
 {
 	#if MPT_COMPILER_MSVC
@@ -748,11 +749,11 @@ void CTrackApp::SetupPaths(bool overridePortable)
 	// Create tunings dir
 	CString sTuningPath;
 	sTuningPath.Format(TEXT("%stunings\\"), m_szConfigDirectory);
-	TrackerSettings::Instance().SetDefaultDirectory(sTuningPath, DIR_TUNING);
+	TrackerDirectories::Instance().SetDefaultDirectory(sTuningPath, DIR_TUNING);
 
-	if(PathIsDirectory(TrackerSettings::Instance().GetDefaultDirectory(DIR_TUNING)) == 0)
+	if(PathIsDirectory(TrackerDirectories::Instance().GetDefaultDirectory(DIR_TUNING)) == 0)
 	{
-		CreateDirectory(TrackerSettings::Instance().GetDefaultDirectory(DIR_TUNING), 0);
+		CreateDirectory(TrackerDirectories::Instance().GetDefaultDirectory(DIR_TUNING), 0);
 	}
 
 	if(!bIsAppDir)
@@ -792,7 +793,7 @@ void CTrackApp::SetupPaths(bool overridePortable)
 	TCHAR szTemplatePath[MAX_PATH];
 	_tcscpy(szTemplatePath, m_szConfigDirectory);
 	_tcscat(szTemplatePath, _T("TemplateModules\\"));
-	TrackerSettings::Instance().SetDefaultDirectory(szTemplatePath, DIR_TEMPLATE_FILES_USER);
+	TrackerDirectories::Instance().SetDefaultDirectory(szTemplatePath, DIR_TEMPLATE_FILES_USER);
 
 	//Force use of custom ini file rather than windowsDir\executableName.ini
 	if(m_pszProfileName)
@@ -817,34 +818,9 @@ BOOL CTrackApp::InitInstance()
 	// Start loading
 	BeginWaitCursor();
 
-	MEMORYSTATUS gMemStatus;
-	MemsetZero(gMemStatus);
-	GlobalMemoryStatus(&gMemStatus);
-#if 0
-	Log("Physical: %lu\n", gMemStatus.dwTotalPhys);
-	Log("Page File: %lu\n", gMemStatus.dwTotalPageFile);
-	Log("Virtual: %lu\n", gMemStatus.dwTotalVirtual);
-#endif
-	// Allow allocations of at least 16MB
-	if (gMemStatus.dwTotalPhys < 16*1024*1024) gMemStatus.dwTotalPhys = 16*1024*1024;
-	TrackerSettings::Instance().m_nSampleUndoMaxBuffer = gMemStatus.dwTotalPhys / 10; // set sample undo buffer size
-	if(TrackerSettings::Instance().m_nSampleUndoMaxBuffer < (1 << 20)) TrackerSettings::Instance().m_nSampleUndoMaxBuffer = (1 << 20);
-
 	// Initialize Audio
 #ifdef ENABLE_ASM
 	InitProcSupport();
-	// rough heuristic to select less cpu consuming defaults for old CPUs
-	if(GetProcSupport() & PROCSUPPORT_MMX)
-	{
-		TrackerSettings::Instance().m_ResamplerSettings.SrcMode = SRCMODE_SPLINE;
-	}
-	if(GetProcSupport() & PROCSUPPORT_SSE)
-	{
-		TrackerSettings::Instance().m_ResamplerSettings.SrcMode = SRCMODE_POLYPHASE;
-	}
-#else
-	// just use a sane default
-	TrackerSettings::Instance().m_ResamplerSettings.SrcMode = SRCMODE_POLYPHASE;
 #endif
 
 	ASSERT(nullptr == m_pDocManager);
@@ -870,6 +846,8 @@ BOOL CTrackApp::InitInstance()
 	}
 	
 	m_pSettings = new SettingsContainer(m_pSettingsIniFile, m_pSettingsRegistry);
+
+	m_pTrackerSettings = new TrackerSettings();
 
 	m_pPluginCache = new IniFileSettingsContainer(m_szPluginCacheFileName);
 
@@ -989,6 +967,8 @@ int CTrackApp::ExitInstance()
 
 	delete m_pPluginCache;
 	m_pPluginCache = nullptr;
+	delete m_pTrackerSettings;
+	m_pTrackerSettings = nullptr;
 	delete m_pSettings;
 	m_pSettings = nullptr;
 	delete m_pSettingsRegistry;

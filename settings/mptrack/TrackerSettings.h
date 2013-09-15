@@ -248,12 +248,6 @@ public:
 	// Chords
 	MPTChords Chords;
 
-	// Directory Arrays (default dir + last dir)
-	TCHAR m_szDefaultDirectory[NUM_DIRS][_MAX_PATH];
-	TCHAR m_szWorkingDirectory[NUM_DIRS][_MAX_PATH];
-	// Directory to INI setting translation
-	static const TCHAR *m_szDirectoryToSettingsName[NUM_DIRS];
-
 	uint8 DefaultPlugVolumeHandling;
 
 	int gnPlugWindowX;
@@ -282,7 +276,7 @@ public:
 	static MPTChords &GetChords() { return Instance().Chords; }
 
 	// Get settings object singleton
-	static TrackerSettings &Instance() { return settings; }
+	static TrackerSettings &Instance();
 
 	std::string IgnoredCCsToString() const;
 	void ParseIgnoredCCs(CString cc);
@@ -297,9 +291,39 @@ protected:
 	void LoadChords(MPTChords &chords);
 	void SaveChords(MPTChords &chords);
 
+};
+
+
+//======================
+class TrackerDirectories
+//======================
+{
+	friend class TrackerSettings;
+private:
+
+	// Directory Arrays (default dir + last dir)
+	TCHAR m_szDefaultDirectory[NUM_DIRS][_MAX_PATH];
+	TCHAR m_szWorkingDirectory[NUM_DIRS][_MAX_PATH];
+	// Directory to INI setting translation
+	static const TCHAR *m_szDirectoryToSettingsName[NUM_DIRS];
+
+public:
+
+	TrackerDirectories();
+	~TrackerDirectories();
+
+	// access to default + working directories
+	void SetWorkingDirectory(const LPCTSTR szFilenameFrom, Directory dir, bool bStripFilename = false);
+	LPCTSTR GetWorkingDirectory(Directory dir) const;
+	void SetDefaultDirectory(const LPCTSTR szFilenameFrom, Directory dir, bool bStripFilename = false);
+	LPCTSTR GetDefaultDirectory(Directory dir) const;
+
+	static TrackerDirectories &Instance() { return directories; }
+
+protected:
+
 	void SetDirectory(const LPCTSTR szFilenameFrom, Directory dir, TCHAR (&pDirs)[NUM_DIRS][_MAX_PATH], bool bStripFilename);
 
-	// The one and only settings object
-	static TrackerSettings settings;
+	static TrackerDirectories directories;
 
 };
