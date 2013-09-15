@@ -34,9 +34,16 @@
 #define OLD_SOUNDSETUP_NOBOOSTTHREADPRIORITY 0x80
 
 
+TrackerDirectories TrackerDirectories::directories;
 
-TrackerSettings TrackerSettings::settings;
-const TCHAR *TrackerSettings::m_szDirectoryToSettingsName[NUM_DIRS] = { _T("Songs_Directory"), _T("Samples_Directory"), _T("Instruments_Directory"), _T("Plugins_Directory"), _T("Plugin_Presets_Directory"), _T("Export_Directory"), _T(""), _T("") };
+const TCHAR *TrackerDirectories::m_szDirectoryToSettingsName[NUM_DIRS] = { _T("Songs_Directory"), _T("Samples_Directory"), _T("Instruments_Directory"), _T("Plugins_Directory"), _T("Plugin_Presets_Directory"), _T("Export_Directory"), _T(""), _T("") };
+
+
+TrackerSettings &TrackerSettings::Instance()
+//------------------------------------------
+{
+	return theApp.GetTrackerSettings();
+}
 
 
 TrackerSettings::TrackerSettings()
@@ -111,14 +118,6 @@ TrackerSettings::TrackerSettings()
 
 	GetDefaultColourScheme(rgbCustomColors);
 
-	// Directory Arrays (Default + Last)
-	for(size_t i = 0; i < NUM_DIRS; i++)
-	{
-		if(i == DIR_TUNING) // Hack: Tuning folder is already set so don't reset it.
-			continue;
-		m_szDefaultDirectory[i][0] = '\0';
-		m_szWorkingDirectory[i][0] = '\0';
-	}
 	m_szKbdFile[0] = '\0';
 
 	// Default chords
@@ -154,6 +153,36 @@ TrackerSettings::TrackerSettings()
 	gnPlugWindowWidth = 370;
 	gnPlugWindowHeight = 332;
 	gnPlugWindowLast = 0;
+
+	// dynamic defaults:
+
+	MEMORYSTATUS gMemStatus;
+	MemsetZero(gMemStatus);
+	GlobalMemoryStatus(&gMemStatus);
+#if 0
+	Log("Physical: %lu\n", gMemStatus.dwTotalPhys);
+	Log("Page File: %lu\n", gMemStatus.dwTotalPageFile);
+	Log("Virtual: %lu\n", gMemStatus.dwTotalVirtual);
+#endif
+	// Allow allocations of at least 16MB
+	if (gMemStatus.dwTotalPhys < 16*1024*1024) gMemStatus.dwTotalPhys = 16*1024*1024;
+	m_nSampleUndoMaxBuffer = gMemStatus.dwTotalPhys / 10; // set sample undo buffer size
+	if(m_nSampleUndoMaxBuffer < (1 << 20)) m_nSampleUndoMaxBuffer = (1 << 20);
+
+#ifdef ENABLE_ASM
+	// rough heuristic to select less cpu consuming defaults for old CPUs
+	if(GetProcSupport() & PROCSUPPORT_MMX)
+	{
+		m_ResamplerSettings.SrcMode = SRCMODE_SPLINE;
+	}
+	if(GetProcSupport() & PROCSUPPORT_SSE)
+	{
+		m_ResamplerSettings.SrcMode = SRCMODE_POLYPHASE;
+	}
+#else
+	// just use a sane default
+	m_ResamplerSettings.SrcMode = SRCMODE_POLYPHASE;
+#endif
 
 }
 
@@ -254,9 +283,9 @@ void TrackerSettings::LoadSettings()
 	// Default directory location
 	for(UINT i = 0; i < NUM_DIRS; i++)
 	{
-		_tcscpy(m_szWorkingDirectory[i], m_szDefaultDirectory[i]);
+		_tcscpy(TrackerDirectories::Instance().m_szWorkingDirectory[i], TrackerDirectories::Instance().m_szDefaultDirectory[i]);
 	}
-	if (m_szDefaultDirectory[DIR_MODS][0]) SetCurrentDirectory(m_szDefaultDirectory[DIR_MODS]);
+	if (TrackerDirectories::Instance().m_szDefaultDirectory[DIR_MODS][0]) SetCurrentDirectory(TrackerDirectories::Instance().m_szDefaultDirectory[DIR_MODS]);
 }
 
 
@@ -477,11 +506,11 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 	// Default Paths
 	for(size_t i = 0; i < NUM_DIRS; i++)
 	{
-		if(m_szDirectoryToSettingsName[i][0] == '\0')
+		if(TrackerDirectories::Instance().m_szDirectoryToSettingsName[i][0] == '\0')
 			continue;
 
 		TCHAR szPath[_MAX_PATH] = "";
-		mpt::String::Copy(szPath, conf.Read<std::string>("Paths", m_szDirectoryToSettingsName[i], GetDefaultDirectory(static_cast<Directory>(i))));
+		mpt::String::Copy(szPath, conf.Read<std::string>("Paths", TrackerDirectories::Instance().m_szDirectoryToSettingsName[i], GetDefaultDirectory(static_cast<Directory>(i))));
 		theApp.RelativePathToAbsolute(szPath);
 		SetDefaultDirectory(szPath, static_cast<Directory>(i), false);
 
@@ -893,7 +922,7 @@ void TrackerSettings::SaveSettings()
 	TCHAR szPath[_MAX_PATH] = "";
 	for(size_t i = 0; i < NUM_DIRS; i++)
 	{
-		if(m_szDirectoryToSettingsName[i][0] == 0)
+		if(TrackerDirectories::Instance().m_szDirectoryToSettingsName[i][0] == 0)
 			continue;
 
 		_tcscpy(szPath, GetDefaultDirectory(static_cast<Directory>(i)));
@@ -901,7 +930,7 @@ void TrackerSettings::SaveSettings()
 		{
 			theApp.AbsolutePathToRelative(szPath);
 		}
-		conf.Write<std::string>("Paths", m_szDirectoryToSettingsName[i], szPath);
+		conf.Write<std::string>("Paths", TrackerDirectories::Instance().m_szDirectoryToSettingsName[i], szPath);
 
 	}
 	// Obsolete, since we always write to Keybindings.mkb now.
@@ -1064,9 +1093,37 @@ void TrackerSettings::ParseIgnoredCCs(CString cc)
 }
 
 
+void TrackerSettings::SetDefaultDirectory(const LPCTSTR szFilenameFrom, Directory dir, bool bStripFilename)
+//---------------------------------------------------------------------------------------------------------
+{
+	TrackerDirectories::Instance().SetDefaultDirectory(szFilenameFrom, dir, bStripFilename);
+}
+
+
+void TrackerSettings::SetWorkingDirectory(const LPCTSTR szFilenameFrom, Directory dir, bool bStripFilename)
+//---------------------------------------------------------------------------------------------------------
+{
+	TrackerDirectories::Instance().SetDefaultDirectory(szFilenameFrom, dir, bStripFilename);
+}
+
+
+LPCTSTR TrackerSettings::GetDefaultDirectory(Directory dir) const
+//---------------------------------------------------------------
+{
+	return TrackerDirectories::Instance().GetDefaultDirectory(dir);
+}
+
+
+LPCTSTR TrackerSettings::GetWorkingDirectory(Directory dir) const
+//---------------------------------------------------------------
+{
+	return TrackerDirectories::Instance().GetWorkingDirectory(dir);
+}
+
+
 // retrieve / set default directory from given string and store it our setup variables
-void TrackerSettings::SetDirectory(const LPCTSTR szFilenameFrom, Directory dir, TCHAR (&directories)[NUM_DIRS][_MAX_PATH], bool bStripFilename)
-//---------------------------------------------------------------------------------------------------------------------------------------------
+void TrackerDirectories::SetDirectory(const LPCTSTR szFilenameFrom, Directory dir, TCHAR (&directories)[NUM_DIRS][_MAX_PATH], bool bStripFilename)
+//------------------------------------------------------------------------------------------------------------------------------------------------
 {
 	TCHAR szPath[_MAX_PATH], szDir[_MAX_DIR];
 
@@ -1093,29 +1150,51 @@ void TrackerSettings::SetDirectory(const LPCTSTR szFilenameFrom, Directory dir, 
 	}
 }
 
-void TrackerSettings::SetDefaultDirectory(const LPCTSTR szFilenameFrom, Directory dir, bool bStripFilename)
-//---------------------------------------------------------------------------------------------------------
+void TrackerDirectories::SetDefaultDirectory(const LPCTSTR szFilenameFrom, Directory dir, bool bStripFilename)
+//------------------------------------------------------------------------------------------------------------
 {
 	SetDirectory(szFilenameFrom, dir, m_szDefaultDirectory, bStripFilename);
 }
 
 
-void TrackerSettings::SetWorkingDirectory(const LPCTSTR szFilenameFrom, Directory dir, bool bStripFilename)
-//---------------------------------------------------------------------------------------------------------
+void TrackerDirectories::SetWorkingDirectory(const LPCTSTR szFilenameFrom, Directory dir, bool bStripFilename)
+//------------------------------------------------------------------------------------------------------------
 {
 	SetDirectory(szFilenameFrom, dir, m_szWorkingDirectory, bStripFilename);
 }
 
 
-LPCTSTR TrackerSettings::GetDefaultDirectory(Directory dir) const
-//---------------------------------------------------------------
+LPCTSTR TrackerDirectories::GetDefaultDirectory(Directory dir) const
+//------------------------------------------------------------------
 {
 	return m_szDefaultDirectory[dir];
 }
 
 
-LPCTSTR TrackerSettings::GetWorkingDirectory(Directory dir) const
-//---------------------------------------------------------------
+LPCTSTR TrackerDirectories::GetWorkingDirectory(Directory dir) const
+//------------------------------------------------------------------
 {
 	return m_szWorkingDirectory[dir];
+}
+
+
+
+TrackerDirectories::TrackerDirectories()
+//--------------------------------------
+{
+	// Directory Arrays (Default + Last)
+	for(size_t i = 0; i < NUM_DIRS; i++)
+	{
+		if(i == DIR_TUNING) // Hack: Tuning folder is already set so don't reset it.
+			continue;
+		m_szDefaultDirectory[i][0] = '\0';
+		m_szWorkingDirectory[i][0] = '\0';
+	}
+}
+
+
+TrackerDirectories::~TrackerDirectories()
+//---------------------------------------
+{
+	return;
 }

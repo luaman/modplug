@@ -22,6 +22,7 @@
 class CModDoc;
 class CVstPluginManager;
 class CDLSBank;
+class TrackerSettings;
 
 /////////////////////////////////////////////////////////////////////////////
 // 16-colors DIB
@@ -114,6 +115,7 @@ protected:
 	IniFileSettingsBackend *m_pSettingsIniFile;
 	RegistrySettingsBackend *m_pSettingsRegistry;
 	SettingsContainer *m_pSettings;
+	TrackerSettings *m_pTrackerSettings;
 	IniFileSettingsContainer *m_pPluginCache;
 	CMultiDocTemplate *m_pModTemplate;
 	CVstPluginManager *m_pPluginManager;
@@ -170,6 +172,11 @@ public:
 	{
 		ASSERT(m_pSettings);
 		return *m_pSettings;
+	}
+	TrackerSettings & GetTrackerSettings()
+	{
+		ASSERT(m_pTrackerSettings);
+		return *m_pTrackerSettings;
 	}
 	bool IsPortableMode() { return m_bPortableMode; }
 	SettingsContainer & GetPluginCache()
