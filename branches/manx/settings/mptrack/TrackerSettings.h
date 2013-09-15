@@ -198,7 +198,6 @@ public:
 	DWORD VuMeterUpdateInterval;
 
 	// Audio Setup
-	DWORD gbLoopSong;
 	bool m_MorePortaudio;
 	LONG m_nWaveDevice; // use the SNDDEV_GET_NUMBER and SNDDEV_GET_TYPE macros to decode
 	DWORD m_LatencyMS;
@@ -220,6 +219,7 @@ public:
 	std::bitset<128> midiIgnoreCCs;
 
 	// Pattern Setup
+	DWORD gbLoopSong;
 	UINT gnPatternSpacing;
 	BOOL gbPatternVUMeters, gbPatternPluginNames, gbPatternRecord;
 	DWORD m_dwPatternSetup, m_nKeyboardCfg;

@@ -112,7 +112,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	gnMsgBoxVisiblityFlags = uint32_max;
 
 	// Audio device
-	gbLoopSong = TRUE;
 	m_MorePortaudio = false;
 	m_nWaveDevice = SNDDEV_BUILD_ID(0, SNDDEV_WAVEOUT);	// Default value will be overridden
 	m_LatencyMS = SNDDEV_DEFAULT_LATENCY_MS;
@@ -137,6 +136,7 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	midiImportSpeed = 3;
 
 	// Pattern Setup
+	gbLoopSong = TRUE;
 	m_dwPatternSetup = PATTERN_PLAYNEWNOTE | PATTERN_EFFECTHILIGHT
 		| PATTERN_SMALLFONT | PATTERN_CENTERROW | PATTERN_DRAGNDROPEDIT
 		| PATTERN_FLATBUTTONS | PATTERN_NOEXTRALOUD | PATTERN_2NDHIGHLIGHT
