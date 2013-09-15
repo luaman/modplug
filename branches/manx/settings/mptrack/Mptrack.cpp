@@ -635,7 +635,9 @@ END_MESSAGE_MAP()
 
 CTrackApp::CTrackApp()
 //--------------------
-	: m_pSettings(nullptr)
+	: m_pSettingsIniFile(nullptr)
+	, m_pSettingsRegistry(nullptr)
+	, m_pSettings(nullptr)
 	, m_pPluginCache(nullptr)
 {
 	#if MPT_COMPILER_MSVC
@@ -857,7 +859,18 @@ BOOL CTrackApp::InitInstance()
 	// Set up paths to store configuration in
 	SetupPaths(cmdInfo.m_bPortable);
 
-	m_pSettings = new IniFileSettingsContainer(m_szConfigFileName);
+	m_pSettingsIniFile = new IniFileSettingsBackend(m_szConfigFileName);
+	
+	// If version number stored in INI is 1.17.02.40 or later, always load setting from INI file.
+	// If it isn't, try loading from Registry first, then from the INI file.
+	const std::string storedVersion = m_pSettingsIniFile->ReadSetting(SettingPath("Version", "Version"), "");
+	if(storedVersion < "1.17.02.40")
+	{
+		m_pSettingsRegistry = new RegistrySettingsBackend(HKEY_CURRENT_USER, "Software\\Olivier Lapicque\\ModPlug Tracker");
+	}
+	
+	m_pSettings = new SettingsContainer(m_pSettingsIniFile, m_pSettingsRegistry);
+
 	m_pPluginCache = new IniFileSettingsContainer(m_szPluginCacheFileName);
 
 	int mruListLength = GetSettings().Read<int32>("Misc", "MRUListLength", 10);
@@ -978,6 +991,10 @@ int CTrackApp::ExitInstance()
 	m_pPluginCache = nullptr;
 	delete m_pSettings;
 	m_pSettings = nullptr;
+	delete m_pSettingsRegistry;
+	m_pSettingsRegistry = nullptr;
+	delete m_pSettingsIniFile;
+	m_pSettingsIniFile = nullptr;
 
 	return CWinApp::ExitInstance();
 }

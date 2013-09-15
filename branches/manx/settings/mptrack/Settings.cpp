@@ -14,6 +14,7 @@
 #include "Settings.h"
 
 #include "../common/misc_util.h"
+#include "../common/StringFixer.h"
 #include "Mptrack.h"
 
 
@@ -106,26 +107,30 @@ void DecodeBinarySettingRaw(void *dst, std::size_t size, const std::string &src)
 #if defined(MPT_SETTINGS_CACHE)
 
 
-SettingValue SettingsContainer::ReadSetting(const SettingPath &path, const SettingValue &def, const SettingMetadata &metadata) const
+SettingValue SettingsContainer::BackendsReadSetting(const SettingPath &path, const SettingValue &def) const
 {
-	if(map.find(path) == map.end())
+	SettingValue result = def;
+	for(std::vector<ISettingsBackend*>::const_iterator it = backends.begin(); it != backends.end(); ++it)
 	{
-		map[path] = SettingState(def).assign(backend.ReadSetting(path, def), false);
-		mapMetadata[path] = metadata;
+		result = (*it)->ReadSetting(path, result);
 	}
-	return map[path];
+	return result;
 }
 
-void SettingsContainer::WriteSetting(const SettingPath &path, const SettingValue &val)
+void SettingsContainer::BackendsWriteSetting(const SettingPath &path, const SettingValue &val)
 {
-	map[path] = val;
-	//backend.WriteSetting(path, val);
+	if(!backends.empty())
+	{
+		backends.back()->WriteSetting(path, val);
+	}
 }
 
-void SettingsContainer::RemoveSetting(const SettingPath &path)
+void SettingsContainer::BackendsRemoveSetting(const SettingPath &path)
 {
-	map.erase(path);
-	backend.RemoveSetting(path);
+	for(std::vector<ISettingsBackend*>::const_iterator it = backends.begin(); it != backends.end(); ++it)
+	{
+		(*it)->RemoveSetting(path);
+	}
 }
 
 void SettingsContainer::WriteSettings()
@@ -134,16 +139,12 @@ void SettingsContainer::WriteSettings()
 	{
 		if(i->second.IsDirty())
 		{
-			backend.WriteSetting(i->first, i->second);
+#if !defined(MPT_SETTINGS_IMMEDIATE_FLUSH)
+			BackendsWriteSetting(i->first, i->second);
 			i->second.Clean();
+#endif
 		}
 	}
-}
-
-SettingsContainer::SettingsContainer(ISettingsBackend &backend_)
-	: backend(backend_)
-{
-	return;
 }
 
 void SettingsContainer::Flush()
@@ -156,9 +157,7 @@ SettingsContainer::~SettingsContainer()
 	WriteSettings();
 }
 
-
 #else // !MPT_SETTINGS_CACHE
-
 
 SettingValue SettingsContainer::ReadSetting(const SettingPath &path, const SettingValue &def, const SettingMetadata & /*metadata*/ ) const
 {
@@ -175,10 +174,13 @@ void SettingsContainer::RemoveSetting(const SettingPath &path)
 	backend.RemoveSetting(path);
 }
 
-SettingsContainer::SettingsContainer(ISettingsBackend &backend_)
-	: backend(backend_)
+SettingsContainer::SettingsContainer(ISettingsBackend *backend)
 {
-	return;
+	if(backend)
+	{
+
+	}
+	backends.push_back(backend);
 }
 
 void SettingsContainer::Flush()
@@ -191,8 +193,24 @@ SettingsContainer::~SettingsContainer()
 	return;
 }
 
-
 #endif // MPT_SETTINGS_CACHE
+
+
+SettingsContainer::SettingsContainer(ISettingsBackend *backend1, ISettingsBackend *backend2)
+{
+	// backwards!
+	if(backend2)
+	{
+		backends.push_back(backend2);
+	}
+	if(backend1)
+	{
+		backends.push_back(backend1);
+	}
+}
+
+
+
 
 
 std::string IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, const std::string &def) const
@@ -296,9 +314,111 @@ void IniFileSettingsBackend::RemoveSetting(const SettingPath &path)
 
 
 
+
+
+std::string RegistrySettingsBackend::BuildKeyName(const SettingPath &path) const
+{
+	return basePath + "\\" + path.GetSection();
+}
+
+std::string RegistrySettingsBackend::BuildValueName(const SettingPath &path) const
+{
+	return path.GetKey();
+}
+
+std::string RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, const std::string &def) const
+{
+	std::string val = def;
+	HKEY regKey = HKEY();
+	if(RegOpenKeyEx(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
+	{
+		CHAR v[1024];
+		MemsetZero(v);
+		DWORD type = REG_SZ;
+		DWORD typesize = sizeof(v);
+		if(RegQueryValueEx(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
+		{
+			mpt::String::Copy(val, v);
+		}
+		RegCloseKey(regKey);
+		regKey = HKEY();
+	}
+	return val;
+}
+
+float RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, float def) const
+{
+	return ConvertStrTo<float>(ReadSettingRaw(path, Stringify(def)));
+}
+
+int32 RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, int32 def) const
+{
+	int32 val = def;
+	HKEY regKey = HKEY();
+	if(RegOpenKeyEx(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
+	{
+		DWORD v = val;
+		DWORD type = REG_DWORD;
+		DWORD typesize = sizeof(v);
+		if(RegQueryValueEx(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
+		{
+			val = v;
+		}
+		RegCloseKey(regKey);
+		regKey = HKEY();
+	}
+	return val;
+}
+
+bool RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, bool def) const
+{
+	return ReadSettingRaw(path, def ? 1 : 0) ? true : false;
+}
+
+
+
+RegistrySettingsBackend::RegistrySettingsBackend(HKEY baseKey, const std::string &basePath)
+	: baseKey(baseKey)
+	, basePath(basePath)
+{
+	return;
+}
+
+RegistrySettingsBackend::~RegistrySettingsBackend()
+{
+	return;
+}
+
+SettingValue RegistrySettingsBackend::ReadSetting(const SettingPath &path, const SettingValue &def) const
+{
+	switch(def.GetType())
+	{
+	case SettingTypeBool: return SettingValue(ReadSettingRaw(path, def.as<bool>()), def.GetTypeTag()); break;
+	case SettingTypeInt: return SettingValue(ReadSettingRaw(path, def.as<int32>()), def.GetTypeTag()); break;
+	case SettingTypeFloat: return SettingValue(ReadSettingRaw(path, def.as<float>()), def.GetTypeTag()); break;
+	case SettingTypeString: return SettingValue(ReadSettingRaw(path, def.as<std::string>()), def.GetTypeTag()); break;
+	default: return SettingValue(); break;
+	}
+}
+
+void RegistrySettingsBackend::WriteSetting(const SettingPath &path, const SettingValue &val)
+{
+	UNREFERENCED_PARAMETER(path);
+	UNREFERENCED_PARAMETER(val);
+	// not needed in OpenMPT
+}
+
+void RegistrySettingsBackend::RemoveSetting(const SettingPath &path)
+{
+	UNREFERENCED_PARAMETER(path);
+	// not needed in OpenMPT
+}
+
+
+
 IniFileSettingsContainer::IniFileSettingsContainer(const std::string &filename)
 	: IniFileSettingsBackend(filename)
-	, SettingsContainer(*static_cast<ISettingsBackend*>(this))
+	, SettingsContainer(this)
 {
 	return;
 }
