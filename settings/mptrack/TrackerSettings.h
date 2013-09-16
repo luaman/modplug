@@ -173,29 +173,42 @@ private:
 
 public:
 
+	// Version
+
 	Setting<uint32> RegVersion;
 	Setting<std::string> IniVersion;
 	const MptVersion::VersionNum gcsPreviousVersion;
-
 	Setting<CString> gcsInstallGUID;
 
+	// Display
+
 	Setting<bool> m_ShowSplashScreen;
+	Setting<bool> gbMdiMaximize;
+	Setting<LONG> glTreeSplitRatio;
+	Setting<LONG> glTreeWindowWidth;
+	Setting<LONG> glGeneralWindowHeight;
+	Setting<LONG> glPatternWindowHeight;
+	Setting<LONG> glSampleWindowHeight;
+	Setting<LONG> glInstrumentWindowHeight;
+	Setting<LONG> glCommentsWindowHeight;
+	Setting<LONG> glGraphWindowHeight;
 
-	// MIDI recording
-	enum RecordAftertouchOptions
-	{
-		atDoNotRecord = 0,
-		atRecordAsVolume,
-		atRecordAsMacro,
-	};
+	Setting<int32> gnPlugWindowX;
+	Setting<int32> gnPlugWindowY;
+	Setting<int32> gnPlugWindowWidth;
+	Setting<int32> gnPlugWindowHeight;
+	Setting<int32> gnPlugWindowLast;	// Last selected plugin ID
 
-	BOOL gbMdiMaximize;
-	bool gbShowHackControls;
-	LONG glTreeWindowWidth, glTreeSplitRatio;
-	LONG glGeneralWindowHeight, glPatternWindowHeight, glSampleWindowHeight, 
-		glInstrumentWindowHeight, glCommentsWindowHeight, glGraphWindowHeight; //rewbs.varWindowSize
+	Setting<uint32> gnMsgBoxVisiblityFlags;
+	Setting<uint32> VuMeterUpdateInterval;
+
+	// Misc
+
+	Setting<bool> gbShowHackControls;
+
+
+
 	MODTYPE defaultModType;
-	DWORD VuMeterUpdateInterval;
 
 	// Audio Setup
 	bool m_MorePortaudio;
@@ -212,6 +225,13 @@ public:
 #endif
 
 	// MIDI Setup
+	// MIDI recording
+	enum RecordAftertouchOptions
+	{
+		atDoNotRecord = 0,
+		atRecordAsVolume,
+		atRecordAsMacro,
+	};
 	LONG m_nMidiDevice;
 	DWORD m_dwMidiSetup;
 	RecordAftertouchOptions aftertouchBehaviour;
@@ -249,8 +269,6 @@ public:
 
 	UINT gnAutoChordWaitTime;
 
-	uint32 gnMsgBoxVisiblityFlags;
-
 	// MIDI Import
 	int midiImportSpeed, midiImportPatternLen;
 
@@ -258,12 +276,6 @@ public:
 	MPTChords Chords;
 
 	uint8 DefaultPlugVolumeHandling;
-
-	int gnPlugWindowX;
-	int gnPlugWindowY;
-	int gnPlugWindowWidth;
-	int gnPlugWindowHeight;
-	int32 gnPlugWindowLast;	// Last selected plugin ID
 
 	bool autoApplySmoothFT2Ramping;
 

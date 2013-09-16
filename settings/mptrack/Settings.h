@@ -315,6 +315,9 @@ template<> inline uint32 FromSettingValue(const SettingValue &val) { return uint
 template<> inline SettingValue ToSettingValue(const uint16 &val) { return SettingValue(int32(val)); }
 template<> inline uint16 FromSettingValue(const SettingValue &val) { return uint16(val.as<int32>()); }
 
+template<> inline SettingValue ToSettingValue(const LONG &val) { return SettingValue(int32(val)); }
+template<> inline LONG FromSettingValue(const SettingValue &val) { return LONG(val.as<int32>()); }
+
 
 #if defined(MPT_SETTINGS_CACHE)
 
