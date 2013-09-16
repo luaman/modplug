@@ -594,11 +594,11 @@ public:
 		conf.Write(path, val);
 		return *this;
 	}
-	operator T () const
+	operator const T () const
 	{
 		return conf.Read(path, defaultValue);
 	}
-	T Get() const
+	const T Get() const
 	{
 		return conf.Read(path, defaultValue);
 	}
@@ -626,11 +626,55 @@ public:
 	{
 		conf.Read(path, defaultValue, metadata); // set default value
 	}
-	operator T () const
+	operator const T () const
+	{
+		return conf.Read(path, defaultValue);
+	}
+	const T Get() const
 	{
 		return conf.Read(path, defaultValue);
 	}
 };
+
+template <typename T>
+class CachedSetting
+{
+private:
+	SettingsContainer &conf;
+	SettingPath path;
+	T value;
+public:
+	CachedSetting(SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
+		: conf(conf_)
+		, path(section, key)
+		, value(def)
+	{
+		value = conf.Read(path, def, metadata);
+	}
+	CachedSetting(SettingsContainer &conf_, const SettingPath &path_, const T&def, const SettingMetadata &metadata = SettingMetadata())
+		: conf(conf_)
+		, path(path_)
+		, value(def)
+		, defaultValue(def)
+	{
+		value = conf.Read(path, def, metadata);
+	}
+	CachedSetting & operator = (const T &val)
+	{
+		value = val;
+		conf.Write(path, val);
+		return *this;
+	}
+	operator const T & () const
+	{
+		return value;
+	}
+	const T & Get() const
+	{
+		return value;
+	}
+};
+
 
 
 class IniFileSettingsBackend : public ISettingsBackend
