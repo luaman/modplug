@@ -83,7 +83,7 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, gnPlugWindowHeight(conf, SettingPath("Display", "PlugSelectWindowHeight", "", "PlugSelectWindowHeight"), 332)
 	, gnPlugWindowLast(conf, SettingPath("Display", "PlugSelectWindowLast", "", "PlugSelectWindowLast"), 0)
 	, gnMsgBoxVisiblityFlags(conf, "Display", "MDIGraphHeight", uint32_max)
-	, VuMeterUpdateInterval(conf, "Display", "MDIGraphHeight", 15)
+	, VuMeterUpdateInterval(conf, "Display", "VuMeterUpdateInterval", 15)
 	// Misc
 	, gbShowHackControls(conf, "Misc", "ShowHackControls", false)
 	// MIDI Settings
@@ -487,6 +487,7 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 	orderlistMargins = conf.Read<int32>("Pattern Editor", "DefaultSequenceMargins", orderlistMargins);
 	rowDisplayOffset = conf.Read<int32>("Pattern Editor", "RowDisplayOffset", rowDisplayOffset);
 	recordQuantizeRows = conf.Read<uint32>("Pattern Editor", "RecordQuantize", recordQuantizeRows);
+
 	DefaultPlugVolumeHandling = static_cast<uint8>(conf.Read<int32>("Misc", "DefaultPlugVolumeHandling", DefaultPlugVolumeHandling));
 	if(DefaultPlugVolumeHandling >= PLUGIN_VOLUMEHANDLING_MAX) DefaultPlugVolumeHandling = PLUGIN_VOLUMEHANDLING_IGNORE;
 	autoApplySmoothFT2Ramping = (0 != conf.Read<uint32>("Misc", "SmoothFT2Ramping", false));
