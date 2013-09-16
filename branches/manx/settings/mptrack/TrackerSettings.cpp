@@ -58,6 +58,19 @@ static MptVersion::VersionNum GetStoredVersion(const std::string &iniVersion, ui
 }
 
 
+std::string SettingsModTypeToString(MODTYPE modtype)
+//--------------------------------------------------
+{
+	return CSoundFile::GetModSpecifications(modtype).fileExtension;
+}
+
+MODTYPE SettingsStringToModType(const std::string &str)
+//-----------------------------------------------------
+{
+	return CModSpecifications::ExtensionToType(str);
+}
+
+
 TrackerSettings::TrackerSettings(SettingsContainer &conf)
 //-------------------------------------------------------
 	: conf(conf)
@@ -86,6 +99,9 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, VuMeterUpdateInterval(conf, "Display", "VuMeterUpdateInterval", 15)
 	// Misc
 	, gbShowHackControls(conf, "Misc", "ShowHackControls", false)
+	, defaultModType(conf, "Misc", "DefaultModType", MOD_TYPE_IT)
+	, DefaultPlugVolumeHandling(conf, "Misc", "DefaultPlugVolumeHandling", PLUGIN_VOLUMEHANDLING_IGNORE)
+	, autoApplySmoothFT2Ramping(conf, "Misc", "SmoothFT2Ramping", false)
 	// MIDI Settings
 	, m_nMidiDevice(conf, SettingPath("MIDI Settings", "MidiDevice", "", "MidiDevice"), 0)
 	, m_dwMidiSetup(conf, SettingPath("MIDI Settings", "MidiSetup", "", "MidiSetup"), MIDISETUP_RECORDVELOCITY | MIDISETUP_RECORDNOTEOFF | MIDISETUP_TRANSPOSEKEYBOARD | MIDISETUP_MIDITOPLUG)
@@ -99,6 +115,9 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	const MptVersion::VersionNum storedVersion =  gcsPreviousVersion;
 
 	// Fixups:
+	// -------
+
+	// Version
 	if(gcsInstallGUID == "")
 	{
 		// No GUID found - generate one.
@@ -108,6 +127,12 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 		UuidToString((UUID*)&guid, &Str);
 		gcsInstallGUID = Str;
 		RpcStringFree(&Str);
+	}
+
+	// Misc
+	if(defaultModType == MOD_TYPE_NONE)
+	{
+		defaultModType = MOD_TYPE_IT;
 	}
 
 	// MIDI Settings
@@ -193,11 +218,7 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 			Chords[ichord].notes[2] = (uint8)(ichord-1);
 		}
 	}
-
-	defaultModType = MOD_TYPE_IT;
-
-	DefaultPlugVolumeHandling = PLUGIN_VOLUMEHANDLING_IGNORE;
-
+	
 	// dynamic defaults:
 
 	MEMORYSTATUS gMemStatus;
@@ -488,10 +509,6 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 	rowDisplayOffset = conf.Read<int32>("Pattern Editor", "RowDisplayOffset", rowDisplayOffset);
 	recordQuantizeRows = conf.Read<uint32>("Pattern Editor", "RecordQuantize", recordQuantizeRows);
 
-	DefaultPlugVolumeHandling = static_cast<uint8>(conf.Read<int32>("Misc", "DefaultPlugVolumeHandling", DefaultPlugVolumeHandling));
-	if(DefaultPlugVolumeHandling >= PLUGIN_VOLUMEHANDLING_MAX) DefaultPlugVolumeHandling = PLUGIN_VOLUMEHANDLING_IGNORE;
-	autoApplySmoothFT2Ramping = (0 != conf.Read<uint32>("Misc", "SmoothFT2Ramping", false));
-
 	m_nSampleUndoMaxBuffer = conf.Read<int32>("Sample Editor" , "UndoBufferSize", m_nSampleUndoMaxBuffer >> 20);
 	m_nSampleUndoMaxBuffer = MAX(1, m_nSampleUndoMaxBuffer) << 20;
 	m_MayNormalizeSamplesOnLoad = conf.Read<bool>("Sample Editor" , "MayNormalizeSamplesOnLoad", m_MayNormalizeSamplesOnLoad);
@@ -564,14 +581,6 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 	}
 	CMainFrame::m_pAutoSaver->SetFilenameTemplate(conf.Read<CString>("AutoSave", "FileNameTemplate", ""));
 
-
-	// Default mod type when using the "New" button
-	const MODTYPE oldDefault = defaultModType;
-	defaultModType = CModSpecifications::ExtensionToType(conf.Read<CString>("Misc", "DefaultModType", CSoundFile::GetModSpecifications(defaultModType).fileExtension).GetString());
-	if(defaultModType == MOD_TYPE_NONE)
-	{
-		defaultModType = oldDefault;
-	}
 }
 
 
@@ -911,8 +920,6 @@ void TrackerSettings::SaveSettings()
 		wsprintf(snam, "Z%02X", izxx | 0x80);
 		conf.Write<std::string>("Zxx Macros", snam, macros.szMidiZXXExt[izxx]);
 	}
-
-	conf.Write<std::string>("Misc", "DefaultModType", CSoundFile::GetModSpecifications(defaultModType).fileExtension);
 
 	CMainFrame::GetMainFrame()->SaveBarState("Toolbars");
 }
