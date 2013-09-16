@@ -1236,12 +1236,12 @@ BOOL CMidiSetupDlg::OnInitDialog()
 	static const struct
 	{
 		const char *text;
-		TrackerSettings::RecordAftertouchOptions option;
+		RecordAftertouchOptions option;
 	} aftertouchOptions[] =
 	{
-		{ "Do not record Aftertouch", TrackerSettings::atDoNotRecord },
-		{ "Record as Volume Commands", TrackerSettings::atRecordAsVolume },
-		{ "Record as MIDI Macros", TrackerSettings::atRecordAsMacro },
+		{ "Do not record Aftertouch", atDoNotRecord },
+		{ "Record as Volume Commands", atRecordAsVolume },
+		{ "Record as MIDI Macros", atRecordAsMacro },
 	};
 
 	for(size_t i = 0; i < CountOf(aftertouchOptions); i++)
@@ -1258,7 +1258,7 @@ BOOL CMidiSetupDlg::OnInitDialog()
 	SetDlgItemInt(IDC_EDIT3, TrackerSettings::Instance().midiVelocityAmp);
 	m_SpinAmp.SetRange(1, 10000);
 
-	SetDlgItemText(IDC_EDIT4, TrackerSettings::Instance().IgnoredCCsToString().c_str());
+	SetDlgItemText(IDC_EDIT4, IgnoredCCsToString(TrackerSettings::Instance().midiIgnoreCCs).c_str());
 
 	// Midi Import settings
 	SetDlgItemInt(IDC_EDIT1, TrackerSettings::Instance().midiImportSpeed);
@@ -1291,7 +1291,7 @@ void CMidiSetupDlg::OnOK()
 		if (n >= 0) m_nMidiDevice = combo->GetItemData(n);
 	}
 
-	TrackerSettings::Instance().aftertouchBehaviour = static_cast<TrackerSettings::RecordAftertouchOptions>(m_ATBehaviour.GetItemData(m_ATBehaviour.GetCurSel()));
+	TrackerSettings::Instance().aftertouchBehaviour = static_cast<RecordAftertouchOptions>(m_ATBehaviour.GetItemData(m_ATBehaviour.GetCurSel()));
 
 	TrackerSettings::Instance().midiImportSpeed = GetDlgItemInt(IDC_EDIT1);
 	TrackerSettings::Instance().midiImportPatternLen = GetDlgItemInt(IDC_EDIT2);
@@ -1299,7 +1299,7 @@ void CMidiSetupDlg::OnOK()
 
 	CString cc;
 	GetDlgItemText(IDC_EDIT4, cc);
-	TrackerSettings::Instance().ParseIgnoredCCs(cc);
+	TrackerSettings::Instance().midiIgnoreCCs = StringToIgnoredCCs(cc.GetString());
 
 	if (pMainFrm) pMainFrm->SetupMidi(m_dwMidiSetup, m_nMidiDevice);
 	CPropertyPage::OnOK();

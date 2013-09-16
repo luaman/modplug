@@ -162,6 +162,30 @@ struct MPTChord
 
 typedef MPTChord MPTChords[3 * 12];	// 3 octaves
 
+// MIDI recording
+enum RecordAftertouchOptions
+{
+	atDoNotRecord = 0,
+	atRecordAsVolume,
+	atRecordAsMacro,
+};
+
+std::string IgnoredCCsToString(const std::bitset<128> &midiIgnoreCCs);
+std::bitset<128> StringToIgnoredCCs(const std::string &in);
+
+template<> inline SettingValue ToSettingValue(const RecordAftertouchOptions &val) { return SettingValue(int32(val)); }
+template<> inline RecordAftertouchOptions FromSettingValue(const SettingValue &val) { return RecordAftertouchOptions(val.as<int32>()); }
+
+template<> inline SettingValue ToSettingValue(const std::bitset<128> &val)
+{
+	return SettingValue(IgnoredCCsToString(val), "IgnoredCCs");
+}
+template<> inline std::bitset<128> FromSettingValue(const SettingValue &val)
+{
+	ASSERT(val.GetTypeTag() == "IgnoredCCs");
+	return StringToIgnoredCCs(val.as<std::string>());
+}
+
 
 //===================
 class TrackerSettings
@@ -224,19 +248,16 @@ public:
 	EQPreset m_EqSettings;
 #endif
 
-	// MIDI Setup
-	// MIDI recording
-	enum RecordAftertouchOptions
-	{
-		atDoNotRecord = 0,
-		atRecordAsVolume,
-		atRecordAsMacro,
-	};
-	LONG m_nMidiDevice;
-	DWORD m_dwMidiSetup;
-	RecordAftertouchOptions aftertouchBehaviour;
-	uint16 midiVelocityAmp;
-	std::bitset<128> midiIgnoreCCs;
+	// MIDI Settings
+
+	Setting<LONG> m_nMidiDevice;
+	Setting<uint32> m_dwMidiSetup;
+	Setting<RecordAftertouchOptions> aftertouchBehaviour;
+	Setting<uint16> midiVelocityAmp;
+	CachedSetting<std::bitset<128> > midiIgnoreCCs;
+
+	Setting<int32> midiImportSpeed;
+	Setting<int32> midiImportPatternLen;
 
 	// Pattern Setup
 	DWORD gbLoopSong;
@@ -269,9 +290,6 @@ public:
 
 	UINT gnAutoChordWaitTime;
 
-	// MIDI Import
-	int midiImportSpeed, midiImportPatternLen;
-
 	// Chords
 	MPTChords Chords;
 
@@ -299,9 +317,6 @@ public:
 
 	// Get settings object singleton
 	static TrackerSettings &Instance();
-
-	std::string IgnoredCCsToString() const;
-	void ParseIgnoredCCs(CString cc);
 
 protected:
 

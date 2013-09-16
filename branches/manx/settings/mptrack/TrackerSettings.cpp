@@ -86,7 +86,17 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, VuMeterUpdateInterval(conf, "Display", "MDIGraphHeight", 15)
 	// Misc
 	, gbShowHackControls(conf, "Misc", "ShowHackControls", false)
+	// MIDI Settings
+	, m_nMidiDevice(conf, SettingPath("MIDI Settings", "MidiDevice", "", "MidiDevice"), 0)
+	, m_dwMidiSetup(conf, SettingPath("MIDI Settings", "MidiSetup", "", "MidiSetup"), MIDISETUP_RECORDVELOCITY | MIDISETUP_RECORDNOTEOFF | MIDISETUP_TRANSPOSEKEYBOARD | MIDISETUP_MIDITOPLUG)
+	, aftertouchBehaviour(conf, "MIDI Settings", "AftertouchBehaviour", atDoNotRecord)
+	, midiVelocityAmp(conf, "MIDI Settings", "MidiVelocityAmp", 100)
+	, midiIgnoreCCs(conf, "MIDI Settings", "IgnoredCCs", std::bitset<128>())
+	, midiImportSpeed(conf, SettingPath("MIDI Settings", "MidiImportSpeed", "", "MidiImportSpeed"), 3)
+	, midiImportPatternLen(conf, SettingPath("MIDI Settings", "MidiImportPatLen", "", "MidiImportPatLen"), 128)
 {
+
+	const MptVersion::VersionNum storedVersion =  gcsPreviousVersion;
 
 	// Fixups:
 	if(gcsInstallGUID == "")
@@ -99,7 +109,15 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 		gcsInstallGUID = Str;
 		RpcStringFree(&Str);
 	}
-	
+
+	// MIDI Settings
+	if((m_dwMidiSetup & 0x40) != 0 && storedVersion < MAKE_VERSION_NUMERIC(1,20,00,86))
+	{
+		// This flag used to be "amplify MIDI Note Velocity" - with a fixed amplification factor of 2.
+		midiVelocityAmp = 200;
+		m_dwMidiSetup = m_dwMidiSetup & ~0x40;
+	}
+
 	// Last fixup: update config version
 	IniVersion = MptVersion::str;
 	conf.Remove("Settings", "Version");
@@ -130,16 +148,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	// Default EQ settings
 	MemCopy(m_EqSettings, CEQSetupDlg::gEQPresets[0]);
 #endif
-
-	// MIDI Setup
-	m_nMidiDevice = 0;
-	m_dwMidiSetup = MIDISETUP_RECORDVELOCITY | MIDISETUP_RECORDNOTEOFF | MIDISETUP_TRANSPOSEKEYBOARD | MIDISETUP_MIDITOPLUG;
-	aftertouchBehaviour = atDoNotRecord;
-	midiVelocityAmp = 100;
-	
-	// MIDI Import
-	midiImportPatternLen = 128;
-	midiImportSpeed = 3;
 
 	// Pattern Setup
 	gbLoopSong = TRUE;
@@ -454,21 +462,6 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 	m_MixerSettings.glVolumeRampUpSamples = conf.Read<int32>("Sound Settings", "VolumeRampUpSamples", m_MixerSettings.glVolumeRampUpSamples);
 	m_MixerSettings.glVolumeRampDownSamples = conf.Read<int32>("Sound Settings", "VolumeRampDownSamples", m_MixerSettings.glVolumeRampDownSamples);
 
-	// MIDI Setup
-	m_dwMidiSetup = conf.Read<uint32>("MIDI Settings", "MidiSetup", m_dwMidiSetup);
-	m_nMidiDevice = conf.Read<uint32>("MIDI Settings", "MidiDevice", m_nMidiDevice);
-	aftertouchBehaviour = static_cast<RecordAftertouchOptions>(conf.Read<uint32>("MIDI Settings", "AftertouchBehaviour", aftertouchBehaviour));
-	midiVelocityAmp = conf.Read<uint16>("MIDI Settings", "MidiVelocityAmp", midiVelocityAmp);
-	midiImportSpeed = conf.Read<int32>("MIDI Settings", "MidiImportSpeed", midiImportSpeed);
-	midiImportPatternLen = conf.Read<int32>("MIDI Settings", "MidiImportPatLen", midiImportPatternLen);
-	if((m_dwMidiSetup & 0x40) != 0 && vIniVersion < MAKE_VERSION_NUMERIC(1, 20, 00, 86))
-	{
-		// This flag used to be "amplify MIDI Note Velocity" - with a fixed amplification factor of 2.
-		midiVelocityAmp = 200;
-		m_dwMidiSetup &= ~0x40;
-	}
-	ParseIgnoredCCs(conf.Read<CString>("MIDI Settings", "IgnoredCCs", ""));
-
 	m_dwPatternSetup = conf.Read<uint32>("Pattern Editor", "PatternSetup", m_dwPatternSetup);
 	if(vIniVersion < MAKE_VERSION_NUMERIC(1, 17, 02, 50))
 		m_dwPatternSetup |= PATTERN_NOTEFADE;
@@ -698,14 +691,6 @@ bool TrackerSettings::LoadRegistrySettings()
 #endif
 		RegQueryValueEx(key, "StereoSeparation", NULL, &dwREG_DWORD, (LPBYTE)&m_MixerSettings.m_nStereoSeparation, &dwDWORDSize);
 		RegQueryValueEx(key, "MixChannels", NULL, &dwREG_DWORD, (LPBYTE)&m_MixerSettings.m_nMaxMixChannels, &dwDWORDSize);
-		RegQueryValueEx(key, "MidiSetup", NULL, &dwREG_DWORD, (LPBYTE)&m_dwMidiSetup, &dwDWORDSize);
-		if((m_dwMidiSetup & 0x40) != 0)
-		{
-			// This flag used to be "amplify MIDI Note Velocity" - with a fixed amplification factor of 2.
-			midiVelocityAmp = 200;
-			m_dwMidiSetup &= ~0x40;
-		}
-		RegQueryValueEx(key, "MidiDevice", NULL, &dwREG_DWORD, (LPBYTE)&m_nMidiDevice, &dwDWORDSize);
 		RegQueryValueEx(key, "PatternSetup", NULL, &dwREG_DWORD, (LPBYTE)&m_dwPatternSetup, &dwDWORDSize);
 		m_dwPatternSetup &= ~(0x800|0x200000|0x400000);	// various deprecated old options
 		m_dwPatternSetup |= PATTERN_NOTEFADE; // Set flag to maintain old behaviour (was changed in 1.17.02.50).
@@ -717,8 +702,6 @@ bool TrackerSettings::LoadRegistrySettings()
 		RegQueryValueEx(key, "BitsPerSample", NULL, &dwREG_DWORD, (LPBYTE)&dummy_sampleformat, &dwDWORDSize);
 		m_SampleFormat = (long)dummy_sampleformat;
 		RegQueryValueEx(key, "ChannelMode", NULL, &dwREG_DWORD, (LPBYTE)&m_MixerSettings.gnChannels, &dwDWORDSize);
-		RegQueryValueEx(key, "MidiImportSpeed", NULL, &dwREG_DWORD, (LPBYTE)&midiImportSpeed, &dwDWORDSize);
-		RegQueryValueEx(key, "MidiImportPatLen", NULL, &dwREG_DWORD, (LPBYTE)&midiImportPatternLen, &dwDWORDSize);
 #ifndef NO_EQ
 		// EQ
 		LoadRegistryEQ(key, "EQ_Settings", &m_EqSettings);
@@ -838,15 +821,6 @@ void TrackerSettings::SaveSettings()
 	conf.Remove("Sound Settings", "VolumeRampSamples");	// deprecated
 	conf.Write<int32>("Sound Settings", "VolumeRampUpSamples", m_MixerSettings.glVolumeRampUpSamples);
 	conf.Write<int32>("Sound Settings", "VolumeRampDownSamples", m_MixerSettings.glVolumeRampDownSamples);
-
-	// MIDI Settings
-	conf.Write<uint32>("MIDI Settings", "MidiSetup", m_dwMidiSetup);
-	conf.Write<uint32>("MIDI Settings", "MidiDevice", m_nMidiDevice);
-	conf.Write<uint32>("MIDI Settings", "AftertouchBehaviour", aftertouchBehaviour);
-	conf.Write<uint16>("MIDI Settings", "MidiVelocityAmp", midiVelocityAmp);
-	conf.Write<int32>("MIDI Settings", "MidiImportSpeed", midiImportSpeed);
-	conf.Write<int32>("MIDI Settings", "MidiImportPatLen", midiImportPatternLen);
-	conf.Write<std::string>("MIDI Settings", "IgnoredCCs", IgnoredCCsToString());
 
 	conf.Write<uint32>("Pattern Editor", "PatternSetup", m_dwPatternSetup);
 	conf.Write<uint32>("Pattern Editor", "RowSpacing", m_nRowHighlightMeasures);
@@ -1002,8 +976,8 @@ void TrackerSettings::SaveChords(MPTChords &chords)
 }
 
 
-std::string TrackerSettings::IgnoredCCsToString() const
-//-----------------------------------------------------
+std::string IgnoredCCsToString(const std::bitset<128> &midiIgnoreCCs)
+//-------------------------------------------------------------------
 {
 	std::string cc;
 	bool first = true;
@@ -1023,19 +997,22 @@ std::string TrackerSettings::IgnoredCCsToString() const
 }
 
 
-void TrackerSettings::ParseIgnoredCCs(CString cc)
-//-----------------------------------------------
+std::bitset<128> StringToIgnoredCCs(const std::string &in)
+//--------------------------------------------------------
 {
+	CString cc = in.c_str();
+	std::bitset<128> midiIgnoreCCs;
 	midiIgnoreCCs.reset();
 	int curPos = 0;
-	CString ccToken= cc.Tokenize(_T(", "), curPos);
+	CString ccToken = cc.Tokenize(_T(", "), curPos);
 	while(ccToken != _T(""))
 	{
 		int ccNumber = ConvertStrTo<int>(ccToken);
 		if(ccNumber >= 0 && ccNumber <= 127)
 			midiIgnoreCCs.set(ccNumber);
 		ccToken = cc.Tokenize(_T(", "), curPos);
-	};
+	}
+	return midiIgnoreCCs;
 }
 
 

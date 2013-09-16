@@ -3860,7 +3860,7 @@ LRESULT CViewPattern::OnMidiMsg(WPARAM dwMidiDataParam, LPARAM)
 			if((paramValue == uint8_max || sndFile.GetType() != MOD_TYPE_MPT)
 				&& IsEditingEnabled()
 				&& (TrackerSettings::Instance().m_dwMidiSetup & MIDISETUP_MIDIMACROCONTROL)
-				&& !TrackerSettings::Instance().midiIgnoreCCs[nByte1 & 0x7F])
+				&& !TrackerSettings::Instance().midiIgnoreCCs.Get()[nByte1 & 0x7F])
 			{
 				const bool liveRecord = IsLiveRecord();
 
@@ -4368,7 +4368,7 @@ LRESULT CViewPattern::OnCustomKeyMsg(WPARAM wParam, LPARAM /*lParam*/)
 		case kcSwitchToOrderList: OnSwitchToOrderList();
 		case kcToggleOverflowPaste:	TrackerSettings::Instance().m_dwPatternSetup ^= PATTERN_OVERFLOWPASTE; return wParam;
 		case kcToggleNoteOffRecordPC: TrackerSettings::Instance().m_dwPatternSetup ^= PATTERN_KBDNOTEOFF; return wParam;
-		case kcToggleNoteOffRecordMIDI: TrackerSettings::Instance().m_dwMidiSetup ^= MIDISETUP_RECORDNOTEOFF; return wParam;
+		case kcToggleNoteOffRecordMIDI: TrackerSettings::Instance().m_dwMidiSetup = TrackerSettings::Instance().m_dwMidiSetup ^ MIDISETUP_RECORDNOTEOFF; return wParam;
 		case kcPatternEditPCNotePlugin: OnTogglePCNotePluginEditor(); return wParam;
 		case kcQuantizeSettings: OnSetQuantize(); return wParam;
 		case kcFindInstrument: FindInstrument(); return wParam;
@@ -5472,7 +5472,7 @@ void CViewPattern::TempEnterChord(int note)
 void CViewPattern::EnterAftertouch(int note, int atValue)
 //-------------------------------------------------------
 {
-	if(TrackerSettings::Instance().aftertouchBehaviour == TrackerSettings::atDoNotRecord || !IsEditingEnabled())
+	if(TrackerSettings::Instance().aftertouchBehaviour == atDoNotRecord || !IsEditingEnabled())
 	{
 		return;
 	}
@@ -5504,7 +5504,7 @@ void CViewPattern::EnterAftertouch(int note, int atValue)
 
 	switch(TrackerSettings::Instance().aftertouchBehaviour)
 	{
-	case TrackerSettings::atRecordAsVolume:
+	case atRecordAsVolume:
 		// Record aftertouch messages as volume commands
 		if(pSndFile->GetModSpecifications().HasVolCommand(VOLCMD_VOLUME))
 		{
@@ -5523,7 +5523,7 @@ void CViewPattern::EnterAftertouch(int note, int atValue)
 		}
 		break;
 
-	case TrackerSettings::atRecordAsMacro:
+	case atRecordAsMacro:
 		// Record aftertouch messages as MIDI Macros
 		if(newCommand.command == CMD_NONE || newCommand.command == CMD_SMOOTHMIDI || newCommand.command == CMD_MIDI)
 		{
