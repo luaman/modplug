@@ -234,14 +234,14 @@ std::string IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, cons
 	return &buf[0];
 }
 
-float IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, float def) const
+double IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, double def) const
 {
 	std::vector<CHAR> buf(128);
 	while(::GetPrivateProfileString(path.GetSection().c_str(), path.GetKey().c_str(), Stringify(def).c_str(), &buf[0], buf.size(), filename.c_str()) == buf.size() - 1)
 	{
 		buf.resize(buf.size() * 2);
 	}
-	return ConvertStrTo<float>(std::string(&buf[0]));
+	return ConvertStrTo<double>(std::string(&buf[0]));
 }
 
 int32 IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, int32 def) const
@@ -260,7 +260,7 @@ void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, const std:
 	::WritePrivateProfileString(path.GetSection().c_str(), path.GetKey().c_str(), val.c_str(), filename.c_str());
 }
 
-void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, float val)
+void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, double val)
 {
 	::WritePrivateProfileString(path.GetSection().c_str(), path.GetKey().c_str(), Stringify(val).c_str(), filename.c_str());
 }
@@ -299,7 +299,7 @@ SettingValue IniFileSettingsBackend::ReadSetting(const SettingPath &path, const 
 	{
 	case SettingTypeBool: return SettingValue(ReadSettingRaw(path, def.as<bool>()), def.GetTypeTag()); break;
 	case SettingTypeInt: return SettingValue(ReadSettingRaw(path, def.as<int32>()), def.GetTypeTag()); break;
-	case SettingTypeFloat: return SettingValue(ReadSettingRaw(path, def.as<float>()), def.GetTypeTag()); break;
+	case SettingTypeFloat: return SettingValue(ReadSettingRaw(path, def.as<double>()), def.GetTypeTag()); break;
 	case SettingTypeString: return SettingValue(ReadSettingRaw(path, def.as<std::string>()), def.GetTypeTag()); break;
 	default: return SettingValue(); break;
 	}
@@ -312,7 +312,7 @@ void IniFileSettingsBackend::WriteSetting(const SettingPath &path, const Setting
 	{
 	case SettingTypeBool: WriteSettingRaw(path, val.as<bool>()); break;
 	case SettingTypeInt: WriteSettingRaw(path, val.as<int32>()); break;
-	case SettingTypeFloat: WriteSettingRaw(path, val.as<float>()); break;
+	case SettingTypeFloat: WriteSettingRaw(path, val.as<double>()); break;
 	case SettingTypeString: WriteSettingRaw(path, val.as<std::string>()); break;
 	default: break;
 	}
@@ -363,9 +363,9 @@ std::string RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, con
 	return val;
 }
 
-float RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, float def) const
+double RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, double def) const
 {
-	return ConvertStrTo<float>(ReadSettingRaw(path, Stringify(def)));
+	return ConvertStrTo<double>(ReadSettingRaw(path, Stringify(def)));
 }
 
 int32 RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, int32 def) const
@@ -413,7 +413,7 @@ SettingValue RegistrySettingsBackend::ReadSetting(const SettingPath &path, const
 	{
 	case SettingTypeBool: return SettingValue(ReadSettingRaw(path, def.as<bool>()), def.GetTypeTag()); break;
 	case SettingTypeInt: return SettingValue(ReadSettingRaw(path, def.as<int32>()), def.GetTypeTag()); break;
-	case SettingTypeFloat: return SettingValue(ReadSettingRaw(path, def.as<float>()), def.GetTypeTag()); break;
+	case SettingTypeFloat: return SettingValue(ReadSettingRaw(path, def.as<double>()), def.GetTypeTag()); break;
 	case SettingTypeString: return SettingValue(ReadSettingRaw(path, def.as<std::string>()), def.GetTypeTag()); break;
 	default: return SettingValue(); break;
 	}
