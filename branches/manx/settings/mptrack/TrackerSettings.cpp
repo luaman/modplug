@@ -61,11 +61,31 @@ static MptVersion::VersionNum GetStoredVersion(const std::string &iniVersion, ui
 TrackerSettings::TrackerSettings(SettingsContainer &conf)
 //-------------------------------------------------------
 	: conf(conf)
+	// Version
 	, RegVersion(conf, "Settings", "Version", 0)
 	, IniVersion(conf, "Version", "Version", "")
 	, gcsPreviousVersion(GetStoredVersion(IniVersion, RegVersion))
 	, gcsInstallGUID(conf, "Version", "InstallGUID", "")
+	// Display
 	, m_ShowSplashScreen(conf, "Display", "ShowSplashScreen", true)
+	, gbMdiMaximize(conf, SettingPath("Display", "MDIMaximize", "Window", "MDIMaximize"), true)
+	, glTreeSplitRatio(conf, SettingPath("Display", "MDITreeRatio", "Window", "MDITreeRatio"), 128)
+	, glTreeWindowWidth(conf, SettingPath("Display", "MDITreeWidth", "Window", "MDITreeWidth"), 160)
+	, glGeneralWindowHeight(conf, SettingPath("Display", "MDIGeneralHeight", "Window", "MDIGeneralHeight"), 178)
+	, glPatternWindowHeight(conf, SettingPath("Display", "MDIPatternHeight", "Window", "MDIPatternHeight"), 152)
+	, glSampleWindowHeight(conf, SettingPath("Display", "MDISampleHeight", "Window", "MDISampleHeight"), 188)
+	, glInstrumentWindowHeight(conf, SettingPath("Display", "MDIInstrumentHeight", "Window", "MDIInstrumentHeight"), 300)
+	, glCommentsWindowHeight(conf, SettingPath("Display", "MDICommentsHeight", "Window", "MDICommentsHeight"), 288)
+	, glGraphWindowHeight(conf, SettingPath("Display", "MDIGraphHeight", "Window", "MDIGraphHeight"), 288)
+	, gnPlugWindowX(conf, SettingPath("Display", "PlugSelectWindowX", "", "PlugSelectWindowX"), 243)
+	, gnPlugWindowY(conf, SettingPath("Display", "PlugSelectWindowY", "", "PlugSelectWindowY"), 273)
+	, gnPlugWindowWidth(conf, SettingPath("Display", "PlugSelectWindowWidth", "", "PlugSelectWindowWidth"), 370)
+	, gnPlugWindowHeight(conf, SettingPath("Display", "PlugSelectWindowHeight", "", "PlugSelectWindowHeight"), 332)
+	, gnPlugWindowLast(conf, SettingPath("Display", "PlugSelectWindowLast", "", "PlugSelectWindowLast"), 0)
+	, gnMsgBoxVisiblityFlags(conf, "Display", "MDIGraphHeight", uint32_max)
+	, VuMeterUpdateInterval(conf, "Display", "MDIGraphHeight", 15)
+	// Misc
+	, gbShowHackControls(conf, "Misc", "ShowHackControls", false)
 {
 
 	// Fixups:
@@ -93,23 +113,9 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	gbPatternRecord = TRUE;
 	gbPatternVUMeters = FALSE;
 	gbPatternPluginNames = TRUE;
-	gbMdiMaximize = TRUE;
-	gbShowHackControls = false;
-	//rewbs.varWindowSize
-	glGeneralWindowHeight = 178;
-	glPatternWindowHeight = 152;
-	glSampleWindowHeight = 188;
-	glInstrumentWindowHeight = 300;
-	glCommentsWindowHeight = 288;
-	glGraphWindowHeight = 288; //rewbs.graph
-	//end rewbs.varWindowSize
-	glTreeWindowWidth = 160;
-	glTreeSplitRatio = 128;
-	VuMeterUpdateInterval = 15;
 
 	// Audio Setup
 	gnAutoChordWaitTime = 60;
-	gnMsgBoxVisiblityFlags = uint32_max;
 
 	// Audio device
 	m_MorePortaudio = false;
@@ -183,12 +189,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	defaultModType = MOD_TYPE_IT;
 
 	DefaultPlugVolumeHandling = PLUGIN_VOLUMEHANDLING_IGNORE;
-
-	gnPlugWindowX = 243;
-	gnPlugWindowY = 273;
-	gnPlugWindowWidth = 370;
-	gnPlugWindowHeight = 332;
-	gnPlugWindowLast = 0;
 
 	// dynamic defaults:
 
@@ -330,24 +330,6 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 //------------------------------------------------------------
 {
 	MptVersion::VersionNum vIniVersion = gcsPreviousVersion;
-
-	// GUI Stuff
-	gbMdiMaximize = conf.Read<int32>("Display", "MDIMaximize", gbMdiMaximize);
-	glTreeWindowWidth = conf.Read<int32>("Display", "MDITreeWidth", glTreeWindowWidth);
-	glTreeSplitRatio = conf.Read<int32>("Display", "MDITreeRatio", glTreeSplitRatio);
-	glGeneralWindowHeight = conf.Read<int32>("Display", "MDIGeneralHeight", glGeneralWindowHeight);
-	glPatternWindowHeight = conf.Read<int32>("Display", "MDIPatternHeight", glPatternWindowHeight);
-	glSampleWindowHeight = conf.Read<int32>("Display", "MDISampleHeight", glSampleWindowHeight);
-	glInstrumentWindowHeight = conf.Read<int32>("Display", "MDIInstrumentHeight", glInstrumentWindowHeight);
-	glCommentsWindowHeight = conf.Read<int32>("Display", "MDICommentsHeight", glCommentsWindowHeight);
-	glGraphWindowHeight = conf.Read<int32>("Display", "MDIGraphHeight", glGraphWindowHeight); //rewbs.graph
-	gnPlugWindowX = conf.Read<int32>("Display", "PlugSelectWindowX", gnPlugWindowX);
-	gnPlugWindowY = conf.Read<int32>("Display", "PlugSelectWindowY", gnPlugWindowY);
-	gnPlugWindowWidth = conf.Read<int32>("Display", "PlugSelectWindowWidth", gnPlugWindowWidth);
-	gnPlugWindowHeight = conf.Read<int32>("Display", "PlugSelectWindowHeight", gnPlugWindowHeight);
-	gnPlugWindowLast = conf.Read<int32>("Display", "PlugSelectWindowLast", gnPlugWindowLast);
-	gnMsgBoxVisiblityFlags = conf.Read<uint32>("Display", "MsgBoxVisibilityFlags", gnMsgBoxVisiblityFlags);
-	VuMeterUpdateInterval = conf.Read<uint32>("Display", "VuMeterUpdateInterval", VuMeterUpdateInterval);
 
 	// Internet Update
 	{
@@ -512,7 +494,6 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 	orderlistMargins = conf.Read<int32>("Pattern Editor", "DefaultSequenceMargins", orderlistMargins);
 	rowDisplayOffset = conf.Read<int32>("Pattern Editor", "RowDisplayOffset", rowDisplayOffset);
 	recordQuantizeRows = conf.Read<uint32>("Pattern Editor", "RecordQuantize", recordQuantizeRows);
-	gbShowHackControls = (0 != conf.Read<uint32>("Misc", "ShowHackControls", gbShowHackControls ? 1 : 0));
 	DefaultPlugVolumeHandling = static_cast<uint8>(conf.Read<int32>("Misc", "DefaultPlugVolumeHandling", DefaultPlugVolumeHandling));
 	if(DefaultPlugVolumeHandling >= PLUGIN_VOLUMEHANDLING_MAX) DefaultPlugVolumeHandling = PLUGIN_VOLUMEHANDLING_IGNORE;
 	autoApplySmoothFT2Ramping = (0 != conf.Read<uint32>("Misc", "SmoothFT2Ramping", false));
@@ -649,15 +630,6 @@ bool TrackerSettings::LoadRegistrySettings()
 		DWORD d = 0;
 		RegQueryValueEx(key, "Maximized", NULL, &dwREG_DWORD, (LPBYTE)&d, &dwDWORDSize);
 		if (d) theApp.m_nCmdShow = SW_SHOWMAXIMIZED;
-		RegQueryValueEx(key, "MDIMaximize", NULL, &dwREG_DWORD, (LPBYTE)&gbMdiMaximize, &dwDWORDSize);
-		RegQueryValueEx(key, "MDITreeWidth", NULL, &dwREG_DWORD, (LPBYTE)&glTreeWindowWidth, &dwDWORDSize);
-		RegQueryValueEx(key, "MDIGeneralHeight", NULL, &dwREG_DWORD, (LPBYTE)&glGeneralWindowHeight, &dwDWORDSize);
-		RegQueryValueEx(key, "MDIPatternHeight", NULL, &dwREG_DWORD, (LPBYTE)&glPatternWindowHeight, &dwDWORDSize);
-		RegQueryValueEx(key, "MDISampleHeight", NULL, &dwREG_DWORD,  (LPBYTE)&glSampleWindowHeight, &dwDWORDSize);
-		RegQueryValueEx(key, "MDIInstrumentHeight", NULL, &dwREG_DWORD,  (LPBYTE)&glInstrumentWindowHeight, &dwDWORDSize);
-		RegQueryValueEx(key, "MDICommentsHeight", NULL, &dwREG_DWORD,  (LPBYTE)&glCommentsWindowHeight, &dwDWORDSize);
-		RegQueryValueEx(key, "MDIGraphHeight", NULL, &dwREG_DWORD,  (LPBYTE)&glGraphWindowHeight, &dwDWORDSize); //rewbs.graph
-		RegQueryValueEx(key, "MDITreeRatio", NULL, &dwREG_DWORD, (LPBYTE)&glTreeSplitRatio, &dwDWORDSize);
 		// Colors
 		for (int ncol = 0; ncol < MAX_MODCOLORS; ncol++)
 		{
@@ -771,18 +743,6 @@ bool TrackerSettings::LoadRegistrySettings()
 		RegQueryValueEx(key, "AutoChordWaitTime", NULL, &dwREG_DWORD, (LPBYTE)&gnAutoChordWaitTime, &dwDWORDSize);
 		//end rewbs.autochord
 
-		dwDWORDSize = sizeof(gnPlugWindowX);
-		RegQueryValueEx(key, "PlugSelectWindowX", NULL, &dwREG_DWORD, (LPBYTE)&gnPlugWindowX, &dwDWORDSize);
-		dwDWORDSize = sizeof(gnPlugWindowY);
-		RegQueryValueEx(key, "PlugSelectWindowY", NULL, &dwREG_DWORD, (LPBYTE)&gnPlugWindowY, &dwDWORDSize);
-		dwDWORDSize = sizeof(gnPlugWindowWidth);
-		RegQueryValueEx(key, "PlugSelectWindowWidth", NULL, &dwREG_DWORD, (LPBYTE)&gnPlugWindowWidth, &dwDWORDSize);
-		dwDWORDSize = sizeof(gnPlugWindowHeight);
-		RegQueryValueEx(key, "PlugSelectWindowHeight", NULL, &dwREG_DWORD, (LPBYTE)&gnPlugWindowHeight, &dwDWORDSize);
-		dwDWORDSize = sizeof(gnPlugWindowLast);
-		RegQueryValueEx(key, "PlugSelectWindowLast", NULL, &dwREG_DWORD, (LPBYTE)&gnPlugWindowLast, &dwDWORDSize);
-
-
 		//rewbs.autoSave
 		dwDWORDSize = sizeof(asEnabled);
 		RegQueryValueEx(key, "AutoSave_Enabled", NULL, &dwREG_DWORD, (LPBYTE)&asEnabled, &dwDWORDSize);
@@ -836,23 +796,6 @@ void TrackerSettings::SaveSettings()
 	CMainFrame::GetMainFrame()->GetWindowPlacement(&wpl);
 	conf.Write<WINDOWPLACEMENT>("Display", "WindowPlacement", wpl);
 
-	conf.Write<int32>("Display", "MDIMaximize", gbMdiMaximize);
-	conf.Write<int32>("Display", "MDITreeWidth", glTreeWindowWidth);
-	conf.Write<int32>("Display", "MDITreeRatio", glTreeSplitRatio);
-	conf.Write<int32>("Display", "MDIGeneralHeight", glGeneralWindowHeight);
-	conf.Write<int32>("Display", "MDIPatternHeight", glPatternWindowHeight);
-	conf.Write<int32>("Display", "MDISampleHeight", glSampleWindowHeight);
-	conf.Write<int32>("Display", "MDIInstrumentHeight", glInstrumentWindowHeight);
-	conf.Write<int32>("Display", "MDICommentsHeight", glCommentsWindowHeight);
-	conf.Write<int32>("Display", "MDIGraphHeight", glGraphWindowHeight); //rewbs.graph
-	conf.Write<int32>("Display", "PlugSelectWindowX", gnPlugWindowX);
-	conf.Write<int32>("Display", "PlugSelectWindowY", gnPlugWindowY);
-	conf.Write<int32>("Display", "PlugSelectWindowWidth", gnPlugWindowWidth);
-	conf.Write<int32>("Display", "PlugSelectWindowHeight", gnPlugWindowHeight);
-	conf.Write<int32>("Display", "PlugSelectWindowLast", gnPlugWindowLast);
-	conf.Write<uint32>("Display", "MsgBoxVisibilityFlags", gnMsgBoxVisiblityFlags);
-	conf.Write<uint32>("Display", "VuMeterUpdateInterval", VuMeterUpdateInterval);
-	
 	// Internet Update
 	{
 		CString outDate;
