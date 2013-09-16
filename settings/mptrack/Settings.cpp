@@ -128,6 +128,20 @@ void SettingsContainer::BackendsRemoveSetting(const SettingPath &path)
 	backend->RemoveSetting(path);
 }
 
+void SettingsContainer::NotifyListeners(const SettingPath &path)
+{
+	const SettingsListenerMap::iterator entry = mapListeners.find(path);
+	if(entry != mapListeners.end())
+	{
+		const std::set<ISettingChanged*>::const_iterator beg = entry->second.begin();
+		const std::set<ISettingChanged*>::const_iterator end = entry->second.end();
+		for(std::set<ISettingChanged*>::const_iterator it = beg; it != end; ++it)
+		{
+			(*it)->SettingChanged(path);
+		}
+	}
+}
+
 void SettingsContainer::WriteSettings()
 {
 	for(SettingsMap::iterator i = map.begin(); i != map.end(); ++i)
@@ -145,6 +159,16 @@ void SettingsContainer::WriteSettings()
 void SettingsContainer::Flush()
 {
 	WriteSettings();
+}
+
+void SettingsContainer::Register(ISettingChanged *listener, const SettingPath &path)
+{
+	mapListeners[path].insert(listener);
+}
+
+void SettingsContainer::UnRegister(ISettingChanged *listener, const SettingPath &path)
+{
+	mapListeners[path].erase(listener);
 }
 
 SettingsContainer::~SettingsContainer()
