@@ -173,8 +173,29 @@ enum RecordAftertouchOptions
 std::string IgnoredCCsToString(const std::bitset<128> &midiIgnoreCCs);
 std::bitset<128> StringToIgnoredCCs(const std::string &in);
 
+std::string SettingsModTypeToString(MODTYPE modtype);
+MODTYPE SettingsStringToModType(const std::string &str);
+
+
 template<> inline SettingValue ToSettingValue(const RecordAftertouchOptions &val) { return SettingValue(int32(val)); }
 template<> inline RecordAftertouchOptions FromSettingValue(const SettingValue &val) { return RecordAftertouchOptions(val.as<int32>()); }
+
+template<> inline SettingValue ToSettingValue(const MODTYPE &val) { return SettingValue(SettingsModTypeToString(val), "MODTYPE"); }
+template<> inline MODTYPE FromSettingValue(const SettingValue &val) { ASSERT(val.GetTypeTag() == "MODTYPE"); return SettingsStringToModType(val.as<std::string>()); }
+
+template<> inline SettingValue ToSettingValue(const PLUGVOLUMEHANDLING &val)
+{
+	return SettingValue(int32(val), "PLUGVOLUMEHANDLING");
+}
+template<> inline PLUGVOLUMEHANDLING FromSettingValue(const SettingValue &val)
+{
+	ASSERT(val.GetTypeTag() == "PLUGVOLUMEHANDLING");
+	if((uint32)val.as<int32>() > PLUGIN_VOLUMEHANDLING_MAX)
+	{
+		return PLUGIN_VOLUMEHANDLING_IGNORE;
+	}
+	return static_cast<PLUGVOLUMEHANDLING>(val.as<int32>());
+}
 
 template<> inline SettingValue ToSettingValue(const std::bitset<128> &val)
 {
@@ -185,6 +206,7 @@ template<> inline std::bitset<128> FromSettingValue(const SettingValue &val)
 	ASSERT(val.GetTypeTag() == "IgnoredCCs");
 	return StringToIgnoredCCs(val.as<std::string>());
 }
+
 
 
 //===================
@@ -229,10 +251,9 @@ public:
 	// Misc
 
 	Setting<bool> gbShowHackControls;
-
-
-
-	MODTYPE defaultModType;
+	Setting<MODTYPE> defaultModType;
+	Setting<PLUGVOLUMEHANDLING> DefaultPlugVolumeHandling;
+	Setting<bool> autoApplySmoothFT2Ramping;
 
 	// Audio Setup
 	bool m_MorePortaudio;
@@ -292,10 +313,6 @@ public:
 
 	// Chords
 	MPTChords Chords;
-
-	uint8 DefaultPlugVolumeHandling;
-
-	bool autoApplySmoothFT2Ramping;
 
 public:
 
