@@ -572,8 +572,8 @@ class Setting
 {
 private:
 	SettingsContainer &conf;
-	SettingPath path;
-	T defaultValue;
+	const SettingPath path;
+	const T defaultValue;
 public:
 	Setting(SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
 		: conf(conf_)
@@ -609,8 +609,8 @@ class ConstSetting
 {
 private:
 	const SettingsContainer &conf;
-	SettingPath path;
-	T defaultValue;
+	const SettingPath path;
+	const T defaultValue;
 public:
 	ConstSetting(const SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
 		: conf(conf_)
@@ -640,21 +640,23 @@ template <typename T>
 class CachedSetting
 {
 private:
-	SettingsContainer &conf;
-	SettingPath path;
 	T value;
+	SettingsContainer &conf;
+	const SettingPath path;
+	const T defaultValue;
 public:
 	CachedSetting(SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
-		: conf(conf_)
+		: value(def)
+		, conf(conf_)
 		, path(section, key)
-		, value(def)
+		, defaultValue(def)
 	{
 		value = conf.Read(path, def, metadata);
 	}
 	CachedSetting(SettingsContainer &conf_, const SettingPath &path_, const T&def, const SettingMetadata &metadata = SettingMetadata())
-		: conf(conf_)
+		: value(def)
+		, conf(conf_)
 		, path(path_)
-		, value(def)
 		, defaultValue(def)
 	{
 		value = conf.Read(path, def, metadata);
@@ -672,6 +674,11 @@ public:
 	const T & Get() const
 	{
 		return value;
+	}
+	CachedSetting & Update()
+	{
+		value = conf.Read(path, def);
+		return *this;
 	}
 };
 
