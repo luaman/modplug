@@ -15,6 +15,7 @@
 #include "../common/misc_util.h"
 
 #include <map>
+#include <set>
 
 
 #define MPT_SETTINGS_CACHE
@@ -477,6 +478,12 @@ typedef bool SettingMetadata;
 
 #endif // MPT_SETTINGS_CACHE
 
+class ISettingChanged
+{
+public:
+	virtual void SettingChanged(const SettingPath &path) = 0;
+};
+
 class SettingsContainer
 {
 
@@ -485,9 +492,11 @@ class SettingsContainer
 		public:
 			typedef std::map<SettingPath,SettingState> SettingsMap;
 			typedef std::map<SettingPath,SettingMetadata> SettingsMetaMap;
+			typedef std::map<SettingPath,std::set<ISettingChanged*> > SettingsListenerMap;
 		private:
 			mutable SettingsMap map;
 			mutable SettingsMetaMap mapMetadata;
+			mutable SettingsListenerMap mapListeners;
 			void WriteSettings();
 
 	#endif // MPT_SETTINGS_CACHE
@@ -498,21 +507,32 @@ private:
 	SettingValue BackendsReadSetting(const SettingPath &path, const SettingValue &def) const;
 	void BackendsWriteSetting(const SettingPath &path, const SettingValue &val);
 	void BackendsRemoveSetting(const SettingPath &path);
+	void NotifyListeners(const SettingPath &path);
 	SettingValue ReadSetting(const SettingPath &path, const SettingValue &def, const SettingMetadata &metadata) const
 	{
-		if(map.find(path) == map.end())
+		SettingsMap::iterator entry = map.find(path);
+		if(entry == map.end())
 		{
-			map[path] = SettingState(def).assign(BackendsReadSetting(path, def), false);
+			entry = map.insert(map.begin(), std::make_pair(path, SettingState(def).assign(BackendsReadSetting(path, def), false)));
 			mapMetadata[path] = metadata;
 		}
-		return map[path];
+		return entry->second;
 	}
 	void WriteSetting(const SettingPath &path, const SettingValue &val)
 	{
-		map[path] = val;
+		SettingsMap::iterator entry = map.find(path);
+		if(entry == map.end())
+		{
+			map[path] = val;
+			entry = map.find(path);
+		} else
+		{
+			entry->second = val;
+		}
+		NotifyListeners(path);
 #if defined(MPT_SETTINGS_IMMEDIATE_FLUSH)
 		BackendsWriteSetting(path, val);
-		map[path].Clean();
+		entry->second.Clean();
 #endif
 	}
 	void RemoveSetting(const SettingPath &path)
@@ -554,6 +574,8 @@ public:
 		RemoveSetting(SettingPath(section, key));
 	}
 	void Flush();
+	void Register(ISettingChanged *listener, const SettingPath &path);
+	void UnRegister(ISettingChanged *listener, const SettingPath &path);
 	~SettingsContainer();
 
 	#if defined(MPT_SETTINGS_CACHE)
@@ -638,6 +660,7 @@ public:
 
 template <typename T>
 class CachedSetting
+	: public ISettingChanged
 {
 private:
 	T value;
@@ -652,6 +675,7 @@ public:
 		, defaultValue(def)
 	{
 		value = conf.Read(path, def, metadata);
+		conf.Register(this, path);
 	}
 	CachedSetting(SettingsContainer &conf_, const SettingPath &path_, const T&def, const SettingMetadata &metadata = SettingMetadata())
 		: value(def)
@@ -660,6 +684,11 @@ public:
 		, defaultValue(def)
 	{
 		value = conf.Read(path, def, metadata);
+		conf.Register(this, path);
+	}
+	~CachedSetting()
+	{
+		conf.UnRegister(this, path);
 	}
 	CachedSetting & operator = (const T &val)
 	{
@@ -677,8 +706,13 @@ public:
 	}
 	CachedSetting & Update()
 	{
-		value = conf.Read(path, def);
+		value = conf.Read(path, defaultValue);
 		return *this;
+	}
+	void SettingChanged(const SettingPath &path)
+	{
+		UNREFERENCED_PARAMETER(path);
+		Update();
 	}
 };
 
