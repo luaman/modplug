@@ -38,7 +38,7 @@ class SettingValue
 private:
 	bool valueBool;
 	int32 valueInt;
-	float valueFloat;
+	double valueFloat;
 	std::string valueString;
 	SettingType type;
 	std::string typeTag;
@@ -46,7 +46,7 @@ private:
 	{
 		valueBool = false;
 		valueInt = 0;
-		valueFloat = 0.0f;
+		valueFloat = 0.0;
 		valueString = std::string();
 		type = SettingTypeNone;
 		typeTag = std::string();
@@ -102,7 +102,7 @@ public:
 		type = SettingTypeInt;
 		valueInt = val;
 	}
-	SettingValue(float val)
+	SettingValue(double val)
 	{
 		Init();
 		type = SettingTypeFloat;
@@ -134,7 +134,7 @@ public:
 		typeTag = typeTag_;
 		valueInt = val;
 	}
-	SettingValue(float val, const std::string &typeTag_)
+	SettingValue(double val, const std::string &typeTag_)
 	{
 		Init();
 		type = SettingTypeFloat;
@@ -182,7 +182,7 @@ public:
 		ASSERT(type == SettingTypeInt);
 		return valueInt;
 	}
-	operator float () const
+	operator double () const
 	{
 		ASSERT(type == SettingTypeFloat);
 		return valueFloat;
@@ -258,7 +258,7 @@ public:
 				valueInt = ConvertStrTo<int32>(newVal);
 				break;
 			case SettingTypeFloat:
-				valueFloat = ConvertStrTo<float>(newVal);
+				valueFloat = ConvertStrTo<double>(newVal);
 				break;
 			case SettingTypeString:
 				valueString = newVal;
@@ -315,6 +315,9 @@ template<> inline uint32 FromSettingValue(const SettingValue &val) { return uint
 
 template<> inline SettingValue ToSettingValue(const uint16 &val) { return SettingValue(int32(val)); }
 template<> inline uint16 FromSettingValue(const SettingValue &val) { return uint16(val.as<int32>()); }
+
+template<> inline SettingValue ToSettingValue(const uint8 &val) { return SettingValue(int32(val)); }
+template<> inline uint8 FromSettingValue(const SettingValue &val) { return uint8(val.as<int32>()); }
 
 template<> inline SettingValue ToSettingValue(const LONG &val) { return SettingValue(int32(val)); }
 template<> inline LONG FromSettingValue(const SettingValue &val) { return LONG(val.as<int32>()); }
@@ -611,6 +614,10 @@ public:
 	{
 		conf.Read(path, defaultValue, metadata); // set default value
 	}
+	SettingPath GetPath() const
+	{
+		return path;
+	}
 	Setting & operator = (const T &val)
 	{
 		conf.Write(path, val);
@@ -647,6 +654,10 @@ public:
 		, defaultValue(def)
 	{
 		conf.Read(path, defaultValue, metadata); // set default value
+	}
+	SettingPath GetPath() const
+	{
+		return path;
 	}
 	operator const T () const
 	{
@@ -690,6 +701,10 @@ public:
 	{
 		conf.UnRegister(this, path);
 	}
+	SettingPath GetPath() const
+	{
+		return path;
+	}
 	CachedSetting & operator = (const T &val)
 	{
 		value = val;
@@ -724,11 +739,11 @@ private:
 	const std::string filename;
 private:
 	std::string ReadSettingRaw(const SettingPath &path, const std::string &def) const;
-	float ReadSettingRaw(const SettingPath &path, float def) const;
+	double ReadSettingRaw(const SettingPath &path, double def) const;
 	int32 ReadSettingRaw(const SettingPath &path, int32 def) const;
 	bool ReadSettingRaw(const SettingPath &path, bool def) const;
 	void WriteSettingRaw(const SettingPath &path, const std::string &val);
-	void WriteSettingRaw(const SettingPath &path, float val);
+	void WriteSettingRaw(const SettingPath &path, double val);
 	void WriteSettingRaw(const SettingPath &path, int32 val);
 	void WriteSettingRaw(const SettingPath &path, bool val);
 	void RemoveSettingRaw(const SettingPath &path);
@@ -750,7 +765,7 @@ private:
 	std::string BuildKeyName(const SettingPath &path) const;
 	std::string BuildValueName(const SettingPath &path) const;
 	std::string ReadSettingRaw(const SettingPath &path, const std::string &def) const;
-	float ReadSettingRaw(const SettingPath &path, float def) const;
+	double ReadSettingRaw(const SettingPath &path, double def) const;
 	int32 ReadSettingRaw(const SettingPath &path, int32 def) const;
 	bool ReadSettingRaw(const SettingPath &path, bool def) const;
 public:
