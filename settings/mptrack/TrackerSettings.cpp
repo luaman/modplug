@@ -26,9 +26,6 @@
 #include "../sounddev/SoundDevice.h"
 
 
-#define OLD_SNDDEV_MINBUFFERLEN			1    // 1ms
-#define OLD_SNDDEV_MAXBUFFERLEN			1000 // 1sec
-
 #define OLD_SOUNDSETUP_REVERSESTEREO         0x20
 #define OLD_SOUNDSETUP_SECONDARY             0x40
 #define OLD_SOUNDSETUP_NOBOOSTTHREADPRIORITY 0x80
@@ -71,6 +68,30 @@ MODTYPE SettingsStringToModType(const std::string &str)
 }
 
 
+static ResamplingMode GetDefaultResamplerMode()
+//---------------------------------------------
+{
+	ResamplingMode result = CResamplerSettings().SrcMode;
+#ifdef ENABLE_ASM
+	// rough heuristic to select less cpu consuming defaults for old CPUs
+	if(GetProcSupport() & PROCSUPPORT_SSE)
+	{
+		result = SRCMODE_POLYPHASE;
+	} else if(GetProcSupport() & PROCSUPPORT_MMX)
+	{
+		result = SRCMODE_SPLINE;
+	} else
+	{
+		result = SRCMODE_LINEAR;
+	}
+#else
+	// just use a sane default
+	result = CResamplerSettings().SrcMode;
+#endif
+	return result;
+}
+
+
 TrackerSettings::TrackerSettings(SettingsContainer &conf)
 //-------------------------------------------------------
 	: conf(conf)
@@ -102,6 +123,28 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, defaultModType(conf, "Misc", "DefaultModType", MOD_TYPE_IT)
 	, DefaultPlugVolumeHandling(conf, "Misc", "DefaultPlugVolumeHandling", PLUGIN_VOLUMEHANDLING_IGNORE)
 	, autoApplySmoothFT2Ramping(conf, "Misc", "SmoothFT2Ramping", false)
+	// Sound Settings
+	, m_MorePortaudio(conf, "Sound Settings", "MorePortaudio", false)
+	, m_nWaveDevice(conf, "Sound Settings", "WaveDevice", SNDDEV_BUILD_ID(0, SNDDEV_WAVEOUT))
+	, m_BufferLength_DEPRECATED(conf, SettingPath("Sound Settings", "BufferLength", "", "BufferLength"), 50)
+	, m_LatencyMS(conf, "Sound Settings", "Latency", SNDDEV_DEFAULT_LATENCY_MS)
+	, m_UpdateIntervalMS(conf, "Sound Settings", "UpdateInterval", SNDDEV_DEFAULT_UPDATEINTERVAL_MS)
+	, m_SampleFormat(conf, SettingPath("Sound Settings", "BitsPerSample", "", "BitsPerSample"), SampleFormatInt16)
+	, m_SoundDeviceExclusiveMode(conf, "Sound Settings", "ExclusiveMode", false)
+	, m_SoundDeviceBoostThreadPriority(conf, "Sound Settings", "BoostThreadPriority", true)
+	, MixerMaxChannels(conf, SettingPath("Sound Settings", "MixChannels", "", "MixChannels"), MixerSettings().m_nMaxMixChannels)
+	, MixerDSPMask(conf, SettingPath("Sound Settings", "Quality", "", "Quality"), MixerSettings().DSPMask)
+	, MixerFlags(conf, SettingPath("Sound Settings", "SoundSetup", "", "SoundSetup"), MixerSettings().MixerFlags)
+	, MixerSamplerate(conf, SettingPath("Sound Settings", "Mixing_Rate", "", "Mixing_Rate"), MixerSettings().gdwMixingFreq)
+	, MixerOutputChannels(conf, SettingPath("Sound Settings", "ChannelMode", "", "ChannelMode"), MixerSettings().gnChannels)
+	, MixerPreAmp(conf, SettingPath("Sound Settings", "PreAmp", "", "PreAmp"), MixerSettings().m_nPreAmp)
+	, MixerStereoSeparation(conf, SettingPath("Sound Settings", "StereoSeparation", "", "StereoSeparation"), MixerSettings().m_nStereoSeparation)
+	, MixerVolumeRampUpSamples(conf, SettingPath("Sound Settings", "VolumeRampUpSamples", "", "BitsPerSample"), MixerSettings().glVolumeRampUpSamples)
+	, MixerVolumeRampDownSamples(conf, SettingPath("Sound Settings", "VolumeRampDownSamples", "", "BitsPerSample"), MixerSettings().glVolumeRampDownSamples)
+	, MixerVolumeRampSamples_DEPRECATED(conf, SettingPath("Sound Settings", "VolumeRampSamples", "", "VolumeRampSamples"), 42)
+	, ResamplerMode(conf, SettingPath("Sound Settings", "SrcMode", "", "SrcMode"), GetDefaultResamplerMode())
+	, ResamplerSubMode(conf, SettingPath("Sound Settings", "XMMSModplugResamplerWFIRType", "", "XMMSModplugResamplerWFIRType"), CResamplerSettings().gbWFIRType)
+	, ResamplerCutoffPercent(conf, SettingPath("Sound Settings", "ResamplerWFIRCutoff", "", "ResamplerWFIRCutoff"), Util::Round<int32>(CResamplerSettings().gdWFIRCutoff * 100.0))
 	// MIDI Settings
 	, m_nMidiDevice(conf, SettingPath("MIDI Settings", "MidiDevice", "", "MidiDevice"), 0)
 	, m_dwMidiSetup(conf, SettingPath("MIDI Settings", "MidiSetup", "", "MidiSetup"), MIDISETUP_RECORDVELOCITY | MIDISETUP_RECORDNOTEOFF | MIDISETUP_TRANSPOSEKEYBOARD | MIDISETUP_MIDITOPLUG)
@@ -128,6 +171,49 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 		gcsInstallGUID = Str;
 		RpcStringFree(&Str);
 	}
+
+	// Sound Settings
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,21,01,26))
+	{
+		if(m_BufferLength_DEPRECATED != 0)
+		{
+			if(m_BufferLength_DEPRECATED < 1) m_BufferLength_DEPRECATED = 1; // 1ms
+			if(m_BufferLength_DEPRECATED > 1000) m_BufferLength_DEPRECATED = 1000; // 1sec
+			if(SNDDEV_GET_TYPE(m_nWaveDevice) == SNDDEV_ASIO)
+			{
+				m_LatencyMS = m_BufferLength_DEPRECATED;
+				m_UpdateIntervalMS = m_BufferLength_DEPRECATED / 8;
+			} else
+			{
+				m_LatencyMS = m_BufferLength_DEPRECATED * 3;
+				m_UpdateIntervalMS = m_BufferLength_DEPRECATED / 8;
+			}
+		}
+		conf.Remove(m_BufferLength_DEPRECATED.GetPath());
+	}
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,21,01,26))
+	{
+		MixerFlags = MixerFlags & ~OLD_SOUNDSETUP_REVERSESTEREO;
+	}
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,22,01,03))
+	{
+		m_SoundDeviceExclusiveMode = ((MixerFlags & OLD_SOUNDSETUP_SECONDARY) == 0);
+		MixerFlags = MixerFlags & ~OLD_SOUNDSETUP_SECONDARY;
+	}
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,22,01,03))
+	{
+		m_SoundDeviceBoostThreadPriority = ((MixerFlags & OLD_SOUNDSETUP_NOBOOSTTHREADPRIORITY) == 0);
+		MixerFlags = MixerFlags & ~OLD_SOUNDSETUP_NOBOOSTTHREADPRIORITY;
+	}
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,20,00,22))
+	{
+		MixerVolumeRampUpSamples = MixerVolumeRampSamples_DEPRECATED.Get();
+		MixerVolumeRampDownSamples = MixerVolumeRampSamples_DEPRECATED.Get();
+		conf.Remove(MixerVolumeRampSamples_DEPRECATED.GetPath());
+	}
+#ifndef NO_ASIO
+	CASIODevice::baseChannel = conf.Read<int32>("Sound Settings", "ASIOBaseChannel", CASIODevice::baseChannel);
+#endif // NO_ASIO
 
 	// Misc
 	if(defaultModType == MOD_TYPE_NONE)
@@ -159,15 +245,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 
 	// Audio Setup
 	gnAutoChordWaitTime = 60;
-
-	// Audio device
-	m_MorePortaudio = false;
-	m_nWaveDevice = SNDDEV_BUILD_ID(0, SNDDEV_WAVEOUT);	// Default value will be overridden
-	m_LatencyMS = SNDDEV_DEFAULT_LATENCY_MS;
-	m_UpdateIntervalMS = SNDDEV_DEFAULT_UPDATEINTERVAL_MS;
-	m_SoundDeviceExclusiveMode = false;
-	m_SoundDeviceBoostThreadPriority = true;
-	m_SampleFormat = SampleFormatInt16;
 
 #ifndef NO_EQ
 	// Default EQ settings
@@ -234,21 +311,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	m_nSampleUndoMaxBuffer = gMemStatus.dwTotalPhys / 10; // set sample undo buffer size
 	if(m_nSampleUndoMaxBuffer < (1 << 20)) m_nSampleUndoMaxBuffer = (1 << 20);
 
-#ifdef ENABLE_ASM
-	// rough heuristic to select less cpu consuming defaults for old CPUs
-	if(GetProcSupport() & PROCSUPPORT_MMX)
-	{
-		m_ResamplerSettings.SrcMode = SRCMODE_SPLINE;
-	}
-	if(GetProcSupport() & PROCSUPPORT_SSE)
-	{
-		m_ResamplerSettings.SrcMode = SRCMODE_POLYPHASE;
-	}
-#else
-	// just use a sane default
-	m_ResamplerSettings.SrcMode = SRCMODE_POLYPHASE;
-#endif
-
 }
 
 
@@ -258,12 +320,61 @@ DWORD TrackerSettings::GetSoundDeviceFlags() const
 	return (m_SoundDeviceExclusiveMode ? SNDDEV_OPTIONS_EXCLUSIVE : 0) | (m_SoundDeviceBoostThreadPriority ? SNDDEV_OPTIONS_BOOSTTHREADPRIORITY : 0);
 }
 
-
 void TrackerSettings::SetSoundDeviceFlags(DWORD flags)
 //----------------------------------------------------
 {
 	m_SoundDeviceExclusiveMode = (flags & SNDDEV_OPTIONS_EXCLUSIVE) ? true : false;
 	m_SoundDeviceBoostThreadPriority = (flags & SNDDEV_OPTIONS_BOOSTTHREADPRIORITY) ? true : false;
+}
+
+
+MixerSettings TrackerSettings::GetMixerSettings() const
+//-----------------------------------------------------
+{
+	MixerSettings settings;
+	settings.m_nMaxMixChannels = MixerMaxChannels;
+	settings.DSPMask = MixerDSPMask;
+	settings.MixerFlags = MixerFlags;
+	settings.gdwMixingFreq = MixerSamplerate;
+	settings.gnChannels = MixerOutputChannels;
+	settings.m_nPreAmp = MixerPreAmp;
+	settings.m_nStereoSeparation = MixerStereoSeparation;
+	settings.glVolumeRampUpSamples = MixerVolumeRampUpSamples;
+	settings.glVolumeRampDownSamples = MixerVolumeRampDownSamples;
+	return settings;
+}
+
+void TrackerSettings::SetMixerSettings(const MixerSettings &settings)
+//-------------------------------------------------------------------
+{
+	MixerMaxChannels = settings.m_nMaxMixChannels;
+	MixerDSPMask = settings.DSPMask;
+	MixerFlags = settings.MixerFlags;
+	MixerSamplerate = settings.gdwMixingFreq;
+	MixerOutputChannels = settings.gnChannels;
+	MixerPreAmp = settings.m_nPreAmp;
+	MixerStereoSeparation = settings.m_nStereoSeparation;
+	MixerVolumeRampUpSamples = settings.glVolumeRampUpSamples;
+	MixerVolumeRampDownSamples = settings.glVolumeRampDownSamples;
+}
+
+
+CResamplerSettings TrackerSettings::GetResamplerSettings() const
+//--------------------------------------------------------------
+{
+	CResamplerSettings settings;
+	settings.SrcMode = ResamplerMode;
+	settings.gbWFIRType = ResamplerSubMode;
+	settings.gdWFIRCutoff = ResamplerCutoffPercent * 0.01;
+	return settings;
+}
+
+void TrackerSettings::SetResamplerSettings(const CResamplerSettings &settings)
+//----------------------------------------------------------------------------
+{
+	ResamplerMode = settings.SrcMode;
+	ResamplerSubMode = settings.gbWFIRType;
+	ResamplerCutoffPercent = settings.gdWFIRCutoff * 100.0;
 }
 
 
@@ -391,97 +502,6 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 		wsprintf(s, "Color%02d", ncol);
 		rgbCustomColors[ncol] = conf.Read<uint32>("Display", s, rgbCustomColors[ncol]);
 	}
-
-	m_MorePortaudio = conf.Read<bool>("Sound Settings", "MorePortaudio", m_MorePortaudio);
-	DWORD defaultDevice = SNDDEV_BUILD_ID(0, SNDDEV_WAVEOUT); // first WaveOut device
-#ifndef NO_ASIO
-	// If there's an ASIO device available, prefer it over DirectSound
-	if(EnumerateSoundDevices(SNDDEV_ASIO, 0, nullptr, 0))
-	{
-		defaultDevice = SNDDEV_BUILD_ID(0, SNDDEV_ASIO);
-	}
-	CASIODevice::baseChannel = conf.Read<int32>("Sound Settings", "ASIOBaseChannel", CASIODevice::baseChannel);
-#endif // NO_ASIO
-	m_nWaveDevice = conf.Read<int32>("Sound Settings", "WaveDevice", defaultDevice);
-	if(vIniVersion < MAKE_VERSION_NUMERIC(1, 22, 01, 03)) m_MixerSettings.MixerFlags |= OLD_SOUNDSETUP_SECONDARY;
-	m_MixerSettings.MixerFlags = conf.Read<uint32>("Sound Settings", "SoundSetup", m_MixerSettings.MixerFlags);
-	m_SoundDeviceExclusiveMode = conf.Read<bool>("Sound Settings", "ExclusiveMode", m_SoundDeviceExclusiveMode);
-	m_SoundDeviceBoostThreadPriority = conf.Read<bool>("Sound Settings", "BoostThreadPriority", m_SoundDeviceBoostThreadPriority);
-	if(vIniVersion < MAKE_VERSION_NUMERIC(1, 21, 01, 26)) m_MixerSettings.MixerFlags &= ~OLD_SOUNDSETUP_REVERSESTEREO;
-	if(vIniVersion < MAKE_VERSION_NUMERIC(1, 22, 01, 03))
-	{
-		m_SoundDeviceExclusiveMode = ((m_MixerSettings.MixerFlags & OLD_SOUNDSETUP_SECONDARY) == 0);
-		m_SoundDeviceBoostThreadPriority = ((m_MixerSettings.MixerFlags & OLD_SOUNDSETUP_NOBOOSTTHREADPRIORITY) == 0);
-		m_MixerSettings.MixerFlags &= ~OLD_SOUNDSETUP_SECONDARY;
-		m_MixerSettings.MixerFlags &= ~OLD_SOUNDSETUP_NOBOOSTTHREADPRIORITY;
-	}
-	m_MixerSettings.DSPMask = conf.Read<uint32>("Sound Settings", "Quality", m_MixerSettings.DSPMask);
-	m_ResamplerSettings.SrcMode = (ResamplingMode)conf.Read<uint32>("Sound Settings", "SrcMode", m_ResamplerSettings.SrcMode);
-	m_MixerSettings.gdwMixingFreq = conf.Read<uint32>("Sound Settings", "Mixing_Rate", 0);
-	m_SampleFormat = conf.Read<uint32>("Sound Settings", "BitsPerSample", m_SampleFormat);
-	m_MixerSettings.gnChannels = conf.Read<uint32>("Sound Settings", "ChannelMode", m_MixerSettings.gnChannels);
-	DWORD LatencyMS = conf.Read<uint32>("Sound Settings", "Latency", 0);
-	DWORD UpdateIntervalMS = conf.Read<uint32>("Sound Settings", "UpdateInterval", 0);
-	if(LatencyMS == 0 || UpdateIntervalMS == 0)
-	{
-		// old versions have set BufferLength which meant different things than the current ISoundDevice interface wants to know
-		DWORD BufferLengthMS = conf.Read<uint32>("Sound Settings", "BufferLength", 0);
-		if(BufferLengthMS != 0)
-		{
-			if(BufferLengthMS < OLD_SNDDEV_MINBUFFERLEN) BufferLengthMS = OLD_SNDDEV_MINBUFFERLEN;
-			if(BufferLengthMS > OLD_SNDDEV_MAXBUFFERLEN) BufferLengthMS = OLD_SNDDEV_MAXBUFFERLEN;
-			if(SNDDEV_GET_TYPE(m_nWaveDevice) == SNDDEV_ASIO)
-			{
-				m_LatencyMS = BufferLengthMS;
-				m_UpdateIntervalMS = BufferLengthMS / 8;
-			} else
-			{
-				m_LatencyMS = BufferLengthMS * 3;
-				m_UpdateIntervalMS = BufferLengthMS / 8;
-			}
-		} else
-		{
-			// use defaults
-			m_LatencyMS = SNDDEV_DEFAULT_LATENCY_MS;
-			m_UpdateIntervalMS = SNDDEV_DEFAULT_UPDATEINTERVAL_MS;
-		}
-	} else
-	{
-		m_LatencyMS = LatencyMS;
-		m_UpdateIntervalMS = UpdateIntervalMS;
-	}
-	if(m_MixerSettings.gdwMixingFreq == 0)
-	{
-		m_MixerSettings.gdwMixingFreq = 44100;
-#ifndef NO_ASIO
-		// If no mixing rate is specified and we're using ASIO, get a mixing rate supported by the device.
-		if(SNDDEV_GET_TYPE(m_nWaveDevice) == SNDDEV_ASIO)
-		{
-			ISoundDevice *dummy = CreateSoundDevice(SNDDEV_ASIO);
-			if(dummy)
-			{
-				m_MixerSettings.gdwMixingFreq = dummy->GetCurrentSampleRate(SNDDEV_GET_NUMBER(m_nWaveDevice));
-				delete dummy;
-			}
-		}
-#endif // NO_ASIO
-	}
-
-	m_MixerSettings.m_nPreAmp = conf.Read<uint32>("Sound Settings", "PreAmp", m_MixerSettings.m_nPreAmp);
-	m_MixerSettings.m_nStereoSeparation = conf.Read<int32>("Sound Settings", "StereoSeparation", m_MixerSettings.m_nStereoSeparation);
-	m_MixerSettings.m_nMaxMixChannels = conf.Read<int32>("Sound Settings", "MixChannels", m_MixerSettings.m_nMaxMixChannels);
-	m_ResamplerSettings.gbWFIRType = static_cast<BYTE>(conf.Read<uint32>("Sound Settings", "XMMSModplugResamplerWFIRType", m_ResamplerSettings.gbWFIRType));
-	//gdWFIRCutoff = static_cast<double>(conf.Read<int32>("Sound Settings", "ResamplerWFIRCutoff", gdWFIRCutoff * 100.0)) / 100.0;
-	m_ResamplerSettings.gdWFIRCutoff = static_cast<double>(conf.Read<int32>("Sound Settings", "ResamplerWFIRCutoff", Util::Round<long>(m_ResamplerSettings.gdWFIRCutoff * 100.0))) / 100.0;
-	
-	// Ramping... first try to read the old setting, then the new ones
-	const long volRamp = conf.Read<int32>("Sound Settings", "VolumeRampSamples", -1);
-	if(volRamp != -1)
-	{
-		m_MixerSettings.glVolumeRampUpSamples = m_MixerSettings.glVolumeRampDownSamples = volRamp;
-	}
-	m_MixerSettings.glVolumeRampUpSamples = conf.Read<int32>("Sound Settings", "VolumeRampUpSamples", m_MixerSettings.glVolumeRampUpSamples);
-	m_MixerSettings.glVolumeRampDownSamples = conf.Read<int32>("Sound Settings", "VolumeRampDownSamples", m_MixerSettings.glVolumeRampDownSamples);
 
 	m_dwPatternSetup = conf.Read<uint32>("Pattern Editor", "PatternSetup", m_dwPatternSetup);
 	if(vIniVersion < MAKE_VERSION_NUMERIC(1, 17, 02, 50))
@@ -645,32 +665,6 @@ bool TrackerSettings::LoadRegistrySettings()
 
 	if (RegOpenKeyEx(HKEY_CURRENT_USER,	m_csRegKey, 0, KEY_READ, &key) == ERROR_SUCCESS)
 	{
-		RegQueryValueEx(key, "SoundSetup", NULL, &dwREG_DWORD, (LPBYTE)&m_MixerSettings.MixerFlags, &dwDWORDSize);
-		m_MixerSettings.MixerFlags &= ~OLD_SOUNDSETUP_REVERSESTEREO;
-		m_SoundDeviceExclusiveMode = ((m_MixerSettings.MixerFlags & OLD_SOUNDSETUP_SECONDARY) == 0);
-		m_MixerSettings.MixerFlags &= ~OLD_SOUNDSETUP_SECONDARY;
-		RegQueryValueEx(key, "Quality", NULL, &dwREG_DWORD, (LPBYTE)&m_MixerSettings.DSPMask, &dwDWORDSize);
-		DWORD dummysrcmode = m_ResamplerSettings.SrcMode;
-		RegQueryValueEx(key, "SrcMode", NULL, &dwREG_DWORD, (LPBYTE)&dummysrcmode, &dwDWORDSize);
-		m_ResamplerSettings.SrcMode = (ResamplingMode)dummysrcmode;
-		RegQueryValueEx(key, "Mixing_Rate", NULL, &dwREG_DWORD, (LPBYTE)&m_MixerSettings.gdwMixingFreq, &dwDWORDSize);
-		DWORD BufferLengthMS = 0;
-		RegQueryValueEx(key, "BufferLength", NULL, &dwREG_DWORD, (LPBYTE)&BufferLengthMS, &dwDWORDSize);
-		if(BufferLengthMS != 0)
-		{
-			if((BufferLengthMS < OLD_SNDDEV_MINBUFFERLEN) || (BufferLengthMS > OLD_SNDDEV_MAXBUFFERLEN)) BufferLengthMS = 100;
-			if(SNDDEV_GET_TYPE(m_nWaveDevice) == SNDDEV_ASIO)
-			{
-				m_LatencyMS = BufferLengthMS;
-				m_UpdateIntervalMS = BufferLengthMS / 8;
-			} else
-			{
-				m_LatencyMS = BufferLengthMS * 3;
-				m_UpdateIntervalMS = BufferLengthMS / 8;
-			}
-		}
-		RegQueryValueEx(key, "PreAmp", NULL, &dwREG_DWORD, (LPBYTE)&m_MixerSettings.m_nPreAmp, &dwDWORDSize);
-
 		CHAR sPath[_MAX_PATH] = "";
 		DWORD dwSZSIZE = sizeof(sPath);
 		RegQueryValueEx(key, "Songs_Directory", NULL, &dwREG_SZ, (LPBYTE)sPath, &dwSZSIZE);
@@ -699,8 +693,6 @@ bool TrackerSettings::LoadRegistrySettings()
 		RegQueryValueEx(key, "ProLogicDepth", NULL, &dwREG_DWORD, (LPBYTE)&m_DSPSettings.m_nProLogicDepth, &dwDWORDSize);
 		RegQueryValueEx(key, "ProLogicDelay", NULL, &dwREG_DWORD, (LPBYTE)&m_DSPSettings.m_nProLogicDelay, &dwDWORDSize);
 #endif
-		RegQueryValueEx(key, "StereoSeparation", NULL, &dwREG_DWORD, (LPBYTE)&m_MixerSettings.m_nStereoSeparation, &dwDWORDSize);
-		RegQueryValueEx(key, "MixChannels", NULL, &dwREG_DWORD, (LPBYTE)&m_MixerSettings.m_nMaxMixChannels, &dwDWORDSize);
 		RegQueryValueEx(key, "PatternSetup", NULL, &dwREG_DWORD, (LPBYTE)&m_dwPatternSetup, &dwDWORDSize);
 		m_dwPatternSetup &= ~(0x800|0x200000|0x400000);	// various deprecated old options
 		m_dwPatternSetup |= PATTERN_NOTEFADE; // Set flag to maintain old behaviour (was changed in 1.17.02.50).
@@ -708,10 +700,6 @@ bool TrackerSettings::LoadRegistrySettings()
 		RegQueryValueEx(key, "RowSpacing", NULL, &dwREG_DWORD, (LPBYTE)&m_nRowHighlightMeasures, &dwDWORDSize);
 		RegQueryValueEx(key, "RowSpacing2", NULL, &dwREG_DWORD, (LPBYTE)&m_nRowHighlightBeats, &dwDWORDSize);
 		RegQueryValueEx(key, "LoopSong", NULL, &dwREG_DWORD, (LPBYTE)&gbLoopSong, &dwDWORDSize);
-		DWORD dummy_sampleformat = m_SampleFormat;
-		RegQueryValueEx(key, "BitsPerSample", NULL, &dwREG_DWORD, (LPBYTE)&dummy_sampleformat, &dwDWORDSize);
-		m_SampleFormat = (long)dummy_sampleformat;
-		RegQueryValueEx(key, "ChannelMode", NULL, &dwREG_DWORD, (LPBYTE)&m_MixerSettings.gnChannels, &dwDWORDSize);
 #ifndef NO_EQ
 		// EQ
 		LoadRegistryEQ(key, "EQ_Settings", &m_EqSettings);
@@ -721,16 +709,6 @@ bool TrackerSettings::LoadRegistrySettings()
 		LoadRegistryEQ(key, "EQ_User4", &CEQSetupDlg::gUserPresets[3]);
 #endif
 
-		//rewbs.resamplerConf
-		dwDWORDSize = sizeof(m_ResamplerSettings.gbWFIRType);
-		RegQueryValueEx(key, "XMMSModplugResamplerWFIRType", NULL, &dwREG_DWORD, (LPBYTE)&m_ResamplerSettings.gbWFIRType, &dwDWORDSize);
-		dwDWORDSize = sizeof(m_ResamplerSettings.gdWFIRCutoff);
-		RegQueryValueEx(key, "ResamplerWFIRCutoff", NULL, &dwREG_DWORD, (LPBYTE)&m_ResamplerSettings.gdWFIRCutoff, &dwDWORDSize);
-		dwDWORDSize = sizeof(m_MixerSettings.glVolumeRampUpSamples);
-		RegQueryValueEx(key, "VolumeRampSamples", NULL, &dwREG_DWORD, (LPBYTE)&m_MixerSettings.glVolumeRampUpSamples, &dwDWORDSize);
-		m_MixerSettings.glVolumeRampDownSamples = m_MixerSettings.glVolumeRampUpSamples;
-
-		//end rewbs.resamplerConf
 		//rewbs.autochord
 		dwDWORDSize = sizeof(gnAutoChordWaitTime);
 		RegQueryValueEx(key, "AutoChordWaitTime", NULL, &dwREG_DWORD, (LPBYTE)&gnAutoChordWaitTime, &dwDWORDSize);
@@ -811,26 +789,6 @@ void TrackerSettings::SaveSettings()
 		wsprintf(s, "Color%02d", ncol);
 		conf.Write<uint32>("Display", s, rgbCustomColors[ncol]);
 	}
-
-	conf.Write<int32>("Sound Settings", "WaveDevice", m_nWaveDevice);
-	conf.Write<uint32>("Sound Settings", "SoundSetup", m_MixerSettings.MixerFlags);
-	conf.Write<bool>("Sound Settings", "ExclusiveMode", m_SoundDeviceExclusiveMode);
-	conf.Write<bool>("Sound Settings", "BoostThreadPriority", m_SoundDeviceBoostThreadPriority);
-	conf.Write<uint32>("Sound Settings", "Quality", m_MixerSettings.DSPMask);
-	conf.Write<uint32>("Sound Settings", "SrcMode", m_ResamplerSettings.SrcMode);
-	conf.Write<uint32>("Sound Settings", "Mixing_Rate", m_MixerSettings.gdwMixingFreq);
-	conf.Write<uint32>("Sound Settings", "BitsPerSample", m_SampleFormat);
-	conf.Write<uint32>("Sound Settings", "ChannelMode", m_MixerSettings.gnChannels);
-	conf.Write<uint32>("Sound Settings", "Latency", m_LatencyMS);
-	conf.Write<uint32>("Sound Settings", "UpdateInterval", m_UpdateIntervalMS);
-	conf.Write<uint32>("Sound Settings", "PreAmp", m_MixerSettings.m_nPreAmp);
-	conf.Write<int32>("Sound Settings", "StereoSeparation", m_MixerSettings.m_nStereoSeparation);
-	conf.Write<int32>("Sound Settings", "MixChannels", m_MixerSettings.m_nMaxMixChannels);
-	conf.Write<uint32>("Sound Settings", "XMMSModplugResamplerWFIRType", m_ResamplerSettings.gbWFIRType);
-	conf.Write<int32>("Sound Settings", "ResamplerWFIRCutoff", static_cast<int>(m_ResamplerSettings.gdWFIRCutoff*100+0.5));
-	conf.Remove("Sound Settings", "VolumeRampSamples");	// deprecated
-	conf.Write<int32>("Sound Settings", "VolumeRampUpSamples", m_MixerSettings.glVolumeRampUpSamples);
-	conf.Write<int32>("Sound Settings", "VolumeRampDownSamples", m_MixerSettings.glVolumeRampDownSamples);
 
 	conf.Write<uint32>("Pattern Editor", "PatternSetup", m_dwPatternSetup);
 	conf.Write<uint32>("Pattern Editor", "RowSpacing", m_nRowHighlightMeasures);

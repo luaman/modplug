@@ -197,6 +197,12 @@ template<> inline PLUGVOLUMEHANDLING FromSettingValue(const SettingValue &val)
 	return static_cast<PLUGVOLUMEHANDLING>(val.as<int32>());
 }
 
+template<> inline SettingValue ToSettingValue(const SampleFormat &val) { return SettingValue(int32(val.value)); }
+template<> inline SampleFormat FromSettingValue(const SettingValue &val) { return SampleFormatEnum(val.as<int32>()); }
+
+template<> inline SettingValue ToSettingValue(const ResamplingMode &val) { return SettingValue(int32(val)); }
+template<> inline ResamplingMode FromSettingValue(const SettingValue &val) { return ResamplingMode(val.as<int32>()); }
+
 template<> inline SettingValue ToSettingValue(const std::bitset<128> &val)
 {
 	return SettingValue(IgnoredCCsToString(val), "IgnoredCCs");
@@ -255,15 +261,38 @@ public:
 	Setting<PLUGVOLUMEHANDLING> DefaultPlugVolumeHandling;
 	Setting<bool> autoApplySmoothFT2Ramping;
 
-	// Audio Setup
-	bool m_MorePortaudio;
-	LONG m_nWaveDevice; // use the SNDDEV_GET_NUMBER and SNDDEV_GET_TYPE macros to decode
-	DWORD m_LatencyMS;
-	DWORD m_UpdateIntervalMS;
-	bool m_SoundDeviceExclusiveMode;
-	bool m_SoundDeviceBoostThreadPriority;
+	// Sound Settings
+	
+	Setting<bool> m_MorePortaudio;
+	Setting<LONG> m_nWaveDevice; // use the SNDDEV_GET_NUMBER and SNDDEV_GET_TYPE macros to decode
+	Setting<uint32> m_BufferLength_DEPRECATED;
+	Setting<uint32> m_LatencyMS;
+	Setting<uint32> m_UpdateIntervalMS;
+	CachedSetting<SampleFormat> m_SampleFormat;
+
+	Setting<bool> m_SoundDeviceExclusiveMode;
+	Setting<bool> m_SoundDeviceBoostThreadPriority;
 	DWORD GetSoundDeviceFlags() const;
 	void SetSoundDeviceFlags(DWORD flags);
+
+	Setting<uint32> MixerMaxChannels;
+	Setting<uint32> MixerDSPMask;
+	Setting<uint32> MixerFlags;
+	CachedSetting<uint32> MixerSamplerate;
+	Setting<uint32> MixerOutputChannels;
+	Setting<uint32> MixerPreAmp;
+	Setting<uint32> MixerStereoSeparation;
+	Setting<uint32> MixerVolumeRampUpSamples;
+	Setting<uint32> MixerVolumeRampDownSamples;
+	Setting<uint32> MixerVolumeRampSamples_DEPRECATED;
+	MixerSettings GetMixerSettings() const;
+	void SetMixerSettings(const MixerSettings &settings);
+
+	Setting<ResamplingMode> ResamplerMode;
+	Setting<uint8> ResamplerSubMode;
+	Setting<int32> ResamplerCutoffPercent;
+	CResamplerSettings GetResamplerSettings() const;
+	void SetResamplerSettings(const CResamplerSettings &settings);
 
 #ifndef NO_EQ
 	EQPreset m_EqSettings;
@@ -299,9 +328,6 @@ public:
 	TCHAR m_szKbdFile[_MAX_PATH];
 	COLORREF rgbCustomColors[MAX_MODCOLORS];
 
-	MixerSettings m_MixerSettings;
-	SampleFormat m_SampleFormat;
-	CResamplerSettings m_ResamplerSettings;
 #ifndef NO_REVERB
 	CReverbSettings m_ReverbSettings;
 #endif
