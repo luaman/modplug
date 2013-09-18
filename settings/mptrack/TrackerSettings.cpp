@@ -374,7 +374,7 @@ void TrackerSettings::SetResamplerSettings(const CResamplerSettings &settings)
 {
 	ResamplerMode = settings.SrcMode;
 	ResamplerSubMode = settings.gbWFIRType;
-	ResamplerCutoffPercent = settings.gdWFIRCutoff * 100.0;
+	ResamplerCutoffPercent = Util::Round<int32>(settings.gdWFIRCutoff * 100.0);
 }
 
 
