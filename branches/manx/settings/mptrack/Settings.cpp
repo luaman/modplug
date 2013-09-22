@@ -19,26 +19,7 @@
 
 
 
-// WINAPI compatible binary structure encoding
-
 static const char EncodeNibble[16] = { '0', '1', '2', '3', '4', '5' ,'6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
-void EncodeBinarySettingRaw(std::string &dst, const void *src, std::size_t size)
-{
-	dst.clear();
-	const uint8 *source = static_cast<const uint8*>(src);
-	uint8 checksum = 0;
-	for(std::size_t i = 0; i < size; ++i)
-	{
-		uint8 byte = *source;
-		dst.push_back(EncodeNibble[(byte&0xf0)>>4]);
-		dst.push_back(EncodeNibble[byte&0x0f]);
-		checksum += byte;
-		source++;
-	}
-	dst.push_back(EncodeNibble[(checksum&0xf0)>>4]);
-	dst.push_back(EncodeNibble[checksum&0x0f]);
-}
 
 static inline bool DecodeByte(uint8 &byte, char c1, char c2)
 {
@@ -66,41 +47,32 @@ static inline bool DecodeByte(uint8 &byte, char c1, char c2)
 	return true;
 }
 
-void DecodeBinarySettingRaw(void *dst, std::size_t size, const std::string &src)
+
+std::string SettingBinToHex(const std::vector<char> &src)
 {
-	if(src.length() != size * 2 + 2)
+	std::string result;
+	for(std::size_t i = 0; i < src.size(); ++i)
 	{
-		return;
+		uint8 byte = src[i];
+		result.push_back(EncodeNibble[(byte&0xf0)>>4]);
+		result.push_back(EncodeNibble[byte&0x0f]);
 	}
-	uint8 checksum = 0;
-	for(std::size_t i = 0; i < size; ++i)
+	return result;
+}
+
+std::vector<char> SettingHexToBin(const std::string &src)
+{
+	std::vector<char> result;
+	for(std::size_t i = 0; i+1 < src.size(); i += 2)
 	{
 		uint8 byte = 0;
 		if(!DecodeByte(byte, src[i*2+0], src[i*2+1]))
 		{
-			return;
+			return result;
 		}
-		checksum += byte;
+		result.push_back(byte);
 	}
-	{
-		uint8 byte = 0;
-		if(!DecodeByte(byte, src[size*2+0], src[size*2+1]))
-		{
-			return;
-		}
-		if(checksum != byte)
-		{
-			return;
-		}
-	}
-	uint8 *dest = static_cast<uint8*>(dst);
-	for(std::size_t i = 0; i < size; ++i)
-	{
-		uint8 byte = 0;
-		DecodeByte(byte, src[i*2+0], src[i*2+1]);
-		*dest = byte;
-		dest++;
-	}
+	return result;
 }
 
 
@@ -224,6 +196,13 @@ SettingsContainer::SettingsContainer(ISettingsBackend *backend, ISettingsBackend
 
 
 
+std::vector<char> IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const
+{
+	std::vector<char> result = def;
+	::GetPrivateProfileStruct(path.GetSection().c_str(), path.GetKey().c_str(), &result[0], result.size(), filename.c_str());
+	return result;
+}
+
 std::string IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, const std::string &def) const
 {
 	std::vector<CHAR> buf(128);
@@ -254,6 +233,11 @@ bool IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, bool def) c
 	return ::GetPrivateProfileInt(path.GetSection().c_str(), path.GetKey().c_str(), def?1:0, filename.c_str()) ? true : false;
 }
 
+
+void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, const std::vector<char> &val)
+{
+	::WritePrivateProfileStruct(path.GetSection().c_str(), path.GetKey().c_str(), (LPVOID)&val[0], val.size(), filename.c_str());
+}
 
 void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, const std::string &val)
 {
@@ -301,6 +285,7 @@ SettingValue IniFileSettingsBackend::ReadSetting(const SettingPath &path, const 
 	case SettingTypeInt: return SettingValue(ReadSettingRaw(path, def.as<int32>()), def.GetTypeTag()); break;
 	case SettingTypeFloat: return SettingValue(ReadSettingRaw(path, def.as<double>()), def.GetTypeTag()); break;
 	case SettingTypeString: return SettingValue(ReadSettingRaw(path, def.as<std::string>()), def.GetTypeTag()); break;
+	case SettingTypeBinary: return SettingValue(ReadSettingRaw(path, def.as<std::vector<char> >()), def.GetTypeTag()); break;
 	default: return SettingValue(); break;
 	}
 }
@@ -314,6 +299,7 @@ void IniFileSettingsBackend::WriteSetting(const SettingPath &path, const Setting
 	case SettingTypeInt: WriteSettingRaw(path, val.as<int32>()); break;
 	case SettingTypeFloat: WriteSettingRaw(path, val.as<double>()); break;
 	case SettingTypeString: WriteSettingRaw(path, val.as<std::string>()); break;
+	case SettingTypeBinary: WriteSettingRaw(path, val.as<std::vector<char> >()); break;
 	default: break;
 	}
 }
@@ -341,6 +327,26 @@ std::string RegistrySettingsBackend::BuildKeyName(const SettingPath &path) const
 std::string RegistrySettingsBackend::BuildValueName(const SettingPath &path) const
 {
 	return oldPaths?path.GetOldKey():path.GetKey();
+}
+
+std::vector<char> RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const
+{
+	std::vector<char> val = def;
+	HKEY regKey = HKEY();
+	if(RegOpenKeyEx(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
+	{
+		char v[4096];
+		MemsetZero(v);
+		DWORD type = REG_BINARY;
+		DWORD typesize = sizeof(v);
+		if(RegQueryValueEx(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
+		{
+			val.assign(v, v + typesize);
+		}
+		RegCloseKey(regKey);
+		regKey = HKEY();
+	}
+	return val;
 }
 
 std::string RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, const std::string &def) const
@@ -415,6 +421,7 @@ SettingValue RegistrySettingsBackend::ReadSetting(const SettingPath &path, const
 	case SettingTypeInt: return SettingValue(ReadSettingRaw(path, def.as<int32>()), def.GetTypeTag()); break;
 	case SettingTypeFloat: return SettingValue(ReadSettingRaw(path, def.as<double>()), def.GetTypeTag()); break;
 	case SettingTypeString: return SettingValue(ReadSettingRaw(path, def.as<std::string>()), def.GetTypeTag()); break;
+	case SettingTypeBinary: return SettingValue(ReadSettingRaw(path, def.as<std::vector<char> >()), def.GetTypeTag()); break;
 	default: return SettingValue(); break;
 	}
 }

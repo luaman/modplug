@@ -142,7 +142,7 @@ template<> inline SettingValue ToSettingValue(const EQPreset &val) {
 }
 template<> inline EQPreset FromSettingValue(const SettingValue &val) {
 	ASSERT(val.GetTypeTag() == "EQPreset");
-	return DecodeBinarySetting<EQPreset>(val.as<std::string>());
+	return DecodeBinarySetting<EQPreset>(val.as<std::vector<char> >());
 }
 
 
