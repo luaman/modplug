@@ -31,7 +31,11 @@ enum SettingType
 	SettingTypeInt,
 	SettingTypeFloat,
 	SettingTypeString,
+	SettingTypeBinary,
 };
+
+std::string SettingBinToHex(const std::vector<char> &src);
+std::vector<char> SettingHexToBin(const std::string &src);
 
 class SettingValue
 {
@@ -40,6 +44,7 @@ private:
 	int32 valueInt;
 	double valueFloat;
 	std::string valueString;
+	std::vector<char> valueBinary;
 	SettingType type;
 	std::string typeTag;
 	void Init()
@@ -48,6 +53,7 @@ private:
 		valueInt = 0;
 		valueFloat = 0.0;
 		valueString = std::string();
+		valueBinary.clear();
 		type = SettingTypeNone;
 		typeTag = std::string();
 	}
@@ -60,6 +66,7 @@ public:
 			&& valueInt == other.valueInt
 			&& valueFloat == other.valueFloat
 			&& valueString == other.valueString
+			&& valueBinary == other.valueBinary
 			;
 	}
 	bool operator != (const SettingValue &other) const
@@ -87,6 +94,7 @@ public:
 		valueInt = other.valueInt;
 		valueFloat = other.valueFloat;
 		valueString = other.valueString;
+		valueBinary = other.valueBinary;
 		typeTag = other.typeTag;
 		return *this;
 	}
@@ -119,6 +127,12 @@ public:
 		Init();
 		type = SettingTypeString;
 		valueString = val;
+	}
+	SettingValue(const std::vector<char> &val)
+	{
+		Init();
+		type = SettingTypeBinary;
+		valueBinary =  val;
 	}
 	SettingValue(bool val, const std::string &typeTag_)
 	{
@@ -154,6 +168,13 @@ public:
 		type = SettingTypeString;
 		typeTag = typeTag_;
 		valueString = val;
+	}
+	SettingValue(const std::vector<char> &val, const std::string &typeTag_)
+	{
+		Init();
+		type = SettingTypeBinary;
+		typeTag = typeTag_;
+		valueBinary =  val;
 	}
 	SettingType GetType() const
 	{
@@ -192,34 +213,45 @@ public:
 		ASSERT(type == SettingTypeString);
 		return valueString;
 	}
+	operator std::vector<char> () const
+	{
+		ASSERT(type == SettingTypeBinary);
+		return valueBinary;
+	}
 	std::string FormatTypeAsString() const
 	{
 		if(GetType() == SettingTypeNone)
 		{
 			return "nil";
-		} else if(HasTypeTag() && !GetTypeTag().empty())
-		{
-			return GetTypeTag();
 		}
+		std::string result;
 		switch(GetType())
 		{
 			case SettingTypeBool:
-				return "bool";
+				result += "bool";
 				break;
 			case SettingTypeInt:
-				return "int";
+				result += "int";
 				break;
 			case SettingTypeFloat:
-				return "float";
+				result += "float";
 				break;
 			case SettingTypeString:
-				return "string";
+				result += "string";
+				break;
+			case SettingTypeBinary:
+				result += "binary";
 				break;
 			case SettingTypeNone:
 			default:
-				return "nil";
+				result += "nil";
 				break;
 		}
+		if(HasTypeTag() && !GetTypeTag().empty())
+		{
+			result += ":" + GetTypeTag();
+		}
+		return result;
 	}
 	std::string FormatValueAsString() const
 	{
@@ -236,6 +268,9 @@ public:
 				break;
 			case SettingTypeString:
 				return valueString;
+				break;
+			case SettingTypeBinary:
+				return SettingBinToHex(valueBinary);
 				break;
 			case SettingTypeNone:
 			default:
@@ -263,6 +298,9 @@ public:
 			case SettingTypeString:
 				valueString = newVal;
 				break;
+			case SettingTypeBinary:
+				valueBinary = SettingHexToBin(newVal);
+				break;
 			case SettingTypeNone:
 			default:
 				break;
@@ -271,24 +309,24 @@ public:
 };
 
 
-
-void EncodeBinarySettingRaw(std::string &dst, const void *src, std::size_t size);
-void DecodeBinarySettingRaw(void *dst, std::size_t size, const std::string &src);
-
 template<typename T>
-std::string EncodeBinarySetting(const T &val)
+std::vector<char> EncodeBinarySetting(const T &val)
 {
-	std::string result;
-	EncodeBinarySettingRaw(result, &val, sizeof(T));
+	std::vector<char> result(sizeof(T));
+	std::memcpy(&result[0], &val, sizeof(T));
 	return result;
 }
 template<typename T>
-T DecodeBinarySetting(const std::string &val)
+T DecodeBinarySetting(const std::vector<char> &val)
 {
 	T result = T();
-	DecodeBinarySettingRaw(&result, sizeof(T), val);
+	if(val.size() >= sizeof(T))
+	{
+		std::memcpy(&result, &val[0], sizeof(T));
+	}
 	return result;
 }
+
 
 template<typename T>
 inline SettingValue ToSettingValue(const T &val)
@@ -738,10 +776,12 @@ class IniFileSettingsBackend : public ISettingsBackend
 private:
 	const std::string filename;
 private:
+	std::vector<char> ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const;
 	std::string ReadSettingRaw(const SettingPath &path, const std::string &def) const;
 	double ReadSettingRaw(const SettingPath &path, double def) const;
 	int32 ReadSettingRaw(const SettingPath &path, int32 def) const;
 	bool ReadSettingRaw(const SettingPath &path, bool def) const;
+	void WriteSettingRaw(const SettingPath &path, const std::vector<char> &val);
 	void WriteSettingRaw(const SettingPath &path, const std::string &val);
 	void WriteSettingRaw(const SettingPath &path, double val);
 	void WriteSettingRaw(const SettingPath &path, int32 val);
@@ -764,6 +804,7 @@ private:
 private:
 	std::string BuildKeyName(const SettingPath &path) const;
 	std::string BuildValueName(const SettingPath &path) const;
+	std::vector<char> ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const;
 	std::string ReadSettingRaw(const SettingPath &path, const std::string &def) const;
 	double ReadSettingRaw(const SettingPath &path, double def) const;
 	int32 ReadSettingRaw(const SettingPath &path, int32 def) const;
