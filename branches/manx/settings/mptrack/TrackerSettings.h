@@ -268,7 +268,7 @@ public:
 	Setting<uint32> m_BufferLength_DEPRECATED;
 	Setting<uint32> m_LatencyMS;
 	Setting<uint32> m_UpdateIntervalMS;
-	CachedSetting<SampleFormat> m_SampleFormat;
+	Setting<SampleFormat> m_SampleFormat;
 
 	Setting<bool> m_SoundDeviceExclusiveMode;
 	Setting<bool> m_SoundDeviceBoostThreadPriority;
@@ -278,7 +278,7 @@ public:
 	Setting<uint32> MixerMaxChannels;
 	Setting<uint32> MixerDSPMask;
 	Setting<uint32> MixerFlags;
-	CachedSetting<uint32> MixerSamplerate;
+	Setting<uint32> MixerSamplerate;
 	Setting<uint32> MixerOutputChannels;
 	Setting<uint32> MixerPreAmp;
 	Setting<uint32> MixerStereoSeparation;

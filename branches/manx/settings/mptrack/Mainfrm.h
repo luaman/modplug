@@ -334,16 +334,16 @@ public:
 
 	// from ISoundSource
 	void FillAudioBufferLocked(IFillAudioBuffer &callback);
-	void AudioRead(PVOID pData, ULONG NumSamples);
-	void AudioDone(ULONG NumSamples, ULONG SamplesLatency);
-	void AudioDone(ULONG NumSamples);
+	void AudioRead(const SoundDeviceSettings &settings, PVOID pData, ULONG NumSamples);
+	void AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples, ULONG SamplesLatency);
+	void AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples);
 	
 	bool audioTryOpeningDevice(UINT channels, SampleFormat sampleFormat, UINT samplespersec);
 	bool audioOpenDevice();
 	bool audioReopenDevice();
 	void audioCloseDevice();
 	bool IsAudioDeviceOpen() const;
-	BOOL DoNotification(DWORD dwSamplesRead, DWORD SamplesLatency, bool hasSoundDeviceGetStreamPosition);
+	BOOL DoNotification(uint32 samplerate, DWORD dwSamplesRead, DWORD SamplesLatency, bool hasSoundDeviceGetStreamPosition);
 
 // Midi Input Functions
 public:
