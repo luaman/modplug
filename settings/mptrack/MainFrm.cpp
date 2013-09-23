@@ -776,12 +776,11 @@ public:
 };
 
 
-void CMainFrame::AudioRead(PVOID pvData, ULONG NumFrames)
-//-------------------------------------------------------
+void CMainFrame::AudioRead(const SoundDeviceSettings &settings, PVOID pvData, ULONG NumFrames)
+//--------------------------------------------------------------------------------------------
 {
 	OPENMPT_PROFILE_FUNCTION(Profiler::Audio);
-	const SampleFormat sampleFormat = TrackerSettings::Instance().m_SampleFormat;
-	StereoVuMeterTargetWrapper target(sampleFormat, m_Dither, pvData);
+	StereoVuMeterTargetWrapper target(settings.sampleFormat, m_Dither, pvData);
 	CSoundFile::samplecount_t renderedFrames = m_pSndFile->Read(NumFrames, target);
 	ASSERT(renderedFrames <= NumFrames);
 	CSoundFile::samplecount_t remainingFrames = NumFrames - renderedFrames;
@@ -789,8 +788,8 @@ void CMainFrame::AudioRead(PVOID pvData, ULONG NumFrames)
 	{
 		// The sound device interface expects the whole buffer to be filled, always.
 		// Clear remaining buffer if not enough samples got rendered.
-		std::size_t frameSize = m_pSndFile->m_MixerSettings.gnChannels * (sampleFormat.GetBitsPerSample()/8);
-		if(sampleFormat.IsUnsigned())
+		std::size_t frameSize = m_pSndFile->m_MixerSettings.gnChannels * (settings.sampleFormat.GetBitsPerSample()/8);
+		if(settings.sampleFormat.IsUnsigned())
 		{
 			std::memset((char*)(pvData) + renderedFrames * frameSize, 0x80, remainingFrames * frameSize);
 		} else
@@ -801,19 +800,19 @@ void CMainFrame::AudioRead(PVOID pvData, ULONG NumFrames)
 }
 
 
-void CMainFrame::AudioDone(ULONG NumSamples, ULONG SamplesLatency)
-//----------------------------------------------------------------
+void CMainFrame::AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples, ULONG SamplesLatency)
+//-----------------------------------------------------------------------------------------------------
 {
 	OPENMPT_PROFILE_FUNCTION(Profiler::Notify);
-	DoNotification(NumSamples, SamplesLatency, false);
+	DoNotification(settings.Samplerate, NumSamples, SamplesLatency, false);
 }
 
 
-void CMainFrame::AudioDone(ULONG NumSamples)
-//------------------------------------------
+void CMainFrame::AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples)
+//-------------------------------------------------------------------------------
 {
 	OPENMPT_PROFILE_FUNCTION(Profiler::Notify);
-	DoNotification(NumSamples, 0, true);
+	DoNotification(settings.Samplerate, NumSamples, 0, true);
 }
 
 
@@ -954,8 +953,8 @@ void CMainFrame::CalcStereoVuMeters(int *pMix, unsigned long nSamples, unsigned 
 }
 
 
-BOOL CMainFrame::DoNotification(DWORD dwSamplesRead, DWORD SamplesLatency, bool hasSoundDeviceGetStreamPosition)
-//--------------------------------------------------------------------------------------------------------------
+BOOL CMainFrame::DoNotification(uint32 samplerate, DWORD dwSamplesRead, DWORD SamplesLatency, bool hasSoundDeviceGetStreamPosition)
+//---------------------------------------------------------------------------------------------------------------------------------
 {
 	if(dwSamplesRead == 0) return FALSE;
 	int64 notificationtimestamp = 0;
@@ -1080,7 +1079,7 @@ BOOL CMainFrame::DoNotification(DWORD dwSamplesRead, DWORD SamplesLatency, bool 
 		notification.masterVU[1] = rVu;
 		if(gnClipLeft) notification.masterVU[0] |= Notification::ClipVU;
 		if(gnClipRight) notification.masterVU[1] |= Notification::ClipVU;
-		uint32 dwVuDecay = Util::muldiv(dwSamplesRead, 120000, TrackerSettings::Instance().MixerSamplerate) + 1;
+		uint32 dwVuDecay = Util::muldiv(dwSamplesRead, 120000, samplerate) + 1;
 
 		if (lVu >= dwVuDecay) gnLVuMeter = (lVu - dwVuDecay) << 11; else gnLVuMeter = 0;
 		if (rVu >= dwVuDecay) gnRVuMeter = (rVu - dwVuDecay) << 11; else gnRVuMeter = 0;

@@ -27,6 +27,9 @@ class ISoundSource;
 //
 
 
+struct SoundDeviceSettings;
+
+
 //====================
 class IFillAudioBuffer
 //====================
@@ -42,9 +45,9 @@ class ISoundSource
 {
 public:
 	virtual void FillAudioBufferLocked(IFillAudioBuffer &callback) = 0; // take any locks needed while rendering audio and then call FillAudioBuffer
-	virtual void AudioRead(void* pData, ULONG NumSamples) = 0;
-	virtual void AudioDone(ULONG NumSamples, ULONG SamplesLatency) = 0; // all in samples
-	virtual void AudioDone(ULONG NumSamples) = 0; // all in samples
+	virtual void AudioRead(const SoundDeviceSettings &settings, void* pData, ULONG NumSamples) = 0;
+	virtual void AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples, ULONG SamplesLatency) = 0; // all in samples
+	virtual void AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples) = 0; // all in samples
 };
 
 

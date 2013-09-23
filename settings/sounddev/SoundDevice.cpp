@@ -115,7 +115,7 @@ void ISoundDevice::SourceFillAudioBufferLocked()
 void ISoundDevice::SourceAudioRead(void* pData, ULONG NumSamples)
 //---------------------------------------------------------------
 {
-	m_Source->AudioRead(pData, NumSamples);
+	m_Source->AudioRead(m_Settings, pData, NumSamples);
 }
 
 
@@ -124,10 +124,10 @@ void ISoundDevice::SourceAudioDone(ULONG NumSamples, ULONG SamplesLatency)
 {
 	if(HasGetStreamPosition())
 	{
-		m_Source->AudioDone(NumSamples);
+		m_Source->AudioDone(m_Settings, NumSamples);
 	} else
 	{
-		m_Source->AudioDone(NumSamples, SamplesLatency);
+		m_Source->AudioDone(m_Settings, NumSamples, SamplesLatency);
 	}
 }
 
