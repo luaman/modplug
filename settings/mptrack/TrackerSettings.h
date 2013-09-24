@@ -324,9 +324,10 @@ public:
 	CachedSetting<int32> orderlistMargins;
 	CachedSetting<int32> rowDisplayOffset;
 
-	// Sample Editor Setup
-	UINT m_nSampleUndoMaxBuffer;
-	bool m_MayNormalizeSamplesOnLoad;
+	// Sample Editor
+	Setting<uint32> m_SampleUndoMaxBufferMB;
+	uint32 GetSampleUndoBufferSize() const { return m_SampleUndoMaxBufferMB << 20; }
+	Setting<bool> m_MayNormalizeSamplesOnLoad;
 
 	// key config
 	TCHAR m_szKbdFile[_MAX_PATH];

@@ -104,6 +104,19 @@ static uint32 GetDefaultPatternSetup()
 }
 
 
+static uint32 GetDefaultUndoBufferSize()
+//--------------------------------------
+{
+	MEMORYSTATUS gMemStatus;
+	MemsetZero(gMemStatus);
+	GlobalMemoryStatus(&gMemStatus);
+	// Allow allocations of at least 16MB
+	if(gMemStatus.dwTotalPhys < 16*1024*1024)
+		gMemStatus.dwTotalPhys = 16*1024*1024;
+	return std::max<uint32>(gMemStatus.dwTotalPhys / 10, 1 << 20);;
+}
+
+
 TrackerSettings::TrackerSettings(SettingsContainer &conf)
 //-------------------------------------------------------
 	: conf(conf)
@@ -178,6 +191,9 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, gnAutoChordWaitTime(conf, SettingPath("Pattern Editor", "AutoChordWaitTime", "", "AutoChordWaitTime"), 60)
 	, orderlistMargins(conf, "Pattern Editor", "DefaultSequenceMargins", 0)
 	, rowDisplayOffset(conf, "Pattern Editor", "RowDisplayOffset", 0)
+	// Sample Editor
+	, m_SampleUndoMaxBufferMB(conf, "Sample Editor", "UndoBufferSize", GetDefaultUndoBufferSize() >> 20)
+	, m_MayNormalizeSamplesOnLoad(conf, "Sample Editor", "MayNormalizeSamplesOnLoad", true)
 {
 
 	const MptVersion::VersionNum storedVersion = gcsPreviousVersion;
@@ -295,10 +311,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	MemCopy(m_EqSettings, CEQSetupDlg::gEQPresets[0]);
 #endif
 
-	// Sample Editor
-	m_nSampleUndoMaxBuffer = 0;	// Real sample buffer undo size will be set later.
-	m_MayNormalizeSamplesOnLoad = true;
-
 	GetDefaultColourScheme(rgbCustomColors);
 
 	m_szKbdFile[0] = '\0';
@@ -327,21 +339,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 		}
 	}
 	
-	// dynamic defaults:
-
-	MEMORYSTATUS gMemStatus;
-	MemsetZero(gMemStatus);
-	GlobalMemoryStatus(&gMemStatus);
-#if 0
-	Log("Physical: %lu\n", gMemStatus.dwTotalPhys);
-	Log("Page File: %lu\n", gMemStatus.dwTotalPageFile);
-	Log("Virtual: %lu\n", gMemStatus.dwTotalVirtual);
-#endif
-	// Allow allocations of at least 16MB
-	if (gMemStatus.dwTotalPhys < 16*1024*1024) gMemStatus.dwTotalPhys = 16*1024*1024;
-	m_nSampleUndoMaxBuffer = gMemStatus.dwTotalPhys / 10; // set sample undo buffer size
-	if(m_nSampleUndoMaxBuffer < (1 << 20)) m_nSampleUndoMaxBuffer = (1 << 20);
-
 }
 
 
@@ -448,7 +445,6 @@ void TrackerSettings::GetDefaultColourScheme(COLORREF (&colours)[MAX_MODCOLORS])
 void TrackerSettings::LoadSettings()
 //----------------------------------
 {
-	SettingsContainer & conf = theApp.GetSettings();
 
 	CString storedVersion = IniVersion.Get().c_str();
 
@@ -533,10 +529,6 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 		wsprintf(s, "Color%02d", ncol);
 		rgbCustomColors[ncol] = conf.Read<uint32>("Display", s, rgbCustomColors[ncol]);
 	}
-
-	m_nSampleUndoMaxBuffer = conf.Read<int32>("Sample Editor" , "UndoBufferSize", m_nSampleUndoMaxBuffer >> 20);
-	m_nSampleUndoMaxBuffer = MAX(1, m_nSampleUndoMaxBuffer) << 20;
-	m_MayNormalizeSamplesOnLoad = conf.Read<bool>("Sample Editor" , "MayNormalizeSamplesOnLoad", m_MayNormalizeSamplesOnLoad);
 
 	PatternClipboard::SetClipboardSize(conf.Read<int32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize()));
 	
@@ -740,7 +732,6 @@ bool TrackerSettings::LoadRegistrySettings()
 void TrackerSettings::SaveSettings()
 //----------------------------------
 {
-	SettingsContainer & conf = theApp.GetSettings();
 
 	WINDOWPLACEMENT wpl;
 	wpl.length = sizeof(WINDOWPLACEMENT);
@@ -772,8 +763,6 @@ void TrackerSettings::SaveSettings()
 
 	conf.Write<uint32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize());
 
-	conf.Write<bool>("Sample Editor", "MayNormalizeSamplesOnLoad", m_MayNormalizeSamplesOnLoad);
-	
 	// Write default paths
 	const bool bConvertPaths = theApp.IsPortableMode();
 	TCHAR szPath[_MAX_PATH] = "";
@@ -886,7 +875,7 @@ void TrackerSettings::LoadChords(MPTChords &chords)
 	for(size_t i = 0; i < CountOf(chords); i++)
 	{
 		uint32 chord;
-		if((chord = theApp.GetSettings().Read<int32>("Chords", szDefaultNoteNames[i], -1)) >= 0)
+		if((chord = conf.Read<int32>("Chords", szDefaultNoteNames[i], -1)) >= 0)
 		{
 			if((chord & 0xFFFFFFC0) || (!chords[i].notes[0]))
 			{
@@ -906,7 +895,7 @@ void TrackerSettings::SaveChords(MPTChords &chords)
 	for(size_t i = 0; i < CountOf(chords); i++)
 	{
 		int32 s = (chords[i].key) | (chords[i].notes[0] << 6) | (chords[i].notes[1] << 12) | (chords[i].notes[2] << 18);
-		theApp.GetSettings().Write<int32>("Chords", szDefaultNoteNames[i], s);
+		conf.Write<int32>("Chords", szDefaultNoteNames[i], s);
 	}
 }
 
