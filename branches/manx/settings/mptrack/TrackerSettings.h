@@ -338,10 +338,12 @@ public:
 	EQPreset m_EqSettings;
 #endif
 
+	// Display (Colors)
+
+	COLORREF rgbCustomColors[MAX_MODCOLORS];
 
 	// key config
 	TCHAR m_szKbdFile[_MAX_PATH];
-	COLORREF rgbCustomColors[MAX_MODCOLORS];
 
 	// Chords
 	MPTChords Chords;
