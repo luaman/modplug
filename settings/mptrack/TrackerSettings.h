@@ -232,6 +232,9 @@ public:
 	const MptVersion::VersionNum gcsPreviousVersion;
 	Setting<CString> gcsInstallGUID;
 
+	// Window
+	Setting<bool> WindowMaximized_DEPRECATED;
+
 	// Display
 
 	Setting<bool> m_ShowSplashScreen;

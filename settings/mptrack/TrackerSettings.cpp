@@ -125,6 +125,8 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, IniVersion(conf, "Version", "Version", "")
 	, gcsPreviousVersion(GetStoredVersion(IniVersion, RegVersion))
 	, gcsInstallGUID(conf, "Version", "InstallGUID", "")
+	// Window
+	, WindowMaximized_DEPRECATED(conf, "Window", "Maximized", false)
 	// Display
 	, m_ShowSplashScreen(conf, "Display", "ShowSplashScreen", true)
 	, gbMdiMaximize(conf, SettingPath("Display", "MDIMaximize", "Window", "MDIMaximize"), true)
@@ -281,6 +283,16 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 		gcsInstallGUID = Str;
 		RpcStringFree(&Str);
 	}
+
+	// Window
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,17,02,40))
+	{
+		if(WindowMaximized_DEPRECATED)
+		{
+			theApp.m_nCmdShow = SW_SHOWMAXIMIZED;
+		}
+	}
+	conf.Remove(WindowMaximized_DEPRECATED.GetPath());
 
 	// Sound Settings
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,21,01,26))
@@ -602,16 +614,6 @@ bool TrackerSettings::LoadRegistrySettings()
 {
 
 	HKEY key;
-
-	if(RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\Olivier Lapicque\\ModPlug Tracker\\Window", 0, KEY_READ, &key) == ERROR_SUCCESS)
-	{
-		DWORD dwREG_DWORD = REG_DWORD;
-		DWORD dwDWORDSize = sizeof(DWORD);
-		DWORD d = 0;
-		RegQueryValueEx(key, "Maximized", NULL, &dwREG_DWORD, (LPBYTE)&d, &dwDWORDSize);
-		if (d) theApp.m_nCmdShow = SW_SHOWMAXIMIZED;
-		RegCloseKey(key);
-	}
 
 	if(RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\Olivier Lapicque\\ModPlug Tracker", 0, KEY_READ, &key) == ERROR_SUCCESS)
 	{
