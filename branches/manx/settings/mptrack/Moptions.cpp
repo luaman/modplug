@@ -749,7 +749,7 @@ void COptionsAdvanced::OnOptionDblClick()
 		return;
 	}
 	const SettingPath path = m_IndexToPath[index];
-	SettingValue val = theApp.GetSettings().GetMap().at(path);
+	SettingValue val = theApp.GetSettings().GetMap().find(path)->second;
 	CInputDlg inputDlg(this, path.FormatAsString().c_str(), val.FormatValueAsString().c_str());
 	if(inputDlg.DoModal() != IDOK)
 	{
