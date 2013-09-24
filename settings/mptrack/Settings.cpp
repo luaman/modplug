@@ -100,6 +100,41 @@ void SettingsContainer::BackendsRemoveSetting(const SettingPath &path)
 	backend->RemoveSetting(path);
 }
 
+SettingValue SettingsContainer::ReadSetting(const SettingPath &path, const SettingValue &def, const SettingMetadata &metadata) const
+{
+	SettingsMap::iterator entry = map.find(path);
+	if(entry == map.end())
+	{
+		entry = map.insert(map.begin(), std::make_pair(path, SettingState(def).assign(BackendsReadSetting(path, def), false)));
+		mapMetadata[path] = metadata;
+	}
+	return entry->second;
+}
+
+void SettingsContainer::WriteSetting(const SettingPath &path, const SettingValue &val)
+{
+	SettingsMap::iterator entry = map.find(path);
+	if(entry == map.end())
+	{
+		map[path] = val;
+		entry = map.find(path);
+	} else
+	{
+		entry->second = val;
+	}
+	NotifyListeners(path);
+#if defined(MPT_SETTINGS_IMMEDIATE_FLUSH)
+	BackendsWriteSetting(path, val);
+	entry->second.Clean();
+#endif
+}
+
+void SettingsContainer::RemoveSetting(const SettingPath &path)
+{
+	map.erase(path);
+	BackendsRemoveSetting(path);
+}
+
 void SettingsContainer::NotifyListeners(const SettingPath &path)
 {
 	const SettingsListenerMap::iterator entry = mapListeners.find(path);
