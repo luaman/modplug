@@ -231,11 +231,24 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	CMainFrame::m_pAutoSaver->SetUseOriginalPath(conf.Read<bool>(SettingPath("AutoSave", "UseOriginalPath", "", "AutoSave_UseOriginalPath"), CMainFrame::m_pAutoSaver->GetUseOriginalPath()));
 	CMainFrame::m_pAutoSaver->SetPath(theApp.RelativePathToAbsolute(conf.Read<CString>(SettingPath("AutoSave", "Path", "", "AutoSave_Path"), CMainFrame::m_pAutoSaver->GetPath())));
 	CMainFrame::m_pAutoSaver->SetFilenameTemplate(conf.Read<CString>(SettingPath("AutoSave", "FileNameTemplate", "", "AutoSave_FileNameTemplate"), CMainFrame::m_pAutoSaver->GetFilenameTemplate()));
+	// Paths
+	for(size_t i = 0; i < NUM_DIRS; i++)
+	{
+		if(TrackerDirectories::Instance().m_szDirectoryToSettingsName[i][0] == '\0')
+		{
+			continue;
+		}
+		const std::string settingKey = TrackerDirectories::Instance().m_szDirectoryToSettingsName[i];
+		CString path = conf.Read<CString>(SettingPath("Paths", settingKey, "", settingKey), GetDefaultDirectory(static_cast<Directory>(i)));
+		path = theApp.RelativePathToAbsolute(path);
+		SetDefaultDirectory(path, static_cast<Directory>(i), false);
+	}
+	MemsetZero(m_szKbdFile);
+	mpt::String::Copy(m_szKbdFile, conf.Read<std::string>("Paths", "Key_Config_File", ""));
+	theApp.RelativePathToAbsolute(m_szKbdFile);
 
 
 	// init old and messy stuff:
-
-	m_szKbdFile[0] = '\0';
 
 	// Default chords
 	MemsetZero(Chords);
@@ -501,14 +514,7 @@ void TrackerSettings::LoadSettings()
 
 	CString storedVersion = IniVersion.Get().c_str();
 
-	// If version number stored in INI is 1.17.02.40 or later, always load setting from INI file.
-	// If it isn't, try loading from Registry first, then from the INI file.
-	if (storedVersion >= "1.17.02.40" || !LoadRegistrySettings())
-	{
-		LoadINISettings();
-	}
-
-	// The following stuff was also stored in mptrack.ini while the registry was still being used...
+	LoadINISettings();
 
 	// Load Chords
 	LoadChords(Chords);
@@ -577,21 +583,6 @@ void TrackerSettings::LoadINISettings()
 
 	PatternClipboard::SetClipboardSize(conf.Read<int32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize()));
 	
-	// Default Paths
-	for(size_t i = 0; i < NUM_DIRS; i++)
-	{
-		if(TrackerDirectories::Instance().m_szDirectoryToSettingsName[i][0] == '\0')
-			continue;
-
-		TCHAR szPath[_MAX_PATH] = "";
-		mpt::String::Copy(szPath, conf.Read<std::string>("Paths", TrackerDirectories::Instance().m_szDirectoryToSettingsName[i], GetDefaultDirectory(static_cast<Directory>(i))));
-		theApp.RelativePathToAbsolute(szPath);
-		SetDefaultDirectory(szPath, static_cast<Directory>(i), false);
-
-	}
-	mpt::String::Copy(m_szKbdFile, conf.Read<std::string>("Paths", "Key_Config_File", m_szKbdFile));
-	theApp.RelativePathToAbsolute(m_szKbdFile);
-
 }
 
 
@@ -606,40 +597,6 @@ void TrackerSettings::FixupEQ(EQPreset *pEqSettings)
 			pEqSettings->Freqs[i] = CEQSetupDlg::gEQPresets[0].Freqs[i];
 	}
 	mpt::String::SetNullTerminator(pEqSettings->szName);
-}
-
-
-bool TrackerSettings::LoadRegistrySettings()
-//------------------------------------------
-{
-
-	HKEY key;
-
-	if(RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\Olivier Lapicque\\ModPlug Tracker", 0, KEY_READ, &key) == ERROR_SUCCESS)
-	{
-		DWORD dwREG_SZ = REG_SZ;
-		CHAR sPath[_MAX_PATH] = "";
-		DWORD dwSZSIZE = sizeof(sPath);
-		RegQueryValueEx(key, "Songs_Directory", NULL, &dwREG_SZ, (LPBYTE)sPath, &dwSZSIZE);
-		SetDefaultDirectory(sPath, DIR_MODS);
-		dwSZSIZE = sizeof(sPath);
-		RegQueryValueEx(key, "Samples_Directory", NULL, &dwREG_SZ, (LPBYTE)sPath, &dwSZSIZE);
-		SetDefaultDirectory(sPath, DIR_SAMPLES);
-		dwSZSIZE = sizeof(sPath);
-		RegQueryValueEx(key, "Instruments_Directory", NULL, &dwREG_SZ, (LPBYTE)sPath, &dwSZSIZE);
-		SetDefaultDirectory(sPath, DIR_INSTRUMENTS);
-		dwSZSIZE = sizeof(sPath);
-		RegQueryValueEx(key, "Plugins_Directory", NULL, &dwREG_SZ, (LPBYTE)sPath, &dwSZSIZE);
-		SetDefaultDirectory(sPath, DIR_PLUGINS);
-		dwSZSIZE = sizeof(m_szKbdFile);
-		RegQueryValueEx(key, "Key_Config_File", NULL, &dwREG_SZ, (LPBYTE)m_szKbdFile, &dwSZSIZE);
-		RegCloseKey(key);
-	} else
-	{
-		return false;
-	}
-
-	return true;
 }
 
 
@@ -669,26 +626,6 @@ void TrackerSettings::SaveSettings()
 	}
 
 	conf.Write<uint32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize());
-
-	// Write default paths
-	const bool bConvertPaths = theApp.IsPortableMode();
-	TCHAR szPath[_MAX_PATH] = "";
-	for(size_t i = 0; i < NUM_DIRS; i++)
-	{
-		if(TrackerDirectories::Instance().m_szDirectoryToSettingsName[i][0] == 0)
-			continue;
-
-		_tcscpy(szPath, GetDefaultDirectory(static_cast<Directory>(i)));
-		if(bConvertPaths)
-		{
-			theApp.AbsolutePathToRelative(szPath);
-		}
-		conf.Write<std::string>("Paths", TrackerDirectories::Instance().m_szDirectoryToSettingsName[i], szPath);
-
-	}
-	// Obsolete, since we always write to Keybindings.mkb now.
-	// Older versions of OpenMPT 1.18+ will look for this file if this entry is missing, so removing this entry after having read it is kind of backwards compatible.
-	conf.Remove("Paths", "Key_Config_File");
 
 
 	// Effects
@@ -725,6 +662,24 @@ void TrackerSettings::SaveSettings()
 	conf.Write<bool>("AutoSave", "UseOriginalPath", CMainFrame::m_pAutoSaver->GetUseOriginalPath());
 	conf.Write<CString>("AutoSave", "Path", theApp.AbsolutePathToRelative(CMainFrame::m_pAutoSaver->GetPath()));
 	conf.Write<CString>("AutoSave", "FileNameTemplate", CMainFrame::m_pAutoSaver->GetFilenameTemplate());
+
+	// Paths
+	for(size_t i = 0; i < NUM_DIRS; i++)
+	{
+		if(TrackerDirectories::Instance().m_szDirectoryToSettingsName[i][0] == '\0')
+		{
+			continue;
+		}
+		CString path = GetDefaultDirectory(static_cast<Directory>(i));
+		if(theApp.IsPortableMode())
+		{
+			path = theApp.AbsolutePathToRelative(path);
+		}
+		conf.Write<CString>("Paths", TrackerDirectories::Instance().m_szDirectoryToSettingsName[i], path);
+	}
+	// Obsolete, since we always write to Keybindings.mkb now.
+	// Older versions of OpenMPT 1.18+ will look for this file if this entry is missing, so removing this entry after having read it is kind of backwards compatible.
+	conf.Remove("Paths", "Key_Config_File");
 
 
 	SaveChords(Chords);

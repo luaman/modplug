@@ -77,7 +77,7 @@ enum
 
 // Pattern Setup (contains also non-pattern related settings)
 // Feel free to replace the deprecated flags by new flags, but be sure to
-// update TrackerSettings::LoadINISettings() / TrackerSettings::LoadRegistrySettings() as well.
+// update TrackerSettings::TrackerSettings() as well.
 #define PATTERN_PLAYNEWNOTE			0x01		// play new notes while recording
 #define PATTERN_LARGECOMMENTS		0x02		// use large font in comments
 #define PATTERN_STDHIGHLIGHT		0x04		// enable primary highlight (measures)
@@ -345,7 +345,8 @@ public:
 
 	COLORREF rgbCustomColors[MAX_MODCOLORS];
 
-	// key config
+	// Paths
+
 	TCHAR m_szKbdFile[_MAX_PATH];
 
 	// Chords
@@ -379,7 +380,6 @@ protected:
 	void LoadINISettings();
 
 	void FixupEQ(EQPreset *pEqSettings);
-	bool LoadRegistrySettings();
 
 	void LoadChords(MPTChords &chords);
 	void SaveChords(MPTChords &chords);
