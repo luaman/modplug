@@ -9,6 +9,7 @@
 
 
 #pragma once
+
 #include "resource.h"
 
 class CModDoc;
@@ -62,7 +63,6 @@ private:
 	CString m_csFileNameTemplate;
 
 };
-#pragma once
 
 
 // CAutoSaverGUI dialog
