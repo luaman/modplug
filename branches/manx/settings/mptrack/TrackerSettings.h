@@ -294,10 +294,6 @@ public:
 	CResamplerSettings GetResamplerSettings() const;
 	void SetResamplerSettings(const CResamplerSettings &settings);
 
-#ifndef NO_EQ
-	EQPreset m_EqSettings;
-#endif
-
 	// MIDI Settings
 
 	Setting<LONG> m_nMidiDevice;
@@ -325,13 +321,12 @@ public:
 	CachedSetting<int32> rowDisplayOffset;
 
 	// Sample Editor
+
 	Setting<uint32> m_SampleUndoMaxBufferMB;
 	uint32 GetSampleUndoBufferSize() const { return m_SampleUndoMaxBufferMB << 20; }
 	Setting<bool> m_MayNormalizeSamplesOnLoad;
 
-	// key config
-	TCHAR m_szKbdFile[_MAX_PATH];
-	COLORREF rgbCustomColors[MAX_MODCOLORS];
+	// Effects
 
 #ifndef NO_REVERB
 	CReverbSettings m_ReverbSettings;
@@ -339,6 +334,14 @@ public:
 #ifndef NO_DSP
 	CDSPSettings m_DSPSettings;
 #endif
+#ifndef NO_EQ
+	EQPreset m_EqSettings;
+#endif
+
+
+	// key config
+	TCHAR m_szKbdFile[_MAX_PATH];
+	COLORREF rgbCustomColors[MAX_MODCOLORS];
 
 	// Chords
 	MPTChords Chords;
@@ -370,7 +373,7 @@ protected:
 
 	void LoadINISettings();
 
-	void LoadRegistryEQ(HKEY key, LPCSTR pszName, EQPreset *pEqSettings);
+	void FixupEQ(EQPreset *pEqSettings);
 	bool LoadRegistrySettings();
 
 	void LoadChords(MPTChords &chords);

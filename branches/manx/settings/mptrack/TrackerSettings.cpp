@@ -195,11 +195,68 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, m_SampleUndoMaxBufferMB(conf, "Sample Editor", "UndoBufferSize", GetDefaultUndoBufferSize() >> 20)
 	, m_MayNormalizeSamplesOnLoad(conf, "Sample Editor", "MayNormalizeSamplesOnLoad", true)
 {
+	// Effects
+#ifndef NO_DSP
+	m_DSPSettings.m_nXBassDepth = conf.Read<int32>(SettingPath("Effects", "XBassDepth", "", "XBassDepth"), m_DSPSettings.m_nXBassDepth);
+	m_DSPSettings.m_nXBassRange = conf.Read<int32>(SettingPath("Effects", "XBassRange", "", "XBassRange"), m_DSPSettings.m_nXBassRange);
+#endif
+#ifndef NO_REVERB
+	m_ReverbSettings.m_nReverbDepth = conf.Read<int32>(SettingPath("Effects", "ReverbDepth", "", "ReverbDepth"), m_ReverbSettings.m_nReverbDepth);
+	m_ReverbSettings.m_nReverbType = conf.Read<int32>(SettingPath("Effects", "ReverbType", "", "ReverbType"), m_ReverbSettings.m_nReverbType);
+#endif
+#ifndef NO_DSP
+	m_DSPSettings.m_nProLogicDepth = conf.Read<int32>(SettingPath("Effects", "ProLogicDepth", "", "ProLogicDepth"), m_DSPSettings.m_nProLogicDepth);
+	m_DSPSettings.m_nProLogicDelay = conf.Read<int32>(SettingPath("Effects", "ProLogicDelay", "", "ProLogicDelay"), m_DSPSettings.m_nProLogicDelay);
+#endif
+#ifndef NO_EQ
+	m_EqSettings = conf.Read<EQPreset>(SettingPath("Effects", "EQ_Settings", "", "EQ_Settings"), CEQSetupDlg::gEQPresets[0]);
+	CEQSetupDlg::gUserPresets[0] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User1", "", "EQ_User1"), CEQSetupDlg::gUserPresets[0]);
+	CEQSetupDlg::gUserPresets[1] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User2", "", "EQ_User2"), CEQSetupDlg::gUserPresets[1]);
+	CEQSetupDlg::gUserPresets[2] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User3", "", "EQ_User3"), CEQSetupDlg::gUserPresets[2]);
+	CEQSetupDlg::gUserPresets[3] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User4", "", "EQ_User4"), CEQSetupDlg::gUserPresets[3]);
+#endif
 
-	const MptVersion::VersionNum storedVersion = gcsPreviousVersion;
+
+	// init old and messy stuff:
+
+	GetDefaultColourScheme(rgbCustomColors);
+
+	m_szKbdFile[0] = '\0';
+
+	// Default chords
+	MemsetZero(Chords);
+	for(UINT ichord = 0; ichord < 3 * 12; ichord++)
+	{
+		Chords[ichord].key = (uint8)ichord;
+		Chords[ichord].notes[0] = 0;
+		Chords[ichord].notes[1] = 0;
+		Chords[ichord].notes[2] = 0;
+
+		if(ichord < 12)
+		{
+			// Major Chords
+			Chords[ichord].notes[0] = (uint8)(ichord+5);
+			Chords[ichord].notes[1] = (uint8)(ichord+8);
+			Chords[ichord].notes[2] = (uint8)(ichord+11);
+		} else if(ichord < 24)
+		{
+			// Minor Chords
+			Chords[ichord].notes[0] = (uint8)(ichord-8);
+			Chords[ichord].notes[1] = (uint8)(ichord-4);
+			Chords[ichord].notes[2] = (uint8)(ichord-1);
+		}
+	}
+
+
+	// load old and messy stuff:
+
+	LoadSettings();
+
 
 	// Fixups:
 	// -------
+
+	const MptVersion::VersionNum storedVersion = gcsPreviousVersion;
 
 	// Version
 	if(gcsInstallGUID == "")
@@ -296,6 +353,13 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 		m_dwPatternSetup = m_dwPatternSetup & ~0x10000000;			// dito
 	}
 
+	// Effects
+	FixupEQ(&m_EqSettings);
+	FixupEQ(&CEQSetupDlg::gUserPresets[0]);
+	FixupEQ(&CEQSetupDlg::gUserPresets[1]);
+	FixupEQ(&CEQSetupDlg::gUserPresets[2]);
+	FixupEQ(&CEQSetupDlg::gUserPresets[3]);
+
 	// Last fixup: update config version
 	IniVersion = MptVersion::str;
 	conf.Remove("Settings", "Version");
@@ -303,45 +367,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	// Write updated settings
 	conf.Flush();
 
-	// old and messy stuff follows:
-
-#ifndef NO_EQ
-	// Default EQ settings
-	MemCopy(m_EqSettings, CEQSetupDlg::gEQPresets[0]);
-#endif
-
-	GetDefaultColourScheme(rgbCustomColors);
-
-	m_szKbdFile[0] = '\0';
-
-	// Default chords
-	MemsetZero(Chords);
-	for(UINT ichord = 0; ichord < 3 * 12; ichord++)
-	{
-		Chords[ichord].key = (uint8)ichord;
-		Chords[ichord].notes[0] = 0;
-		Chords[ichord].notes[1] = 0;
-		Chords[ichord].notes[2] = 0;
-
-		if(ichord < 12)
-		{
-			// Major Chords
-			Chords[ichord].notes[0] = (uint8)(ichord+5);
-			Chords[ichord].notes[1] = (uint8)(ichord+8);
-			Chords[ichord].notes[2] = (uint8)(ichord+11);
-		} else if(ichord < 24)
-		{
-			// Minor Chords
-			Chords[ichord].notes[0] = (uint8)(ichord-8);
-			Chords[ichord].notes[1] = (uint8)(ichord-4);
-			Chords[ichord].notes[2] = (uint8)(ichord-1);
-		}
-	}
-
-	// more old and messy stuff:
-
-	LoadSettings();
-	
 }
 
 
@@ -550,37 +575,6 @@ void TrackerSettings::LoadINISettings()
 	mpt::String::Copy(m_szKbdFile, conf.Read<std::string>("Paths", "Key_Config_File", m_szKbdFile));
 	theApp.RelativePathToAbsolute(m_szKbdFile);
 
-
-	// Effects Settings
-#ifndef NO_DSP
-	m_DSPSettings.m_nXBassDepth = conf.Read<int32>("Effects", "XBassDepth", m_DSPSettings.m_nXBassDepth);
-	m_DSPSettings.m_nXBassRange = conf.Read<int32>("Effects", "XBassRange", m_DSPSettings.m_nXBassRange);
-#endif
-#ifndef NO_REVERB
-	m_ReverbSettings.m_nReverbDepth = conf.Read<int32>("Effects", "ReverbDepth", m_ReverbSettings.m_nReverbDepth);
-	m_ReverbSettings.m_nReverbType = conf.Read<int32>("Effects", "ReverbType", m_ReverbSettings.m_nReverbType);
-#endif
-#ifndef NO_DSP
-	m_DSPSettings.m_nProLogicDepth = conf.Read<int32>("Effects", "ProLogicDepth", m_DSPSettings.m_nProLogicDepth);
-	m_DSPSettings.m_nProLogicDelay = conf.Read<int32>("Effects", "ProLogicDelay", m_DSPSettings.m_nProLogicDelay);
-#endif
-
-
-#ifndef NO_EQ
-	// EQ Settings
-	m_EqSettings = conf.Read<EQPreset>("Effects", "EQ_Settings", m_EqSettings);
-	CEQSetupDlg::gUserPresets[0] = conf.Read<EQPreset>("Effects", "EQ_User1", CEQSetupDlg::gUserPresets[0]);
-	CEQSetupDlg::gUserPresets[1] = conf.Read<EQPreset>("Effects", "EQ_User2", CEQSetupDlg::gUserPresets[1]);
-	CEQSetupDlg::gUserPresets[2] = conf.Read<EQPreset>("Effects", "EQ_User3", CEQSetupDlg::gUserPresets[2]);
-	CEQSetupDlg::gUserPresets[3] = conf.Read<EQPreset>("Effects", "EQ_User4", CEQSetupDlg::gUserPresets[3]);
-	mpt::String::SetNullTerminator(m_EqSettings.szName);
-	mpt::String::SetNullTerminator(CEQSetupDlg::gUserPresets[0].szName);
-	mpt::String::SetNullTerminator(CEQSetupDlg::gUserPresets[1].szName);
-	mpt::String::SetNullTerminator(CEQSetupDlg::gUserPresets[2].szName);
-	mpt::String::SetNullTerminator(CEQSetupDlg::gUserPresets[3].szName);
-#endif
-
-
 	// Auto saver settings
 	CMainFrame::m_pAutoSaver = new CAutoSaver();
 	if(conf.Read<int32>("AutoSave", "Enabled", true))
@@ -608,16 +602,15 @@ void TrackerSettings::LoadINISettings()
 #define SETTINGS_REGKEY_DEFAULT		"ModPlug Tracker"
 #define SETTINGS_REGEXT_WINDOW		"\\Window"
 
-void TrackerSettings::LoadRegistryEQ(HKEY key, LPCSTR pszName, EQPreset *pEqSettings)
-//-----------------------------------------------------------------------------------
+void TrackerSettings::FixupEQ(EQPreset *pEqSettings)
+//--------------------------------------------------
 {
-	DWORD dwType = REG_BINARY;
-	DWORD dwSize = sizeof(EQPreset);
-	RegQueryValueEx(key, pszName, NULL, &dwType, (LPBYTE)pEqSettings, &dwSize);
-	for (UINT i=0; i<MAX_EQ_BANDS; i++)
+	for(UINT i=0; i<MAX_EQ_BANDS; i++)
 	{
-		if (pEqSettings->Gains[i] > 32) pEqSettings->Gains[i] = 16;
-		if ((pEqSettings->Freqs[i] < 100) || (pEqSettings->Freqs[i] > 10000)) pEqSettings->Freqs[i] = CEQSetupDlg::gEQPresets[0].Freqs[i];
+		if(pEqSettings->Gains[i] > 32)
+			pEqSettings->Gains[i] = 16;
+		if((pEqSettings->Freqs[i] < 100) || (pEqSettings->Freqs[i] > 10000))
+			pEqSettings->Freqs[i] = CEQSetupDlg::gEQPresets[0].Freqs[i];
 	}
 	mpt::String::SetNullTerminator(pEqSettings->szName);
 }
@@ -677,28 +670,6 @@ bool TrackerSettings::LoadRegistrySettings()
 		SetDefaultDirectory(sPath, DIR_PLUGINS);
 		dwSZSIZE = sizeof(m_szKbdFile);
 		RegQueryValueEx(key, "Key_Config_File", NULL, &dwREG_SZ, (LPBYTE)m_szKbdFile, &dwSZSIZE);
-
-#ifndef NO_DSP
-		RegQueryValueEx(key, "XBassDepth", NULL, &dwREG_DWORD, (LPBYTE)&m_DSPSettings.m_nXBassDepth, &dwDWORDSize);
-		RegQueryValueEx(key, "XBassRange", NULL, &dwREG_DWORD, (LPBYTE)&m_DSPSettings.m_nXBassRange, &dwDWORDSize);
-#endif
-#ifndef NO_REVERB
-		RegQueryValueEx(key, "ReverbDepth", NULL, &dwREG_DWORD, (LPBYTE)&m_ReverbSettings.m_nReverbDepth, &dwDWORDSize);
-		RegQueryValueEx(key, "ReverbType", NULL, &dwREG_DWORD, (LPBYTE)&m_ReverbSettings.m_nReverbType, &dwDWORDSize);
-#endif NO_REVERB
-#ifndef NO_DSP
-		RegQueryValueEx(key, "ProLogicDepth", NULL, &dwREG_DWORD, (LPBYTE)&m_DSPSettings.m_nProLogicDepth, &dwDWORDSize);
-		RegQueryValueEx(key, "ProLogicDelay", NULL, &dwREG_DWORD, (LPBYTE)&m_DSPSettings.m_nProLogicDelay, &dwDWORDSize);
-#endif
-#ifndef NO_EQ
-		// EQ
-		LoadRegistryEQ(key, "EQ_Settings", &m_EqSettings);
-		LoadRegistryEQ(key, "EQ_User1", &CEQSetupDlg::gUserPresets[0]);
-		LoadRegistryEQ(key, "EQ_User2", &CEQSetupDlg::gUserPresets[1]);
-		LoadRegistryEQ(key, "EQ_User3", &CEQSetupDlg::gUserPresets[2]);
-		LoadRegistryEQ(key, "EQ_User4", &CEQSetupDlg::gUserPresets[3]);
-#endif
-
 
 		//rewbs.autoSave
 		dwDWORDSize = sizeof(asEnabled);
@@ -786,6 +757,8 @@ void TrackerSettings::SaveSettings()
 	// Older versions of OpenMPT 1.18+ will look for this file if this entry is missing, so removing this entry after having read it is kind of backwards compatible.
 	conf.Remove("Paths", "Key_Config_File");
 
+
+	// Effects
 #ifndef NO_DSP
 	conf.Write<int32>("Effects", "XBassDepth", m_DSPSettings.m_nXBassDepth);
 	conf.Write<int32>("Effects", "XBassRange", m_DSPSettings.m_nXBassRange);
@@ -798,7 +771,6 @@ void TrackerSettings::SaveSettings()
 	conf.Write<int32>("Effects", "ProLogicDepth", m_DSPSettings.m_nProLogicDepth);
 	conf.Write<int32>("Effects", "ProLogicDelay", m_DSPSettings.m_nProLogicDelay);
 #endif
-
 #ifndef NO_EQ
 	conf.Write<EQPreset>("Effects", "EQ_Settings", m_EqSettings);
 	conf.Write<EQPreset>("Effects", "EQ_User1", CEQSetupDlg::gUserPresets[0]);
@@ -806,6 +778,7 @@ void TrackerSettings::SaveSettings()
 	conf.Write<EQPreset>("Effects", "EQ_User3", CEQSetupDlg::gUserPresets[2]);
 	conf.Write<EQPreset>("Effects", "EQ_User4", CEQSetupDlg::gUserPresets[3]);
 #endif
+
 
 	if(CMainFrame::m_pAutoSaver != nullptr)
 	{
