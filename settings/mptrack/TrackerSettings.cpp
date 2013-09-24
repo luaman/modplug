@@ -328,17 +328,17 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	}
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,21,01,26))
 	{
-		MixerFlags = MixerFlags & ~OLD_SOUNDSETUP_REVERSESTEREO;
+		MixerFlags &= ~OLD_SOUNDSETUP_REVERSESTEREO;
 	}
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,22,01,03))
 	{
 		m_SoundDeviceExclusiveMode = ((MixerFlags & OLD_SOUNDSETUP_SECONDARY) == 0);
-		MixerFlags = MixerFlags & ~OLD_SOUNDSETUP_SECONDARY;
+		MixerFlags &= ~OLD_SOUNDSETUP_SECONDARY;
 	}
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,22,01,03))
 	{
 		m_SoundDeviceBoostThreadPriority = ((MixerFlags & OLD_SOUNDSETUP_NOBOOSTTHREADPRIORITY) == 0);
-		MixerFlags = MixerFlags & ~OLD_SOUNDSETUP_NOBOOSTTHREADPRIORITY;
+		MixerFlags &= ~OLD_SOUNDSETUP_NOBOOSTTHREADPRIORITY;
 	}
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,20,00,22))
 	{
@@ -361,33 +361,33 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	{
 		// This flag used to be "amplify MIDI Note Velocity" - with a fixed amplification factor of 2.
 		midiVelocityAmp = 200;
-		m_dwMidiSetup = m_dwMidiSetup & ~0x40;
+		m_dwMidiSetup &= ~0x40;
 	}
 
 	// Pattern Editor
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,17,02,50))
 	{
-		m_dwPatternSetup = m_dwPatternSetup | PATTERN_NOTEFADE;
+		m_dwPatternSetup |= PATTERN_NOTEFADE;
 	}
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,17,03,01))
 	{
-		m_dwPatternSetup = m_dwPatternSetup | PATTERN_RESETCHANNELS;
+		m_dwPatternSetup |= PATTERN_RESETCHANNELS;
 	}
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,19,00,07))
 	{
-		m_dwPatternSetup = m_dwPatternSetup & ~0x800;					// this was previously deprecated and is now used for something else
+		m_dwPatternSetup &= ~0x800;					// this was previously deprecated and is now used for something else
 	}
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,20,00,04))
 	{
-		m_dwPatternSetup = m_dwPatternSetup & ~0x200000;				// dito
+		m_dwPatternSetup &= ~0x200000;				// dito
 	}
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,20,00,07))
 	{
-		m_dwPatternSetup = m_dwPatternSetup & ~0x400000;				// dito
+		m_dwPatternSetup &= ~0x400000;				// dito
 	}
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,20,00,39))
 	{
-		m_dwPatternSetup = m_dwPatternSetup & ~0x10000000;			// dito
+		m_dwPatternSetup &= ~0x10000000;			// dito
 	}
 
 	// Effects
