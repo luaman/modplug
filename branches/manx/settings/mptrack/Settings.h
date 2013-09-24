@@ -428,6 +428,20 @@ public:
 #endif // MPT_SETTINGS_CACHE
 
 
+struct OldSettingPath
+{
+	std::string section;
+	std::string key;
+	OldSettingPath() {}
+	OldSettingPath(const std::string &section, const std::string &key)
+		: section(section)
+		, key(key)
+	{
+		return;
+	}
+};
+
+
 class SettingPath
 {
 private:
@@ -440,11 +454,11 @@ public:
 	{
 		return;
 	}
-	SettingPath(const std::string &section_, const std::string &key_, const std::string &oldSection_ = std::string(), const std::string &oldKey_ = std::string())
+	SettingPath(const std::string &section_, const std::string &key_, const OldSettingPath &oldPath = OldSettingPath())
 		: section(section_)
 		, key(key_)
-		, oldSection(oldSection_)
-		, oldKey(oldKey_)
+		, oldSection(oldPath.section)
+		, oldKey(oldPath.key)
 	{
 		return;
 	}
@@ -569,6 +583,11 @@ public:
 		return FromSettingValue<T>(ReadSetting(SettingPath(section, key), ToSettingValue<T>(def), metadata));
 	}
 	template <typename T>
+	T Read(const std::string &section, const std::string &key, const OldSettingPath &oldPath, const T &def = T(), const SettingMetadata &metadata = SettingMetadata()) const
+	{
+		return FromSettingValue<T>(ReadSetting(SettingPath(section, key, oldPath), ToSettingValue<T>(def), metadata));
+	}
+	template <typename T>
 	void Write(const SettingPath &path, const T &val)
 	{
 		WriteSetting(path, ToSettingValue<T>(val));
@@ -612,6 +631,12 @@ public:
 	Setting(SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
 		: conf(conf_)
 		, path(section, key)
+	{
+		conf.Read(path, def, metadata); // set default value
+	}
+	Setting(SettingsContainer &conf_, const std::string &section, const std::string &key, const OldSettingPath &oldPath, const T&def, const SettingMetadata &metadata = SettingMetadata())
+		: conf(conf_)
+		, path(section, key, oldPath)
 	{
 		conf.Read(path, def, metadata); // set default value
 	}
@@ -660,6 +685,14 @@ public:
 		: value(def)
 		, conf(conf_)
 		, path(section, key)
+	{
+		value = conf.Read(path, def, metadata);
+		conf.Register(this, path);
+	}
+	CachedSetting(SettingsContainer &conf_, const std::string &section, const std::string &key, const OldSettingPath &oldPath, const T&def, const SettingMetadata &metadata = SettingMetadata())
+		: value(def)
+		, conf(conf_)
+		, path(section, key, oldPath)
 	{
 		value = conf.Read(path, def, metadata);
 		conf.Register(this, path);

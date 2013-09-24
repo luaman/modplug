@@ -129,20 +129,20 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, WindowMaximized_DEPRECATED(conf, "Window", "Maximized", false)
 	// Display
 	, m_ShowSplashScreen(conf, "Display", "ShowSplashScreen", true)
-	, gbMdiMaximize(conf, SettingPath("Display", "MDIMaximize", "Window", "MDIMaximize"), true)
-	, glTreeSplitRatio(conf, SettingPath("Display", "MDITreeRatio", "Window", "MDITreeRatio"), 128)
-	, glTreeWindowWidth(conf, SettingPath("Display", "MDITreeWidth", "Window", "MDITreeWidth"), 160)
-	, glGeneralWindowHeight(conf, SettingPath("Display", "MDIGeneralHeight", "Window", "MDIGeneralHeight"), 178)
-	, glPatternWindowHeight(conf, SettingPath("Display", "MDIPatternHeight", "Window", "MDIPatternHeight"), 152)
-	, glSampleWindowHeight(conf, SettingPath("Display", "MDISampleHeight", "Window", "MDISampleHeight"), 188)
-	, glInstrumentWindowHeight(conf, SettingPath("Display", "MDIInstrumentHeight", "Window", "MDIInstrumentHeight"), 300)
-	, glCommentsWindowHeight(conf, SettingPath("Display", "MDICommentsHeight", "Window", "MDICommentsHeight"), 288)
-	, glGraphWindowHeight(conf, SettingPath("Display", "MDIGraphHeight", "Window", "MDIGraphHeight"), 288)
-	, gnPlugWindowX(conf, SettingPath("Display", "PlugSelectWindowX", "", "PlugSelectWindowX"), 243)
-	, gnPlugWindowY(conf, SettingPath("Display", "PlugSelectWindowY", "", "PlugSelectWindowY"), 273)
-	, gnPlugWindowWidth(conf, SettingPath("Display", "PlugSelectWindowWidth", "", "PlugSelectWindowWidth"), 370)
-	, gnPlugWindowHeight(conf, SettingPath("Display", "PlugSelectWindowHeight", "", "PlugSelectWindowHeight"), 332)
-	, gnPlugWindowLast(conf, SettingPath("Display", "PlugSelectWindowLast", "", "PlugSelectWindowLast"), 0)
+	, gbMdiMaximize(conf, "Display", "MDIMaximize", OldSettingPath("Window", "MDIMaximize"), true)
+	, glTreeSplitRatio(conf, "Display", "MDITreeRatio", OldSettingPath("Window", "MDITreeRatio"), 128)
+	, glTreeWindowWidth(conf, "Display", "MDITreeWidth", OldSettingPath("Window", "MDITreeWidth"), 160)
+	, glGeneralWindowHeight(conf, "Display", "MDIGeneralHeight", OldSettingPath("Window", "MDIGeneralHeight"), 178)
+	, glPatternWindowHeight(conf, "Display", "MDIPatternHeight", OldSettingPath("Window", "MDIPatternHeight"), 152)
+	, glSampleWindowHeight(conf, "Display", "MDISampleHeight", OldSettingPath("Window", "MDISampleHeight"), 188)
+	, glInstrumentWindowHeight(conf, "Display", "MDIInstrumentHeight", OldSettingPath("Window", "MDIInstrumentHeight"), 300)
+	, glCommentsWindowHeight(conf, "Display", "MDICommentsHeight", OldSettingPath("Window", "MDICommentsHeight"), 288)
+	, glGraphWindowHeight(conf, "Display", "MDIGraphHeight", OldSettingPath("Window", "MDIGraphHeight"), 288)
+	, gnPlugWindowX(conf, "Display", "PlugSelectWindowX", OldSettingPath("", "PlugSelectWindowX"), 243)
+	, gnPlugWindowY(conf, "Display", "PlugSelectWindowY", OldSettingPath("", "PlugSelectWindowY"), 273)
+	, gnPlugWindowWidth(conf, "Display", "PlugSelectWindowWidth", OldSettingPath("", "PlugSelectWindowWidth"), 370)
+	, gnPlugWindowHeight(conf, "Display", "PlugSelectWindowHeight", OldSettingPath("", "PlugSelectWindowHeight"), 332)
+	, gnPlugWindowLast(conf, "Display", "PlugSelectWindowLast", OldSettingPath("", "PlugSelectWindowLast"), 0)
 	, gnMsgBoxVisiblityFlags(conf, "Display", "MDIGraphHeight", uint32_max)
 	, VuMeterUpdateInterval(conf, "Display", "VuMeterUpdateInterval", 15)
 	// Misc
@@ -153,44 +153,44 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	// Sound Settings
 	, m_MorePortaudio(conf, "Sound Settings", "MorePortaudio", false)
 	, m_nWaveDevice(conf, "Sound Settings", "WaveDevice", SNDDEV_BUILD_ID(0, SNDDEV_WAVEOUT))
-	, m_BufferLength_DEPRECATED(conf, SettingPath("Sound Settings", "BufferLength", "", "BufferLength"), 50)
+	, m_BufferLength_DEPRECATED(conf, "Sound Settings", "BufferLength", OldSettingPath("", "BufferLength"), 50)
 	, m_LatencyMS(conf, "Sound Settings", "Latency", SNDDEV_DEFAULT_LATENCY_MS)
 	, m_UpdateIntervalMS(conf, "Sound Settings", "UpdateInterval", SNDDEV_DEFAULT_UPDATEINTERVAL_MS)
-	, m_SampleFormat(conf, SettingPath("Sound Settings", "BitsPerSample", "", "BitsPerSample"), SampleFormatInt16)
+	, m_SampleFormat(conf, "Sound Settings", "BitsPerSample", OldSettingPath("", "BitsPerSample"), SampleFormatInt16)
 	, m_SoundDeviceExclusiveMode(conf, "Sound Settings", "ExclusiveMode", false)
 	, m_SoundDeviceBoostThreadPriority(conf, "Sound Settings", "BoostThreadPriority", true)
-	, MixerMaxChannels(conf, SettingPath("Sound Settings", "MixChannels", "", "MixChannels"), MixerSettings().m_nMaxMixChannels)
-	, MixerDSPMask(conf, SettingPath("Sound Settings", "Quality", "", "Quality"), MixerSettings().DSPMask)
-	, MixerFlags(conf, SettingPath("Sound Settings", "SoundSetup", "", "SoundSetup"), MixerSettings().MixerFlags)
-	, MixerSamplerate(conf, SettingPath("Sound Settings", "Mixing_Rate", "", "Mixing_Rate"), MixerSettings().gdwMixingFreq)
-	, MixerOutputChannels(conf, SettingPath("Sound Settings", "ChannelMode", "", "ChannelMode"), MixerSettings().gnChannels)
-	, MixerPreAmp(conf, SettingPath("Sound Settings", "PreAmp", "", "PreAmp"), MixerSettings().m_nPreAmp)
-	, MixerStereoSeparation(conf, SettingPath("Sound Settings", "StereoSeparation", "", "StereoSeparation"), MixerSettings().m_nStereoSeparation)
-	, MixerVolumeRampUpSamples(conf, SettingPath("Sound Settings", "VolumeRampUpSamples", "", "BitsPerSample"), MixerSettings().glVolumeRampUpSamples)
-	, MixerVolumeRampDownSamples(conf, SettingPath("Sound Settings", "VolumeRampDownSamples", "", "BitsPerSample"), MixerSettings().glVolumeRampDownSamples)
-	, MixerVolumeRampSamples_DEPRECATED(conf, SettingPath("Sound Settings", "VolumeRampSamples", "", "VolumeRampSamples"), 42)
-	, ResamplerMode(conf, SettingPath("Sound Settings", "SrcMode", "", "SrcMode"), GetDefaultResamplerMode())
-	, ResamplerSubMode(conf, SettingPath("Sound Settings", "XMMSModplugResamplerWFIRType", "", "XMMSModplugResamplerWFIRType"), CResamplerSettings().gbWFIRType)
-	, ResamplerCutoffPercent(conf, SettingPath("Sound Settings", "ResamplerWFIRCutoff", "", "ResamplerWFIRCutoff"), Util::Round<int32>(CResamplerSettings().gdWFIRCutoff * 100.0))
+	, MixerMaxChannels(conf, "Sound Settings", "MixChannels", OldSettingPath("", "MixChannels"), MixerSettings().m_nMaxMixChannels)
+	, MixerDSPMask(conf, "Sound Settings", "Quality", OldSettingPath("", "Quality"), MixerSettings().DSPMask)
+	, MixerFlags(conf, "Sound Settings", "SoundSetup", OldSettingPath("", "SoundSetup"), MixerSettings().MixerFlags)
+	, MixerSamplerate(conf, "Sound Settings", "Mixing_Rate", OldSettingPath("", "Mixing_Rate"), MixerSettings().gdwMixingFreq)
+	, MixerOutputChannels(conf, "Sound Settings", "ChannelMode", OldSettingPath("", "ChannelMode"), MixerSettings().gnChannels)
+	, MixerPreAmp(conf, "Sound Settings", "PreAmp", OldSettingPath("", "PreAmp"), MixerSettings().m_nPreAmp)
+	, MixerStereoSeparation(conf, "Sound Settings", "StereoSeparation", OldSettingPath("", "StereoSeparation"), MixerSettings().m_nStereoSeparation)
+	, MixerVolumeRampUpSamples(conf, "Sound Settings", "VolumeRampUpSamples", OldSettingPath("", "BitsPerSample"), MixerSettings().glVolumeRampUpSamples)
+	, MixerVolumeRampDownSamples(conf, "Sound Settings", "VolumeRampDownSamples", OldSettingPath("", "BitsPerSample"), MixerSettings().glVolumeRampDownSamples)
+	, MixerVolumeRampSamples_DEPRECATED(conf, "Sound Settings", "VolumeRampSamples", OldSettingPath("", "VolumeRampSamples"), 42)
+	, ResamplerMode(conf, "Sound Settings", "SrcMode", OldSettingPath("", "SrcMode"), GetDefaultResamplerMode())
+	, ResamplerSubMode(conf, "Sound Settings", "XMMSModplugResamplerWFIRType", OldSettingPath("", "XMMSModplugResamplerWFIRType"), CResamplerSettings().gbWFIRType)
+	, ResamplerCutoffPercent(conf, "Sound Settings", "ResamplerWFIRCutoff", OldSettingPath("", "ResamplerWFIRCutoff"), Util::Round<int32>(CResamplerSettings().gdWFIRCutoff * 100.0))
 	// MIDI Settings
-	, m_nMidiDevice(conf, SettingPath("MIDI Settings", "MidiDevice", "", "MidiDevice"), 0)
-	, m_dwMidiSetup(conf, SettingPath("MIDI Settings", "MidiSetup", "", "MidiSetup"), MIDISETUP_RECORDVELOCITY | MIDISETUP_RECORDNOTEOFF | MIDISETUP_TRANSPOSEKEYBOARD | MIDISETUP_MIDITOPLUG)
+	, m_nMidiDevice(conf, "MIDI Settings", "MidiDevice", OldSettingPath("", "MidiDevice"), 0)
+	, m_dwMidiSetup(conf, "MIDI Settings", "MidiSetup", OldSettingPath("", "MidiSetup"), MIDISETUP_RECORDVELOCITY | MIDISETUP_RECORDNOTEOFF | MIDISETUP_TRANSPOSEKEYBOARD | MIDISETUP_MIDITOPLUG)
 	, aftertouchBehaviour(conf, "MIDI Settings", "AftertouchBehaviour", atDoNotRecord)
 	, midiVelocityAmp(conf, "MIDI Settings", "MidiVelocityAmp", 100)
 	, midiIgnoreCCs(conf, "MIDI Settings", "IgnoredCCs", std::bitset<128>())
-	, midiImportSpeed(conf, SettingPath("MIDI Settings", "MidiImportSpeed", "", "MidiImportSpeed"), 3)
-	, midiImportPatternLen(conf, SettingPath("MIDI Settings", "MidiImportPatLen", "", "MidiImportPatLen"), 128)
+	, midiImportSpeed(conf, "MIDI Settings", "MidiImportSpeed", OldSettingPath("", "MidiImportSpeed"), 3)
+	, midiImportPatternLen(conf, "MIDI Settings", "MidiImportPatLen", OldSettingPath("", "MidiImportPatLen"), 128)
 	// Pattern Editor
-	, gbLoopSong(conf, SettingPath("Pattern Editor", "LoopSong", "", "LoopSong"), true)
+	, gbLoopSong(conf, "Pattern Editor", "LoopSong", OldSettingPath("", "LoopSong"), true)
 	, gnPatternSpacing(conf, "Pattern Editor", "Spacing", 0)
 	, gbPatternVUMeters(conf, "Pattern Editor", "VU-Meters", false)
 	, gbPatternPluginNames(conf, "Pattern Editor", "Plugin-Names", true)
 	, gbPatternRecord(conf, "Pattern Editor", "Record", true)
-	, m_dwPatternSetup(conf, SettingPath("Pattern Editor", "PatternSetup", "", "PatternSetup"), GetDefaultPatternSetup())
-	, m_nRowHighlightMeasures(conf, SettingPath("Pattern Editor", "RowSpacing", "", "RowSpacing"), 16)
-	, m_nRowHighlightBeats(conf, SettingPath("Pattern Editor", "RowSpacing2", "", "RowSpacing2"), 4)
+	, m_dwPatternSetup(conf, "Pattern Editor", "PatternSetup", OldSettingPath("", "PatternSetup"), GetDefaultPatternSetup())
+	, m_nRowHighlightMeasures(conf, "Pattern Editor", "RowSpacing", OldSettingPath("", "RowSpacing"), 16)
+	, m_nRowHighlightBeats(conf, "Pattern Editor", "RowSpacing2", OldSettingPath("", "RowSpacing2"), 4)
 	, recordQuantizeRows(conf, "Pattern Editor", "RecordQuantize", 0)
-	, gnAutoChordWaitTime(conf, SettingPath("Pattern Editor", "AutoChordWaitTime", "", "AutoChordWaitTime"), 60)
+	, gnAutoChordWaitTime(conf, "Pattern Editor", "AutoChordWaitTime", OldSettingPath("", "AutoChordWaitTime"), 60)
 	, orderlistMargins(conf, "Pattern Editor", "DefaultSequenceMargins", 0)
 	, rowDisplayOffset(conf, "Pattern Editor", "RowDisplayOffset", 0)
 	// Sample Editor
@@ -199,38 +199,38 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 {
 	// Effects
 #ifndef NO_DSP
-	m_DSPSettings.m_nXBassDepth = conf.Read<int32>(SettingPath("Effects", "XBassDepth", "", "XBassDepth"), m_DSPSettings.m_nXBassDepth);
-	m_DSPSettings.m_nXBassRange = conf.Read<int32>(SettingPath("Effects", "XBassRange", "", "XBassRange"), m_DSPSettings.m_nXBassRange);
+	m_DSPSettings.m_nXBassDepth = conf.Read<int32>("Effects", "XBassDepth", OldSettingPath("", "XBassDepth"), m_DSPSettings.m_nXBassDepth);
+	m_DSPSettings.m_nXBassRange = conf.Read<int32>("Effects", "XBassRange", OldSettingPath("", "XBassRange"), m_DSPSettings.m_nXBassRange);
 #endif
 #ifndef NO_REVERB
-	m_ReverbSettings.m_nReverbDepth = conf.Read<int32>(SettingPath("Effects", "ReverbDepth", "", "ReverbDepth"), m_ReverbSettings.m_nReverbDepth);
-	m_ReverbSettings.m_nReverbType = conf.Read<int32>(SettingPath("Effects", "ReverbType", "", "ReverbType"), m_ReverbSettings.m_nReverbType);
+	m_ReverbSettings.m_nReverbDepth = conf.Read<int32>("Effects", "ReverbDepth", OldSettingPath("", "ReverbDepth"), m_ReverbSettings.m_nReverbDepth);
+	m_ReverbSettings.m_nReverbType = conf.Read<int32>("Effects", "ReverbType", OldSettingPath("", "ReverbType"), m_ReverbSettings.m_nReverbType);
 #endif
 #ifndef NO_DSP
-	m_DSPSettings.m_nProLogicDepth = conf.Read<int32>(SettingPath("Effects", "ProLogicDepth", "", "ProLogicDepth"), m_DSPSettings.m_nProLogicDepth);
-	m_DSPSettings.m_nProLogicDelay = conf.Read<int32>(SettingPath("Effects", "ProLogicDelay", "", "ProLogicDelay"), m_DSPSettings.m_nProLogicDelay);
+	m_DSPSettings.m_nProLogicDepth = conf.Read<int32>("Effects", "ProLogicDepth", OldSettingPath("", "ProLogicDepth"), m_DSPSettings.m_nProLogicDepth);
+	m_DSPSettings.m_nProLogicDelay = conf.Read<int32>("Effects", "ProLogicDelay", OldSettingPath("", "ProLogicDelay"), m_DSPSettings.m_nProLogicDelay);
 #endif
 #ifndef NO_EQ
-	m_EqSettings = conf.Read<EQPreset>(SettingPath("Effects", "EQ_Settings", "", "EQ_Settings"), CEQSetupDlg::gEQPresets[0]);
-	CEQSetupDlg::gUserPresets[0] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User1", "", "EQ_User1"), CEQSetupDlg::gUserPresets[0]);
-	CEQSetupDlg::gUserPresets[1] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User2", "", "EQ_User2"), CEQSetupDlg::gUserPresets[1]);
-	CEQSetupDlg::gUserPresets[2] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User3", "", "EQ_User3"), CEQSetupDlg::gUserPresets[2]);
-	CEQSetupDlg::gUserPresets[3] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User4", "", "EQ_User4"), CEQSetupDlg::gUserPresets[3]);
+	m_EqSettings = conf.Read<EQPreset>("Effects", "EQ_Settings", OldSettingPath("", "EQ_Settings"), CEQSetupDlg::gEQPresets[0]);
+	CEQSetupDlg::gUserPresets[0] = conf.Read<EQPreset>("Effects", "EQ_User1", OldSettingPath("", "EQ_User1"), CEQSetupDlg::gUserPresets[0]);
+	CEQSetupDlg::gUserPresets[1] = conf.Read<EQPreset>("Effects", "EQ_User2", OldSettingPath("", "EQ_User2"), CEQSetupDlg::gUserPresets[1]);
+	CEQSetupDlg::gUserPresets[2] = conf.Read<EQPreset>("Effects", "EQ_User3", OldSettingPath("", "EQ_User3"), CEQSetupDlg::gUserPresets[2]);
+	CEQSetupDlg::gUserPresets[3] = conf.Read<EQPreset>("Effects", "EQ_User4", OldSettingPath("", "EQ_User4"), CEQSetupDlg::gUserPresets[3]);
 #endif
 	// Display (Colors)
 	GetDefaultColourScheme(rgbCustomColors);
 	for(int ncol = 0; ncol < MAX_MODCOLORS; ncol++)
 	{
 		const std::string colorName = mpt::String::Format("Color%02d", ncol);
-		rgbCustomColors[ncol] = conf.Read<uint32>(SettingPath("Display", colorName, "Window", colorName), rgbCustomColors[ncol]);
+		rgbCustomColors[ncol] = conf.Read<uint32>("Display", colorName, OldSettingPath("Window", colorName), rgbCustomColors[ncol]);
 	}
 	// AutoSave
-	CMainFrame::m_pAutoSaver->SetEnabled(conf.Read<bool>(SettingPath("AutoSave", "Enabled", "", "AutoSave_Enabled"), CMainFrame::m_pAutoSaver->IsEnabled()));
-	CMainFrame::m_pAutoSaver->SetSaveInterval(conf.Read<int32>(SettingPath("AutoSave", "IntervalMinutes", "", "AutoSave_IntervalMinutes"), CMainFrame::m_pAutoSaver->GetSaveInterval()));
-	CMainFrame::m_pAutoSaver->SetHistoryDepth(conf.Read<int32>(SettingPath("AutoSave", "BackupHistory", "", "AutoSave_BackupHistory"), CMainFrame::m_pAutoSaver->GetHistoryDepth()));
-	CMainFrame::m_pAutoSaver->SetUseOriginalPath(conf.Read<bool>(SettingPath("AutoSave", "UseOriginalPath", "", "AutoSave_UseOriginalPath"), CMainFrame::m_pAutoSaver->GetUseOriginalPath()));
-	CMainFrame::m_pAutoSaver->SetPath(theApp.RelativePathToAbsolute(conf.Read<CString>(SettingPath("AutoSave", "Path", "", "AutoSave_Path"), CMainFrame::m_pAutoSaver->GetPath())));
-	CMainFrame::m_pAutoSaver->SetFilenameTemplate(conf.Read<CString>(SettingPath("AutoSave", "FileNameTemplate", "", "AutoSave_FileNameTemplate"), CMainFrame::m_pAutoSaver->GetFilenameTemplate()));
+	CMainFrame::m_pAutoSaver->SetEnabled(conf.Read<bool>("AutoSave", "Enabled", OldSettingPath("", "AutoSave_Enabled"), CMainFrame::m_pAutoSaver->IsEnabled()));
+	CMainFrame::m_pAutoSaver->SetSaveInterval(conf.Read<int32>("AutoSave", "IntervalMinutes", OldSettingPath("", "AutoSave_IntervalMinutes"), CMainFrame::m_pAutoSaver->GetSaveInterval()));
+	CMainFrame::m_pAutoSaver->SetHistoryDepth(conf.Read<int32>("AutoSave", "BackupHistory", OldSettingPath("", "AutoSave_BackupHistory"), CMainFrame::m_pAutoSaver->GetHistoryDepth()));
+	CMainFrame::m_pAutoSaver->SetUseOriginalPath(conf.Read<bool>("AutoSave", "UseOriginalPath", OldSettingPath("", "AutoSave_UseOriginalPath"), CMainFrame::m_pAutoSaver->GetUseOriginalPath()));
+	CMainFrame::m_pAutoSaver->SetPath(theApp.RelativePathToAbsolute(conf.Read<CString>("AutoSave", "Path", OldSettingPath("", "AutoSave_Path"), CMainFrame::m_pAutoSaver->GetPath())));
+	CMainFrame::m_pAutoSaver->SetFilenameTemplate(conf.Read<CString>("AutoSave", "FileNameTemplate", OldSettingPath("", "AutoSave_FileNameTemplate"), CMainFrame::m_pAutoSaver->GetFilenameTemplate()));
 	// Paths
 	for(size_t i = 0; i < NUM_DIRS; i++)
 	{
@@ -239,7 +239,7 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 			continue;
 		}
 		const std::string settingKey = TrackerDirectories::Instance().m_szDirectoryToSettingsName[i];
-		CString path = conf.Read<CString>(SettingPath("Paths", settingKey, "", settingKey), GetDefaultDirectory(static_cast<Directory>(i)));
+		CString path = conf.Read<CString>("Paths", settingKey, OldSettingPath("", settingKey), GetDefaultDirectory(static_cast<Directory>(i)));
 		path = theApp.RelativePathToAbsolute(path);
 		SetDefaultDirectory(path, static_cast<Directory>(i), false);
 	}
