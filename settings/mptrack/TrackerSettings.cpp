@@ -215,6 +215,13 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	CEQSetupDlg::gUserPresets[2] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User3", "", "EQ_User3"), CEQSetupDlg::gUserPresets[2]);
 	CEQSetupDlg::gUserPresets[3] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User4", "", "EQ_User4"), CEQSetupDlg::gUserPresets[3]);
 #endif
+	// AutoSave
+	CMainFrame::m_pAutoSaver->SetEnabled(conf.Read<bool>(SettingPath("AutoSave", "Enabled", "", "AutoSave_Enabled"), CMainFrame::m_pAutoSaver->IsEnabled()));
+	CMainFrame::m_pAutoSaver->SetSaveInterval(conf.Read<int32>(SettingPath("AutoSave", "IntervalMinutes", "", "AutoSave_IntervalMinutes"), CMainFrame::m_pAutoSaver->GetSaveInterval()));
+	CMainFrame::m_pAutoSaver->SetHistoryDepth(conf.Read<int32>(SettingPath("AutoSave", "BackupHistory", "", "AutoSave_BackupHistory"), CMainFrame::m_pAutoSaver->GetHistoryDepth()));
+	CMainFrame::m_pAutoSaver->SetUseOriginalPath(conf.Read<bool>(SettingPath("AutoSave", "UseOriginalPath", "", "AutoSave_UseOriginalPath"), CMainFrame::m_pAutoSaver->GetUseOriginalPath()));
+	CMainFrame::m_pAutoSaver->SetPath(theApp.RelativePathToAbsolute(conf.Read<CString>(SettingPath("AutoSave", "Path", "", "AutoSave_Path"), CMainFrame::m_pAutoSaver->GetPath())));
+	CMainFrame::m_pAutoSaver->SetFilenameTemplate(conf.Read<CString>(SettingPath("AutoSave", "FileNameTemplate", "", "AutoSave_FileNameTemplate"), CMainFrame::m_pAutoSaver->GetFilenameTemplate()));
 
 
 	// init old and messy stuff:
@@ -575,26 +582,6 @@ void TrackerSettings::LoadINISettings()
 	mpt::String::Copy(m_szKbdFile, conf.Read<std::string>("Paths", "Key_Config_File", m_szKbdFile));
 	theApp.RelativePathToAbsolute(m_szKbdFile);
 
-	// Auto saver settings
-	CMainFrame::m_pAutoSaver = new CAutoSaver();
-	if(conf.Read<int32>("AutoSave", "Enabled", true))
-	{
-		CMainFrame::m_pAutoSaver->Enable();
-	} else
-	{
-		CMainFrame::m_pAutoSaver->Disable();
-	}
-	CMainFrame::m_pAutoSaver->SetSaveInterval(conf.Read<int32>("AutoSave", "IntervalMinutes", 10));
-	CMainFrame::m_pAutoSaver->SetHistoryDepth(conf.Read<int32>("AutoSave", "BackupHistory", 3));
-	CMainFrame::m_pAutoSaver->SetUseOriginalPath(conf.Read<int32>("AutoSave", "UseOriginalPath", true) != 0);
-	{
-		TCHAR szPath[_MAX_PATH] = "";
-		mpt::String::Copy(szPath, conf.Read<std::string>("AutoSave", "Path", ""));
-		theApp.RelativePathToAbsolute(szPath);
-		CMainFrame::m_pAutoSaver->SetPath(szPath);
-	}
-	CMainFrame::m_pAutoSaver->SetFilenameTemplate(conf.Read<CString>("AutoSave", "FileNameTemplate", ""));
-
 }
 
 
@@ -631,13 +618,6 @@ bool TrackerSettings::LoadRegistrySettings()
 	DWORD dwDWORDSize = sizeof(UINT);
 	DWORD dwCRSIZE = sizeof(COLORREF);
 
-	bool asEnabled=true;
-	int asInterval=10;
-	int asBackupHistory=3;
-	bool asUseOriginalPath=true;
-	CString asPath ="";
-	CString asFileNameTemplate="";
-
 	if (RegOpenKeyEx(HKEY_CURRENT_USER,	m_csRegWindow, 0, KEY_READ, &key) == ERROR_SUCCESS)
 	{
 		DWORD d = 0;
@@ -670,34 +650,11 @@ bool TrackerSettings::LoadRegistrySettings()
 		SetDefaultDirectory(sPath, DIR_PLUGINS);
 		dwSZSIZE = sizeof(m_szKbdFile);
 		RegQueryValueEx(key, "Key_Config_File", NULL, &dwREG_SZ, (LPBYTE)m_szKbdFile, &dwSZSIZE);
-
-		//rewbs.autoSave
-		dwDWORDSize = sizeof(asEnabled);
-		RegQueryValueEx(key, "AutoSave_Enabled", NULL, &dwREG_DWORD, (LPBYTE)&asEnabled, &dwDWORDSize);
-		dwDWORDSize = sizeof(asInterval);
-		RegQueryValueEx(key, "AutoSave_IntervalMinutes", NULL, &dwREG_DWORD, (LPBYTE)&asInterval, &dwDWORDSize);
-		dwDWORDSize = sizeof(asBackupHistory);
-		RegQueryValueEx(key, "AutoSave_BackupHistory", NULL, &dwREG_DWORD, (LPBYTE)&asBackupHistory, &dwDWORDSize);
-		dwDWORDSize = sizeof(asUseOriginalPath);
-		RegQueryValueEx(key, "AutoSave_UseOriginalPath", NULL, &dwREG_DWORD, (LPBYTE)&asUseOriginalPath, &dwDWORDSize);
-
-		dwDWORDSize = MAX_PATH;
-		RegQueryValueEx(key, "AutoSave_Path", NULL, &dwREG_DWORD, (LPBYTE)asPath.GetBuffer(dwDWORDSize/sizeof(TCHAR)), &dwDWORDSize);
-		asPath.ReleaseBuffer();
-
-		dwDWORDSize = MAX_PATH;
-		RegQueryValueEx(key, "AutoSave_FileNameTemplate", NULL, &dwREG_DWORD, (LPBYTE)asFileNameTemplate.GetBuffer(dwDWORDSize/sizeof(TCHAR)), &dwDWORDSize);
-		asFileNameTemplate.ReleaseBuffer();
-
-		//end rewbs.autoSave
-
 		RegCloseKey(key);
 	} else
 	{
 		return false;
 	}
-
-	CMainFrame::m_pAutoSaver = new CAutoSaver(asEnabled, asInterval, asBackupHistory, asUseOriginalPath, asPath, asFileNameTemplate);
 
 	return true;
 }
@@ -779,21 +736,14 @@ void TrackerSettings::SaveSettings()
 	conf.Write<EQPreset>("Effects", "EQ_User4", CEQSetupDlg::gUserPresets[3]);
 #endif
 
+	// AutoSave
+	conf.Write<bool>("AutoSave", "Enabled", CMainFrame::m_pAutoSaver->IsEnabled());
+	conf.Write<int32>("AutoSave", "IntervalMinutes", CMainFrame::m_pAutoSaver->GetSaveInterval());
+	conf.Write<int32>("AutoSave", "BackupHistory", CMainFrame::m_pAutoSaver->GetHistoryDepth());
+	conf.Write<bool>("AutoSave", "UseOriginalPath", CMainFrame::m_pAutoSaver->GetUseOriginalPath());
+	conf.Write<CString>("AutoSave", "Path", theApp.AbsolutePathToRelative(CMainFrame::m_pAutoSaver->GetPath()));
+	conf.Write<CString>("AutoSave", "FileNameTemplate", CMainFrame::m_pAutoSaver->GetFilenameTemplate());
 
-	if(CMainFrame::m_pAutoSaver != nullptr)
-	{
-		conf.Write<int32>("AutoSave", "Enabled", CMainFrame::m_pAutoSaver->IsEnabled());
-		conf.Write<int32>("AutoSave", "IntervalMinutes", CMainFrame::m_pAutoSaver->GetSaveInterval());
-		conf.Write<int32>("AutoSave", "BackupHistory", CMainFrame::m_pAutoSaver->GetHistoryDepth());
-		conf.Write<int32>("AutoSave", "UseOriginalPath", CMainFrame::m_pAutoSaver->GetUseOriginalPath());
-		_tcscpy(szPath, CMainFrame::m_pAutoSaver->GetPath());
-		if(bConvertPaths)
-		{
-			theApp.AbsolutePathToRelative(szPath);
-		}
-		conf.Write<std::string>("AutoSave", "Path", szPath);
-		conf.Write<CString>("AutoSave", "FileNameTemplate", CMainFrame::m_pAutoSaver->GetFilenameTemplate());
-	}
 
 	SaveChords(Chords);
 
