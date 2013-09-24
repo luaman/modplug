@@ -397,6 +397,16 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	FixupEQ(&CEQSetupDlg::gUserPresets[2]);
 	FixupEQ(&CEQSetupDlg::gUserPresets[3]);
 
+	// Paths
+	for(size_t i = 0; i < NUM_DIRS; i++)
+	{
+		mpt::String::Copy(TrackerDirectories::Instance().m_szWorkingDirectory[i], TrackerDirectories::Instance().m_szDefaultDirectory[i]);
+	}
+	if(TrackerDirectories::Instance().m_szDefaultDirectory[DIR_MODS][0])
+	{
+		SetCurrentDirectory(TrackerDirectories::Instance().m_szDefaultDirectory[DIR_MODS]);
+	}
+
 	// Last fixup: update config version
 	IniVersion = MptVersion::str;
 	conf.Remove("Settings", "Version");
@@ -514,7 +524,32 @@ void TrackerSettings::LoadSettings()
 
 	CString storedVersion = IniVersion.Get().c_str();
 
-	LoadINISettings();
+	// Internet Update
+	{
+		tm lastUpdate;
+		MemsetZero(lastUpdate);
+		CString s = conf.Read<CString>("Update", "LastUpdateCheck", "1970-01-01 00:00");
+		if(sscanf(s, "%04d-%02d-%02d %02d:%02d", &lastUpdate.tm_year, &lastUpdate.tm_mon, &lastUpdate.tm_mday, &lastUpdate.tm_hour, &lastUpdate.tm_min) == 5)
+		{
+			lastUpdate.tm_year -= 1900;
+			lastUpdate.tm_mon--;
+		}
+
+		time_t outTime = Util::sdTime::MakeGmTime(lastUpdate);
+
+		if(outTime < 0) outTime = 0;
+
+		CUpdateCheck::SetUpdateSettings
+			(
+			outTime,
+			conf.Read<int32>("Update", "UpdateCheckPeriod", CUpdateCheck::GetUpdateCheckPeriod()),
+			conf.Read<CString>("Update", "UpdateURL", CUpdateCheck::GetUpdateURL()),
+			conf.Read<int32>("Update", "SendGUID", CUpdateCheck::GetSendGUID() ? 1 : 0) != 0,
+			conf.Read<int32>("Update", "ShowUpdateHint", CUpdateCheck::GetShowUpdateHint() ? 1 : 0) != 0
+			);
+	}
+
+	PatternClipboard::SetClipboardSize(conf.Read<int32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize()));
 
 	// Load Chords
 	LoadChords(Chords);
@@ -543,46 +578,6 @@ void TrackerSettings::LoadSettings()
 	}
 	theApp.SetDefaultMidiMacro(macros);
 
-	// Default directory location
-	for(UINT i = 0; i < NUM_DIRS; i++)
-	{
-		_tcscpy(TrackerDirectories::Instance().m_szWorkingDirectory[i], TrackerDirectories::Instance().m_szDefaultDirectory[i]);
-	}
-	if (TrackerDirectories::Instance().m_szDefaultDirectory[DIR_MODS][0]) SetCurrentDirectory(TrackerDirectories::Instance().m_szDefaultDirectory[DIR_MODS]);
-}
-
-
-void TrackerSettings::LoadINISettings()
-//-------------------------------------
-{
-
-	// Internet Update
-	{
-		tm lastUpdate;
-		MemsetZero(lastUpdate);
-		CString s = conf.Read<CString>("Update", "LastUpdateCheck", "1970-01-01 00:00");
-		if(sscanf(s, "%04d-%02d-%02d %02d:%02d", &lastUpdate.tm_year, &lastUpdate.tm_mon, &lastUpdate.tm_mday, &lastUpdate.tm_hour, &lastUpdate.tm_min) == 5)
-		{
-			lastUpdate.tm_year -= 1900;
-			lastUpdate.tm_mon--;
-		}
-
-		time_t outTime = Util::sdTime::MakeGmTime(lastUpdate);
-
-		if(outTime < 0) outTime = 0;
-
-		CUpdateCheck::SetUpdateSettings
-			(
-			outTime,
-			conf.Read<int32>("Update", "UpdateCheckPeriod", CUpdateCheck::GetUpdateCheckPeriod()),
-			conf.Read<CString>("Update", "UpdateURL", CUpdateCheck::GetUpdateURL()),
-			conf.Read<int32>("Update", "SendGUID", CUpdateCheck::GetSendGUID() ? 1 : 0) != 0,
-			conf.Read<int32>("Update", "ShowUpdateHint", CUpdateCheck::GetShowUpdateHint() ? 1 : 0) != 0
-			);
-	}
-
-	PatternClipboard::SetClipboardSize(conf.Read<int32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize()));
-	
 }
 
 
