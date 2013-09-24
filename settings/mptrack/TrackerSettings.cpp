@@ -215,6 +215,13 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	CEQSetupDlg::gUserPresets[2] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User3", "", "EQ_User3"), CEQSetupDlg::gUserPresets[2]);
 	CEQSetupDlg::gUserPresets[3] = conf.Read<EQPreset>(SettingPath("Effects", "EQ_User4", "", "EQ_User4"), CEQSetupDlg::gUserPresets[3]);
 #endif
+	// Display (Colors)
+	GetDefaultColourScheme(rgbCustomColors);
+	for(int ncol = 0; ncol < MAX_MODCOLORS; ncol++)
+	{
+		const std::string colorName = mpt::String::Format("Color%02d", ncol);
+		rgbCustomColors[ncol] = conf.Read<uint32>(SettingPath("Display", colorName, "Window", colorName), rgbCustomColors[ncol]);
+	}
 	// AutoSave
 	CMainFrame::m_pAutoSaver->SetEnabled(conf.Read<bool>(SettingPath("AutoSave", "Enabled", "", "AutoSave_Enabled"), CMainFrame::m_pAutoSaver->IsEnabled()));
 	CMainFrame::m_pAutoSaver->SetSaveInterval(conf.Read<int32>(SettingPath("AutoSave", "IntervalMinutes", "", "AutoSave_IntervalMinutes"), CMainFrame::m_pAutoSaver->GetSaveInterval()));
@@ -225,8 +232,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 
 
 	// init old and messy stuff:
-
-	GetDefaultColourScheme(rgbCustomColors);
 
 	m_szKbdFile[0] = '\0';
 
@@ -558,13 +563,6 @@ void TrackerSettings::LoadINISettings()
 			);
 	}
 
-	CHAR s[16];
-	for (int ncol = 0; ncol < MAX_MODCOLORS; ncol++)
-	{
-		wsprintf(s, "Color%02d", ncol);
-		rgbCustomColors[ncol] = conf.Read<uint32>("Display", s, rgbCustomColors[ncol]);
-	}
-
 	PatternClipboard::SetClipboardSize(conf.Read<int32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize()));
 	
 	// Default Paths
@@ -585,10 +583,6 @@ void TrackerSettings::LoadINISettings()
 }
 
 
-#define SETTINGS_REGKEY_BASE		"Software\\Olivier Lapicque\\"
-#define SETTINGS_REGKEY_DEFAULT		"ModPlug Tracker"
-#define SETTINGS_REGEXT_WINDOW		"\\Window"
-
 void TrackerSettings::FixupEQ(EQPreset *pEqSettings)
 //--------------------------------------------------
 {
@@ -606,35 +600,22 @@ void TrackerSettings::FixupEQ(EQPreset *pEqSettings)
 bool TrackerSettings::LoadRegistrySettings()
 //------------------------------------------
 {
-	CString m_csRegKey;
-	CString m_csRegExt;
-	CString m_csRegWindow;
-	m_csRegKey.Format("%s%s", SETTINGS_REGKEY_BASE, SETTINGS_REGKEY_DEFAULT);
-	m_csRegWindow.Format("%s%s", m_csRegKey, SETTINGS_REGEXT_WINDOW);
 
 	HKEY key;
-	DWORD dwREG_DWORD = REG_DWORD;
-	DWORD dwREG_SZ = REG_SZ;
-	DWORD dwDWORDSize = sizeof(UINT);
-	DWORD dwCRSIZE = sizeof(COLORREF);
 
-	if (RegOpenKeyEx(HKEY_CURRENT_USER,	m_csRegWindow, 0, KEY_READ, &key) == ERROR_SUCCESS)
+	if(RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\Olivier Lapicque\\ModPlug Tracker\\Window", 0, KEY_READ, &key) == ERROR_SUCCESS)
 	{
+		DWORD dwREG_DWORD = REG_DWORD;
+		DWORD dwDWORDSize = sizeof(DWORD);
 		DWORD d = 0;
 		RegQueryValueEx(key, "Maximized", NULL, &dwREG_DWORD, (LPBYTE)&d, &dwDWORDSize);
 		if (d) theApp.m_nCmdShow = SW_SHOWMAXIMIZED;
-		// Colors
-		for (int ncol = 0; ncol < MAX_MODCOLORS; ncol++)
-		{
-			CHAR s[16];
-			wsprintf(s, "Color%02d", ncol);
-			RegQueryValueEx(key, s, NULL, &dwREG_DWORD, (LPBYTE)&rgbCustomColors[ncol], &dwCRSIZE);
-		}
 		RegCloseKey(key);
 	}
 
-	if (RegOpenKeyEx(HKEY_CURRENT_USER,	m_csRegKey, 0, KEY_READ, &key) == ERROR_SUCCESS)
+	if(RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\Olivier Lapicque\\ModPlug Tracker", 0, KEY_READ, &key) == ERROR_SUCCESS)
 	{
+		DWORD dwREG_SZ = REG_SZ;
 		CHAR sPath[_MAX_PATH] = "";
 		DWORD dwSZSIZE = sizeof(sPath);
 		RegQueryValueEx(key, "Songs_Directory", NULL, &dwREG_SZ, (LPBYTE)sPath, &dwSZSIZE);
@@ -685,13 +666,6 @@ void TrackerSettings::SaveSettings()
 		conf.Write<int32>("Update", "ShowUpdateHint", CUpdateCheck::GetShowUpdateHint() ? 1 : 0);
 	}
 
-	CHAR s[16];
-	for (int ncol = 0; ncol < MAX_MODCOLORS; ncol++)
-	{
-		wsprintf(s, "Color%02d", ncol);
-		conf.Write<uint32>("Display", s, rgbCustomColors[ncol]);
-	}
-
 	conf.Write<uint32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize());
 
 	// Write default paths
@@ -735,6 +709,12 @@ void TrackerSettings::SaveSettings()
 	conf.Write<EQPreset>("Effects", "EQ_User3", CEQSetupDlg::gUserPresets[2]);
 	conf.Write<EQPreset>("Effects", "EQ_User4", CEQSetupDlg::gUserPresets[3]);
 #endif
+
+	// Display (Colors)
+	for(int ncol = 0; ncol < MAX_MODCOLORS; ncol++)
+	{
+		conf.Write<uint32>("Display", mpt::String::Format("Color%02d", ncol), rgbCustomColors[ncol]);
+	}
 
 	// AutoSave
 	conf.Write<bool>("AutoSave", "Enabled", CMainFrame::m_pAutoSaver->IsEnabled());
