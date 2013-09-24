@@ -92,6 +92,18 @@ static ResamplingMode GetDefaultResamplerMode()
 }
 
 
+static uint32 GetDefaultPatternSetup()
+//------------------------------------
+{
+	return PATTERN_PLAYNEWNOTE | PATTERN_EFFECTHILIGHT
+		| PATTERN_SMALLFONT | PATTERN_CENTERROW | PATTERN_DRAGNDROPEDIT
+		| PATTERN_FLATBUTTONS | PATTERN_NOEXTRALOUD | PATTERN_2NDHIGHLIGHT
+		| PATTERN_STDHIGHLIGHT | PATTERN_SHOWPREVIOUS | PATTERN_CONTSCROLL
+		| PATTERN_SYNCMUTE | PATTERN_AUTODELAY | PATTERN_NOTEFADE
+		| PATTERN_LARGECOMMENTS | PATTERN_SHOWDEFAULTVOLUME;
+}
+
+
 TrackerSettings::TrackerSettings(SettingsContainer &conf)
 //-------------------------------------------------------
 	: conf(conf)
@@ -153,9 +165,22 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, midiIgnoreCCs(conf, "MIDI Settings", "IgnoredCCs", std::bitset<128>())
 	, midiImportSpeed(conf, SettingPath("MIDI Settings", "MidiImportSpeed", "", "MidiImportSpeed"), 3)
 	, midiImportPatternLen(conf, SettingPath("MIDI Settings", "MidiImportPatLen", "", "MidiImportPatLen"), 128)
+	// Pattern Editor
+	, gbLoopSong(conf, SettingPath("Pattern Editor", "LoopSong", "", "LoopSong"), true)
+	, gnPatternSpacing(conf, "Pattern Editor", "Spacing", 0)
+	, gbPatternVUMeters(conf, "Pattern Editor", "VU-Meters", false)
+	, gbPatternPluginNames(conf, "Pattern Editor", "Plugin-Names", true)
+	, gbPatternRecord(conf, "Pattern Editor", "Record", true)
+	, m_dwPatternSetup(conf, SettingPath("Pattern Editor", "PatternSetup", "", "PatternSetup"), GetDefaultPatternSetup())
+	, m_nRowHighlightMeasures(conf, SettingPath("Pattern Editor", "RowSpacing", "", "RowSpacing"), 16)
+	, m_nRowHighlightBeats(conf, SettingPath("Pattern Editor", "RowSpacing2", "", "RowSpacing2"), 4)
+	, recordQuantizeRows(conf, "Pattern Editor", "RecordQuantize", 0)
+	, gnAutoChordWaitTime(conf, SettingPath("Pattern Editor", "AutoChordWaitTime", "", "AutoChordWaitTime"), 60)
+	, orderlistMargins(conf, "Pattern Editor", "DefaultSequenceMargins", 0)
+	, rowDisplayOffset(conf, "Pattern Editor", "RowDisplayOffset", 0)
 {
 
-	const MptVersion::VersionNum storedVersion =  gcsPreviousVersion;
+	const MptVersion::VersionNum storedVersion = gcsPreviousVersion;
 
 	// Fixups:
 	// -------
@@ -229,6 +254,32 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 		m_dwMidiSetup = m_dwMidiSetup & ~0x40;
 	}
 
+	// Pattern Editor
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,17,02,50))
+	{
+		m_dwPatternSetup = m_dwPatternSetup | PATTERN_NOTEFADE;
+	}
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,17,03,01))
+	{
+		m_dwPatternSetup = m_dwPatternSetup | PATTERN_RESETCHANNELS;
+	}
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,19,00,07))
+	{
+		m_dwPatternSetup = m_dwPatternSetup & ~0x800;					// this was previously deprecated and is now used for something else
+	}
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,20,00,04))
+	{
+		m_dwPatternSetup = m_dwPatternSetup & ~0x200000;				// dito
+	}
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,20,00,07))
+	{
+		m_dwPatternSetup = m_dwPatternSetup & ~0x400000;				// dito
+	}
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,20,00,39))
+	{
+		m_dwPatternSetup = m_dwPatternSetup & ~0x10000000;			// dito
+	}
+
 	// Last fixup: update config version
 	IniVersion = MptVersion::str;
 	conf.Remove("Settings", "Version");
@@ -238,31 +289,11 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 
 
 
-	gnPatternSpacing = 0;
-	gbPatternRecord = TRUE;
-	gbPatternVUMeters = FALSE;
-	gbPatternPluginNames = TRUE;
-
-	// Audio Setup
-	gnAutoChordWaitTime = 60;
 
 #ifndef NO_EQ
 	// Default EQ settings
 	MemCopy(m_EqSettings, CEQSetupDlg::gEQPresets[0]);
 #endif
-
-	// Pattern Setup
-	gbLoopSong = TRUE;
-	m_dwPatternSetup = PATTERN_PLAYNEWNOTE | PATTERN_EFFECTHILIGHT
-		| PATTERN_SMALLFONT | PATTERN_CENTERROW | PATTERN_DRAGNDROPEDIT
-		| PATTERN_FLATBUTTONS | PATTERN_NOEXTRALOUD | PATTERN_2NDHIGHLIGHT
-		| PATTERN_STDHIGHLIGHT | PATTERN_SHOWPREVIOUS | PATTERN_CONTSCROLL
-		| PATTERN_SYNCMUTE | PATTERN_AUTODELAY | PATTERN_NOTEFADE
-		| PATTERN_LARGECOMMENTS | PATTERN_SHOWDEFAULTVOLUME;
-	m_nRowHighlightMeasures = 16;
-	m_nRowHighlightBeats = 4;
-	recordQuantizeRows = 0;
-	rowDisplayOffset = 0;
 
 	// Sample Editor
 	m_nSampleUndoMaxBuffer = 0;	// Real sample buffer undo size will be set later.
@@ -503,32 +534,6 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 		rgbCustomColors[ncol] = conf.Read<uint32>("Display", s, rgbCustomColors[ncol]);
 	}
 
-	m_dwPatternSetup = conf.Read<uint32>("Pattern Editor", "PatternSetup", m_dwPatternSetup);
-	if(vIniVersion < MAKE_VERSION_NUMERIC(1, 17, 02, 50))
-		m_dwPatternSetup |= PATTERN_NOTEFADE;
-	if(vIniVersion < MAKE_VERSION_NUMERIC(1, 17, 03, 01))
-		m_dwPatternSetup |= PATTERN_RESETCHANNELS;
-	if(vIniVersion < MAKE_VERSION_NUMERIC(1, 19, 00, 07))
-		m_dwPatternSetup &= ~0x800;					// this was previously deprecated and is now used for something else
-	if(vIniVersion < MAKE_VERSION_NUMERIC(1, 20, 00, 04))
-		m_dwPatternSetup &= ~0x200000;				// dito
-	if(vIniVersion < MAKE_VERSION_NUMERIC(1, 20, 00, 07))
-		m_dwPatternSetup &= ~0x400000;				// dito
-	if(vIniVersion < MAKE_VERSION_NUMERIC(1, 20, 00, 39))
-		m_dwPatternSetup &= ~0x10000000;			// dito
-
-	m_nRowHighlightMeasures = conf.Read<uint32>("Pattern Editor", "RowSpacing", m_nRowHighlightMeasures);
-	m_nRowHighlightBeats = conf.Read<uint32>("Pattern Editor", "RowSpacing2", m_nRowHighlightBeats);
-	gbLoopSong = conf.Read<uint32>("Pattern Editor", "LoopSong", gbLoopSong);
-	gnPatternSpacing = conf.Read<uint32>("Pattern Editor", "Spacing", gnPatternSpacing);
-	gbPatternVUMeters = conf.Read<uint32>("Pattern Editor", "VU-Meters", gbPatternVUMeters);
-	gbPatternPluginNames = conf.Read<uint32>("Pattern Editor", "Plugin-Names", gbPatternPluginNames);
-	gbPatternRecord = conf.Read<uint32>("Pattern Editor", "Record", gbPatternRecord);
-	gnAutoChordWaitTime = conf.Read<uint32>("Pattern Editor", "AutoChordWaitTime", gnAutoChordWaitTime);
-	orderlistMargins = conf.Read<int32>("Pattern Editor", "DefaultSequenceMargins", orderlistMargins);
-	rowDisplayOffset = conf.Read<int32>("Pattern Editor", "RowDisplayOffset", rowDisplayOffset);
-	recordQuantizeRows = conf.Read<uint32>("Pattern Editor", "RecordQuantize", recordQuantizeRows);
-
 	m_nSampleUndoMaxBuffer = conf.Read<int32>("Sample Editor" , "UndoBufferSize", m_nSampleUndoMaxBuffer >> 20);
 	m_nSampleUndoMaxBuffer = MAX(1, m_nSampleUndoMaxBuffer) << 20;
 	m_MayNormalizeSamplesOnLoad = conf.Read<bool>("Sample Editor" , "MayNormalizeSamplesOnLoad", m_MayNormalizeSamplesOnLoad);
@@ -607,7 +612,6 @@ void TrackerSettings::LoadINISettings(SettingsContainer &conf)
 #define SETTINGS_REGKEY_BASE		"Software\\Olivier Lapicque\\"
 #define SETTINGS_REGKEY_DEFAULT		"ModPlug Tracker"
 #define SETTINGS_REGEXT_WINDOW		"\\Window"
-#define SETTINGS_REGEXT_PATTERNEDITOR	"\\Pattern Editor"
 
 void TrackerSettings::LoadRegistryEQ(HKEY key, LPCSTR pszName, EQPreset *pEqSettings)
 //-----------------------------------------------------------------------------------
@@ -630,10 +634,8 @@ bool TrackerSettings::LoadRegistrySettings()
 	CString m_csRegKey;
 	CString m_csRegExt;
 	CString m_csRegWindow;
-	CString m_csRegPatternEditor;
 	m_csRegKey.Format("%s%s", SETTINGS_REGKEY_BASE, SETTINGS_REGKEY_DEFAULT);
 	m_csRegWindow.Format("%s%s", m_csRegKey, SETTINGS_REGEXT_WINDOW);
-	m_csRegPatternEditor.Format("%s%s", m_csRegKey, SETTINGS_REGEXT_PATTERNEDITOR);
 
 	HKEY key;
 	DWORD dwREG_DWORD = REG_DWORD;
@@ -693,13 +695,6 @@ bool TrackerSettings::LoadRegistrySettings()
 		RegQueryValueEx(key, "ProLogicDepth", NULL, &dwREG_DWORD, (LPBYTE)&m_DSPSettings.m_nProLogicDepth, &dwDWORDSize);
 		RegQueryValueEx(key, "ProLogicDelay", NULL, &dwREG_DWORD, (LPBYTE)&m_DSPSettings.m_nProLogicDelay, &dwDWORDSize);
 #endif
-		RegQueryValueEx(key, "PatternSetup", NULL, &dwREG_DWORD, (LPBYTE)&m_dwPatternSetup, &dwDWORDSize);
-		m_dwPatternSetup &= ~(0x800|0x200000|0x400000);	// various deprecated old options
-		m_dwPatternSetup |= PATTERN_NOTEFADE; // Set flag to maintain old behaviour (was changed in 1.17.02.50).
-		m_dwPatternSetup |= PATTERN_RESETCHANNELS; // Set flag to reset channels on loop was changed in 1.17.03.01).
-		RegQueryValueEx(key, "RowSpacing", NULL, &dwREG_DWORD, (LPBYTE)&m_nRowHighlightMeasures, &dwDWORDSize);
-		RegQueryValueEx(key, "RowSpacing2", NULL, &dwREG_DWORD, (LPBYTE)&m_nRowHighlightBeats, &dwDWORDSize);
-		RegQueryValueEx(key, "LoopSong", NULL, &dwREG_DWORD, (LPBYTE)&gbLoopSong, &dwDWORDSize);
 #ifndef NO_EQ
 		// EQ
 		LoadRegistryEQ(key, "EQ_Settings", &m_EqSettings);
@@ -709,10 +704,6 @@ bool TrackerSettings::LoadRegistrySettings()
 		LoadRegistryEQ(key, "EQ_User4", &CEQSetupDlg::gUserPresets[3]);
 #endif
 
-		//rewbs.autochord
-		dwDWORDSize = sizeof(gnAutoChordWaitTime);
-		RegQueryValueEx(key, "AutoChordWaitTime", NULL, &dwREG_DWORD, (LPBYTE)&gnAutoChordWaitTime, &dwDWORDSize);
-		//end rewbs.autochord
 
 		//rewbs.autoSave
 		dwDWORDSize = sizeof(asEnabled);
@@ -741,17 +732,6 @@ bool TrackerSettings::LoadRegistrySettings()
 	}
 
 	CMainFrame::m_pAutoSaver = new CAutoSaver(asEnabled, asInterval, asBackupHistory, asUseOriginalPath, asPath, asFileNameTemplate);
-
-	if(RegOpenKeyEx(HKEY_CURRENT_USER, m_csRegPatternEditor, 0, KEY_READ, &key) == ERROR_SUCCESS)
-	{
-		dwDWORDSize = sizeof(gnPatternSpacing);
-		RegQueryValueEx(key, "Spacing", NULL, &dwREG_DWORD, (LPBYTE)&gnPatternSpacing, &dwDWORDSize);
-		dwDWORDSize = sizeof(gbPatternVUMeters);
-		RegQueryValueEx(key, "VU-Meters", NULL, &dwREG_DWORD, (LPBYTE)&gbPatternVUMeters, &dwDWORDSize);
-		dwDWORDSize = sizeof(gbPatternPluginNames);
-		RegQueryValueEx(key, "Plugin-Names", NULL, &dwREG_DWORD, (LPBYTE)&gbPatternPluginNames, &dwDWORDSize);
-		RegCloseKey(key);
-	}
 
 	return true;
 }
@@ -789,17 +769,6 @@ void TrackerSettings::SaveSettings()
 		wsprintf(s, "Color%02d", ncol);
 		conf.Write<uint32>("Display", s, rgbCustomColors[ncol]);
 	}
-
-	conf.Write<uint32>("Pattern Editor", "PatternSetup", m_dwPatternSetup);
-	conf.Write<uint32>("Pattern Editor", "RowSpacing", m_nRowHighlightMeasures);
-	conf.Write<uint32>("Pattern Editor", "RowSpacing2", m_nRowHighlightBeats);
-	conf.Write<uint32>("Pattern Editor", "LoopSong", gbLoopSong);
-	conf.Write<uint32>("Pattern Editor", "Spacing", gnPatternSpacing);
-	conf.Write<uint32>("Pattern Editor", "VU-Meters", gbPatternVUMeters);
-	conf.Write<uint32>("Pattern Editor", "Plugin-Names", gbPatternPluginNames);
-	conf.Write<uint32>("Pattern Editor", "Record", gbPatternRecord);
-	conf.Write<uint32>("Pattern Editor", "AutoChordWaitTime", gnAutoChordWaitTime);
-	conf.Write<uint32>("Pattern Editor", "RecordQuantize", recordQuantizeRows);
 
 	conf.Write<uint32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize());
 

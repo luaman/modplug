@@ -309,16 +309,20 @@ public:
 	Setting<int32> midiImportSpeed;
 	Setting<int32> midiImportPatternLen;
 
-	// Pattern Setup
-	DWORD gbLoopSong;
-	UINT gnPatternSpacing;
-	BOOL gbPatternVUMeters, gbPatternPluginNames, gbPatternRecord;
-	DWORD m_dwPatternSetup, m_nKeyboardCfg;
-	DWORD m_nRowHighlightMeasures, m_nRowHighlightBeats;	// primary (measures) and secondary (beats) highlight
-	ROWINDEX recordQuantizeRows;
-	bool m_bHideUnavailableCtxMenuItems;
-	int orderlistMargins;
-	int rowDisplayOffset;
+	// Pattern Editor
+
+	Setting<bool> gbLoopSong;
+	CachedSetting<UINT> gnPatternSpacing;
+	CachedSetting<bool> gbPatternVUMeters;
+	CachedSetting<bool> gbPatternPluginNames;
+	CachedSetting<bool> gbPatternRecord;
+	CachedSetting<uint32> m_dwPatternSetup;
+	CachedSetting<uint32> m_nRowHighlightMeasures; // primary (measures) and secondary (beats) highlight
+	CachedSetting<uint32> m_nRowHighlightBeats;	// primary (measures) and secondary (beats) highlight
+	CachedSetting<ROWINDEX> recordQuantizeRows;
+	CachedSetting<UINT> gnAutoChordWaitTime;
+	CachedSetting<int32> orderlistMargins;
+	CachedSetting<int32> rowDisplayOffset;
 
 	// Sample Editor Setup
 	UINT m_nSampleUndoMaxBuffer;
@@ -334,8 +338,6 @@ public:
 #ifndef NO_DSP
 	CDSPSettings m_DSPSettings;
 #endif
-
-	UINT gnAutoChordWaitTime;
 
 	// Chords
 	MPTChords Chords;
