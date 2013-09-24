@@ -192,6 +192,11 @@ SettingsContainer::SettingsContainer(ISettingsBackend *backend, ISettingsBackend
 	ASSERT(backend);
 }
 
+void SettingsContainer::RemoveOldBackend()
+{
+	oldBackend = nullptr;
+}
+
 
 
 

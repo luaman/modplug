@@ -586,6 +586,7 @@ private:
 	SettingsContainer& operator = (const SettingsContainer &other); // disable
 public:
 	SettingsContainer(ISettingsBackend *backend, ISettingsBackend *oldBackend = nullptr);
+	void RemoveOldBackend();
 	template <typename T>
 	T Read(const SettingPath &path, const T &def, const SettingMetadata &metadata = SettingMetadata()) const
 	{

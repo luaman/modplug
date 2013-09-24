@@ -303,8 +303,7 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	// Write updated settings
 	conf.Flush();
 
-
-
+	// old and messy stuff follows:
 
 #ifndef NO_EQ
 	// Default EQ settings
@@ -338,6 +337,10 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 			Chords[ichord].notes[2] = (uint8)(ichord-1);
 		}
 	}
+
+	// more old and messy stuff:
+
+	LoadSettings();
 	
 }
 
@@ -345,7 +348,8 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 DWORD TrackerSettings::GetSoundDeviceFlags() const
 //------------------------------------------------
 {
-	return (m_SoundDeviceExclusiveMode ? SNDDEV_OPTIONS_EXCLUSIVE : 0) | (m_SoundDeviceBoostThreadPriority ? SNDDEV_OPTIONS_BOOSTTHREADPRIORITY : 0);
+	return (m_SoundDeviceExclusiveMode ? SNDDEV_OPTIONS_EXCLUSIVE : 0)
+		| (m_SoundDeviceBoostThreadPriority ? SNDDEV_OPTIONS_BOOSTTHREADPRIORITY : 0);
 }
 
 void TrackerSettings::SetSoundDeviceFlags(DWORD flags)
@@ -452,7 +456,7 @@ void TrackerSettings::LoadSettings()
 	// If it isn't, try loading from Registry first, then from the INI file.
 	if (storedVersion >= "1.17.02.40" || !LoadRegistrySettings())
 	{
-		LoadINISettings(conf);
+		LoadINISettings();
 	}
 
 	// The following stuff was also stored in mptrack.ini while the registry was still being used...
@@ -493,10 +497,9 @@ void TrackerSettings::LoadSettings()
 }
 
 
-void TrackerSettings::LoadINISettings(SettingsContainer &conf)
-//------------------------------------------------------------
+void TrackerSettings::LoadINISettings()
+//-------------------------------------
 {
-	MptVersion::VersionNum vIniVersion = gcsPreviousVersion;
 
 	// Internet Update
 	{
@@ -837,7 +840,6 @@ void TrackerSettings::SaveSettings()
 		conf.Write<std::string>("Zxx Macros", snam, macros.szMidiZXXExt[izxx]);
 	}
 
-	CMainFrame::GetMainFrame()->SaveBarState("Toolbars");
 }
 
 
