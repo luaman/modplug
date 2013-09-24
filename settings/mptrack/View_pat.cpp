@@ -4368,7 +4368,7 @@ LRESULT CViewPattern::OnCustomKeyMsg(WPARAM wParam, LPARAM /*lParam*/)
 		case kcSwitchToOrderList: OnSwitchToOrderList();
 		case kcToggleOverflowPaste:	TrackerSettings::Instance().m_dwPatternSetup ^= PATTERN_OVERFLOWPASTE; return wParam;
 		case kcToggleNoteOffRecordPC: TrackerSettings::Instance().m_dwPatternSetup ^= PATTERN_KBDNOTEOFF; return wParam;
-		case kcToggleNoteOffRecordMIDI: TrackerSettings::Instance().m_dwMidiSetup = TrackerSettings::Instance().m_dwMidiSetup ^ MIDISETUP_RECORDNOTEOFF; return wParam;
+		case kcToggleNoteOffRecordMIDI: TrackerSettings::Instance().m_dwMidiSetup ^= MIDISETUP_RECORDNOTEOFF; return wParam;
 		case kcPatternEditPCNotePlugin: OnTogglePCNotePluginEditor(); return wParam;
 		case kcQuantizeSettings: OnSetQuantize(); return wParam;
 		case kcFindInstrument: FindInstrument(); return wParam;

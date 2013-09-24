@@ -1122,9 +1122,9 @@ void CMainFrame::UpdateAudioParameters(CSoundFile &sndFile, bool reset)
 {
 	CriticalSection cs;
 	if (TrackerSettings::Instance().m_dwPatternSetup & PATTERN_MUTECHNMODE)
-		TrackerSettings::Instance().MixerFlags = TrackerSettings::Instance().MixerFlags | SNDMIX_MUTECHNMODE;
+		TrackerSettings::Instance().MixerFlags |= SNDMIX_MUTECHNMODE;
 	else
-		TrackerSettings::Instance().MixerFlags = TrackerSettings::Instance().MixerFlags & ~SNDMIX_MUTECHNMODE;
+		TrackerSettings::Instance().MixerFlags &= ~SNDMIX_MUTECHNMODE;
 	sndFile.SetMixerSettings(TrackerSettings::Instance().GetMixerSettings());
 	sndFile.SetResamplerSettings(TrackerSettings::Instance().GetResamplerSettings());
 	UpdateDspEffects(sndFile, false); // reset done in next line
@@ -1745,9 +1745,9 @@ BOOL CMainFrame::SetupMiscOptions()
 //---------------------------------
 {
 	if (TrackerSettings::Instance().m_dwPatternSetup & PATTERN_MUTECHNMODE)
-		TrackerSettings::Instance().MixerFlags = TrackerSettings::Instance().MixerFlags | SNDMIX_MUTECHNMODE;
+		TrackerSettings::Instance().MixerFlags |= SNDMIX_MUTECHNMODE;
 	else
-		TrackerSettings::Instance().MixerFlags = TrackerSettings::Instance().MixerFlags & ~SNDMIX_MUTECHNMODE;
+		TrackerSettings::Instance().MixerFlags &= ~SNDMIX_MUTECHNMODE;
 	{
 		CriticalSection cs;
 		if(GetSoundFilePlaying()) UpdateAudioParameters(*GetSoundFilePlaying());

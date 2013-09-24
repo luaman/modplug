@@ -1251,9 +1251,9 @@ void MsgBoxHidable(enMsgBoxHidableMessage enMsg)
 
 	// Update visibility flags.
 	if(dlg.m_nCheckStatus == BST_CHECKED)
-		TrackerSettings::Instance().gnMsgBoxVisiblityFlags = TrackerSettings::Instance().gnMsgBoxVisiblityFlags & ~mask;
+		TrackerSettings::Instance().gnMsgBoxVisiblityFlags &= ~mask;
 	else
-		TrackerSettings::Instance().gnMsgBoxVisiblityFlags = TrackerSettings::Instance().gnMsgBoxVisiblityFlags | mask;
+		TrackerSettings::Instance().gnMsgBoxVisiblityFlags |= mask;
 }
 
 
