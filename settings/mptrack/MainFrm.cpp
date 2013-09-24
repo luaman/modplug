@@ -482,8 +482,9 @@ void CMainFrame::OnClose()
 
 	// Save Settings
 	RemoveControlBar(&m_wndStatusBar); // Remove statusbar so that its state won't get saved.
-	TrackerSettings::Instance().SaveSettings();
+	SaveBarState("Toolbars");
 	AddControlBar(&m_wndStatusBar); // Restore statusbar to mainframe.
+	TrackerSettings::Instance().SaveSettings();
 
 	if(m_InputHandler && m_InputHandler->activeCommandSet)
 	{

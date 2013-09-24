@@ -851,6 +851,16 @@ BOOL CTrackApp::InitInstance()
 
 	TrackerSettings::Instance().LoadSettings();
 
+	if(m_pSettingsRegistry)
+	{
+		// Registry backend is only needed while loading and importing old settings.
+		// Remove it here to avoid overhead.
+		m_pSettings->Flush();
+		m_pSettings->RemoveOldBackend();
+		delete m_pSettingsRegistry;
+		m_pSettingsRegistry = nullptr;
+	}
+
 	m_pPluginCache = new IniFileSettingsContainer(m_szPluginCacheFileName);
 
 	int mruListLength = GetSettings().Read<int32>("Misc", "MRUListLength", 10);

@@ -347,8 +347,8 @@ public:
 
 	TrackerSettings(SettingsContainer &conf);
 
-	void LoadSettings();
 	void SaveSettings();
+
 	static void GetDefaultColourScheme(COLORREF (&colours)[MAX_MODCOLORS]);
 
 	// access to default + working directories
@@ -366,7 +366,9 @@ public:
 
 protected:
 
-	void LoadINISettings(SettingsContainer &conf);
+	void LoadSettings();
+
+	void LoadINISettings();
 
 	void LoadRegistryEQ(HKEY key, LPCSTR pszName, EQPreset *pEqSettings);
 	bool LoadRegistrySettings();
