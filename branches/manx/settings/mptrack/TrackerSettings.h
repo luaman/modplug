@@ -377,8 +377,6 @@ protected:
 
 	void LoadSettings();
 
-	void LoadINISettings();
-
 	void FixupEQ(EQPreset *pEqSettings);
 
 	void LoadChords(MPTChords &chords);
