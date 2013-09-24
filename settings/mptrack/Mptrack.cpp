@@ -849,8 +849,6 @@ BOOL CTrackApp::InitInstance()
 
 	m_pTrackerSettings = new TrackerSettings(*m_pSettings);
 
-	TrackerSettings::Instance().LoadSettings();
-
 	if(m_pSettingsRegistry)
 	{
 		// Registry backend is only needed while loading and importing old settings.
