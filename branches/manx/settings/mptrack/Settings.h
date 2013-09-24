@@ -369,7 +369,7 @@ class SettingState
 private:
 	SettingValue value;
 #if defined(MPT_SETTINGS_CACHE_STORE_DEFAULTS)
-	SettingValue defaultValue;
+	const SettingValue defaultValue;
 #endif // MPT_SETTINGS_CACHE_STORE_DEFAULTS
 	bool dirty;
 public:
@@ -549,38 +549,9 @@ private:
 	void BackendsWriteSetting(const SettingPath &path, const SettingValue &val);
 	void BackendsRemoveSetting(const SettingPath &path);
 	void NotifyListeners(const SettingPath &path);
-	SettingValue ReadSetting(const SettingPath &path, const SettingValue &def, const SettingMetadata &metadata) const
-	{
-		SettingsMap::iterator entry = map.find(path);
-		if(entry == map.end())
-		{
-			entry = map.insert(map.begin(), std::make_pair(path, SettingState(def).assign(BackendsReadSetting(path, def), false)));
-			mapMetadata[path] = metadata;
-		}
-		return entry->second;
-	}
-	void WriteSetting(const SettingPath &path, const SettingValue &val)
-	{
-		SettingsMap::iterator entry = map.find(path);
-		if(entry == map.end())
-		{
-			map[path] = val;
-			entry = map.find(path);
-		} else
-		{
-			entry->second = val;
-		}
-		NotifyListeners(path);
-#if defined(MPT_SETTINGS_IMMEDIATE_FLUSH)
-		BackendsWriteSetting(path, val);
-		entry->second.Clean();
-#endif
-	}
-	void RemoveSetting(const SettingPath &path)
-	{
-		map.erase(path);
-		BackendsRemoveSetting(path);
-	}
+	SettingValue ReadSetting(const SettingPath &path, const SettingValue &def, const SettingMetadata &metadata) const;
+	void WriteSetting(const SettingPath &path, const SettingValue &val);
+	void RemoveSetting(const SettingPath &path);
 private:
 	SettingsContainer(const SettingsContainer &other); // disable
 	SettingsContainer& operator = (const SettingsContainer &other); // disable
@@ -588,12 +559,12 @@ public:
 	SettingsContainer(ISettingsBackend *backend, ISettingsBackend *oldBackend = nullptr);
 	void RemoveOldBackend();
 	template <typename T>
-	T Read(const SettingPath &path, const T &def, const SettingMetadata &metadata = SettingMetadata()) const
+	T Read(const SettingPath &path, const T &def = T(), const SettingMetadata &metadata = SettingMetadata()) const
 	{
 		return FromSettingValue<T>(ReadSetting(path, ToSettingValue<T>(def), metadata));
 	}
 	template <typename T>
-	T Read(const std::string &section, const std::string &key, const T &def, const SettingMetadata &metadata = SettingMetadata()) const
+	T Read(const std::string &section, const std::string &key, const T &def = T(), const SettingMetadata &metadata = SettingMetadata()) const
 	{
 		return FromSettingValue<T>(ReadSetting(SettingPath(section, key), ToSettingValue<T>(def), metadata));
 	}
@@ -637,21 +608,18 @@ class Setting
 private:
 	SettingsContainer &conf;
 	const SettingPath path;
-	const T defaultValue;
 public:
 	Setting(SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
 		: conf(conf_)
 		, path(section, key)
-		, defaultValue(def)
 	{
-		conf.Read(path, defaultValue, metadata); // set default value
+		conf.Read(path, def, metadata); // set default value
 	}
 	Setting(SettingsContainer &conf_, const SettingPath &path_, const T&def, const SettingMetadata &metadata = SettingMetadata())
 		: conf(conf_)
 		, path(path_)
-		, defaultValue(def)
 	{
-		conf.Read(path, defaultValue, metadata); // set default value
+		conf.Read(path, def, metadata); // set default value
 	}
 	SettingPath GetPath() const
 	{
@@ -664,11 +632,11 @@ public:
 	}
 	operator const T () const
 	{
-		return conf.Read(path, defaultValue);
+		return conf.Read<T>(path);
 	}
 	const T Get() const
 	{
-		return conf.Read(path, defaultValue);
+		return conf.Read<T>(path);
 	}
 	template<typename Trhs> Setting & operator += (const Trhs &rhs) { T tmp = *this; tmp += rhs; *this = tmp; return *this; }
 	template<typename Trhs> Setting & operator -= (const Trhs &rhs) { T tmp = *this; tmp -= rhs; *this = tmp; return *this; }
@@ -687,13 +655,11 @@ private:
 	T value;
 	SettingsContainer &conf;
 	const SettingPath path;
-	const T defaultValue;
 public:
 	CachedSetting(SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
 		: value(def)
 		, conf(conf_)
 		, path(section, key)
-		, defaultValue(def)
 	{
 		value = conf.Read(path, def, metadata);
 		conf.Register(this, path);
@@ -702,7 +668,6 @@ public:
 		: value(def)
 		, conf(conf_)
 		, path(path_)
-		, defaultValue(def)
 	{
 		value = conf.Read(path, def, metadata);
 		conf.Register(this, path);
@@ -731,7 +696,7 @@ public:
 	}
 	CachedSetting & Update()
 	{
-		value = conf.Read(path, defaultValue);
+		value = conf.Read<T>(path);
 		return *this;
 	}
 	void SettingChanged(const SettingPath &path)
