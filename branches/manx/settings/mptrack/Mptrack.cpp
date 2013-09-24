@@ -27,6 +27,7 @@
 #include "../common/StringFixer.h"
 #include "ExceptionHandler.h"
 #include "CloseMainDialog.h"
+#include "AutoSaver.h"
 
 // rewbs.memLeak
 #define _CRTDBG_MAP_ALLOC
@@ -834,6 +835,9 @@ BOOL CTrackApp::InitInstance()
 
 	// Set up paths to store configuration in
 	SetupPaths(cmdInfo.m_bPortable);
+
+	// Construct auto saver instance, class TrackerSettings expects it being available.
+	CMainFrame::m_pAutoSaver = new CAutoSaver();
 
 	m_pSettingsIniFile = new IniFileSettingsBackend(m_szConfigFileName);
 	
@@ -2191,6 +2195,15 @@ void CTrackApp::AbsolutePathToRelative(TCHAR (&szPath)[nLength])
 	mpt::String::SetNullTerminator(szPath);
 }
 
+CString CTrackApp::AbsolutePathToRelative(const CString &path)
+//------------------------------------------------------------
+{
+	TCHAR szPath[_MAX_PATH] = "";
+	mpt::String::Copy(szPath, std::string(path.GetString()));
+	AbsolutePathToRelative(szPath);
+	return szPath;
+}
+
 
 // Convert a relative path to an absolute path.
 // Paths are relative to the executable path.
@@ -2228,6 +2241,16 @@ void CTrackApp::RelativePathToAbsolute(TCHAR (&szPath)[nLength])
 	}
 	mpt::String::SetNullTerminator(szPath);
 }
+
+CString CTrackApp::RelativePathToAbsolute(const CString &path)
+//------------------------------------------------------------
+{
+	TCHAR szPath[_MAX_PATH] = "";
+	mpt::String::Copy(szPath, std::string(path.GetString()));
+	RelativePathToAbsolute(szPath);
+	return szPath;
+}
+
 
 void CTrackApp::RemoveMruItem(const int nItem)
 //--------------------------------------------

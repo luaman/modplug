@@ -191,8 +191,10 @@ public:
 	// Relative / absolute paths conversion
 	template <size_t nLength>
 	void AbsolutePathToRelative(TCHAR (&szPath)[nLength]);
+	CString AbsolutePathToRelative(const CString &path);
 	template <size_t nLength>
 	void RelativePathToAbsolute(TCHAR (&szPath)[nLength]);
+	CString RelativePathToAbsolute(const CString &path);
 
 	/// Removes item from MRU-list; most recent item has index zero.
 	void RemoveMruItem(const int nItem);
