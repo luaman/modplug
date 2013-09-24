@@ -669,42 +669,13 @@ public:
 	{
 		return conf.Read(path, defaultValue);
 	}
-};
-
-template <typename T>
-class ConstSetting
-{
-private:
-	const SettingsContainer &conf;
-	const SettingPath path;
-	const T defaultValue;
-public:
-	ConstSetting(const SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
-		: conf(conf_)
-		, path(section, key)
-		, defaultValue(def)
-	{
-		conf.Read(path, defaultValue, metadata); // set default value
-	}
-	ConstSetting(const SettingsContainer &conf_, const SettingPath &path_, const T&def, const SettingMetadata &metadata = SettingMetadata())
-		: conf(conf_)
-		, path(path_)
-		, defaultValue(def)
-	{
-		conf.Read(path, defaultValue, metadata); // set default value
-	}
-	SettingPath GetPath() const
-	{
-		return path;
-	}
-	operator const T () const
-	{
-		return conf.Read(path, defaultValue);
-	}
-	const T Get() const
-	{
-		return conf.Read(path, defaultValue);
-	}
+	template<typename Trhs> Setting & operator += (const Trhs &rhs) { T tmp = *this; tmp += rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator -= (const Trhs &rhs) { T tmp = *this; tmp -= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator *= (const Trhs &rhs) { T tmp = *this; tmp *= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator /= (const Trhs &rhs) { T tmp = *this; tmp /= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator |= (const Trhs &rhs) { T tmp = *this; tmp |= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator &= (const Trhs &rhs) { T tmp = *this; tmp &= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator ^= (const Trhs &rhs) { T tmp = *this; tmp ^= rhs; *this = tmp; return *this; }
 };
 
 template <typename T>
@@ -767,6 +738,13 @@ public:
 		UNREFERENCED_PARAMETER(path);
 		Update();
 	}
+	template<typename Trhs> CachedSetting & operator += (const Trhs &rhs) { T tmp = *this; tmp += rhs; *this = tmp; return *this; }
+	template<typename Trhs> CachedSetting & operator -= (const Trhs &rhs) { T tmp = *this; tmp -= rhs; *this = tmp; return *this; }
+	template<typename Trhs> CachedSetting & operator *= (const Trhs &rhs) { T tmp = *this; tmp *= rhs; *this = tmp; return *this; }
+	template<typename Trhs> CachedSetting & operator /= (const Trhs &rhs) { T tmp = *this; tmp /= rhs; *this = tmp; return *this; }
+	template<typename Trhs> CachedSetting & operator |= (const Trhs &rhs) { T tmp = *this; tmp |= rhs; *this = tmp; return *this; }
+	template<typename Trhs> CachedSetting & operator &= (const Trhs &rhs) { T tmp = *this; tmp &= rhs; *this = tmp; return *this; }
+	template<typename Trhs> CachedSetting & operator ^= (const Trhs &rhs) { T tmp = *this; tmp ^= rhs; *this = tmp; return *this; }
 };
 
 
