@@ -17,12 +17,17 @@
 
 #include "libopenmpt_settings.hpp"
 
+#include "svn_version.h"
+static char * in_openmpt_string = "in_openmpt " OPENMPT_API_VERSION_STRING "." OPENMPT_API_VERSION_STRINGIZE(OPENMPT_VERSION_REVISION);
+
 #define LIBOPENMPT_WINAMP_API LIBOPENMPT_API
 
 #define NOMINMAX
 #include <windows.h>
 
+#define UNICODE_INPUT_PLUGIN
 #include "winamp/IN2.H"
+#include "winamp/wa_ipc.h"
 
 #include <algorithm>
 #include <fstream>
@@ -35,7 +40,6 @@
 #define WINAMP_DSP_HEADROOM_FACTOR 2
 #define WINAMP_BUFFER_SIZE_FRAMES  576
 
-#define WM_WA_MPEG_EOF  (WM_USER+2)
 #define WM_OPENMPT_SEEK (WM_USER+3)
 
 #define SHORT_TITLE "in_openmpt"
@@ -73,7 +77,7 @@ struct self_winamp_t {
 	openmpt::settings::settings settings;
 	int samplerate;
 	int channels;
-	std::string cached_filename;
+	std::wstring cached_filename;
 	std::wstring cached_title;
 	int cached_length;
 	std::wstring cached_infotext;
@@ -98,7 +102,7 @@ struct self_winamp_t {
 		filetypes_string.push_back('\0');
 		samplerate = settings.samplerate;
 		channels = settings.channels;
-		cached_filename = "";
+		cached_filename = std::wstring();
 		cached_title = std::wstring();
 		cached_length = 0;
 		cached_infotext = std::wstring();
@@ -132,9 +136,9 @@ extern In_Module inmod;
 
 static DWORD WINAPI DecodeThread( LPVOID );
 
-static std::wstring generate_infotext( const std::string & filename, const openmpt::module & mod ) {
+static std::wstring generate_infotext( const std::wstring & filename, const openmpt::module & mod ) {
 	std::wostringstream str;
-	str << L"filename: " << StringDecode( filename, CP_ACP ) << std::endl;
+	str << L"filename: " << filename << std::endl;
 	str << L"duration: " << mod.get_duration_seconds() << L"seconds" << std::endl;
 	std::vector<std::string> metadatakeys = mod.get_metadata_keys();
 	for ( std::vector<std::string>::iterator key = metadatakeys.begin(); key != metadatakeys.end(); ++key ) {
@@ -193,11 +197,11 @@ static void quit() {
 	}
 }
 
-static int isourfile( char * fn ) {
+static int isourfile( const in_char * fn ) {
 	return 0;
 }
 
-static int play( char * fn ) {
+static int play( const in_char * fn ) {
 	if ( !fn ) {
 		return -1;
 	}
@@ -279,8 +283,8 @@ static void setpan( int pan ) {
 	inmod.outMod->SetPan( pan );
 }
 
-static int infobox( char * fn, HWND hWndParent ) {
-	if ( fn && fn[0] != '\0' && self->cached_filename != std::string(fn) ) {
+static int infobox( const in_char * fn, HWND hWndParent ) {
+	if ( fn && fn[0] != '\0' && self->cached_filename != std::wstring(fn) ) {
 		try {
 			std::ifstream s( fn, std::ios::binary );
 			openmpt::module mod( s );
@@ -293,13 +297,17 @@ static int infobox( char * fn, HWND hWndParent ) {
 	return 0;
 }
 
-static void getfileinfo( char * filename, char * title, int * length_in_ms ) {
+static void getfileinfo( const in_char * filename, in_char * title, int * length_in_ms ) {
 	if ( !filename || *filename == '\0' ) {
 		if ( length_in_ms ) {
 			*length_in_ms = self->cached_length;
 		}
 		if ( title ) {
-			strcpy( title, StringEncode( self->cached_title, CP_ACP ).c_str() );
+			std::wstring truncated_title = self->cached_title;
+			if ( truncated_title.length() >= GETFILEINFO_TITLE_LENGTH ) {
+				truncated_title.resize( GETFILEINFO_TITLE_LENGTH - 1 );
+			}
+			wcscpy( title, truncated_title.c_str() );
 		}
 	} else {
 		try {
@@ -309,7 +317,11 @@ static void getfileinfo( char * filename, char * title, int * length_in_ms ) {
 				*length_in_ms = static_cast<int>( mod.get_duration_seconds() * 1000.0 );
 			}
 			if ( title ) {
-				strcpy( title, StringEncode( StringDecode( mod.get_metadata("title"), CP_UTF8 ), CP_ACP ).c_str() );
+				std::wstring truncated_title = StringDecode( mod.get_metadata("title"), CP_UTF8 );
+				if ( truncated_title.length() >= GETFILEINFO_TITLE_LENGTH ) {
+					truncated_title.resize( GETFILEINFO_TITLE_LENGTH - 1 );
+				}
+				wcscpy( title, truncated_title.c_str() );
 			}
 		} catch ( ... ) {
 		}
@@ -399,7 +411,7 @@ static DWORD WINAPI DecodeThread( LPVOID ) {
 
 In_Module inmod = {
 	IN_VER,
-	openmpt::version::in_openmpt_string, // SHORT_TITLE,
+	in_openmpt_string, // SHORT_TITLE,
 	0, // hMainWindow
 	0, // hDllInstance
 	NULL, // filled later in Init() "mptm\0ModPlug Tracker Module (*.mptm)\0",
