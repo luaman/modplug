@@ -310,7 +310,6 @@ protected:
 
 	// Notification Buffer
 	Util::mutex m_NotificationBufferMutex; // to avoid deadlocks, this mutex should only be taken as a innermost lock, i.e. do not block on anything while holding this mutex
-	int64 m_TotalSamplesRendered;
 	Util::fixed_size_queue<Notification,MAX_UPDATE_HISTORY> m_NotifyBuffer;
 	HANDLE m_PendingNotificationSempahore; // protects the one notification that is in flight from the notification thread to the gui thread from being freed while the gui thread still uses it
 
@@ -335,15 +334,14 @@ public:
 	// from ISoundSource
 	void FillAudioBufferLocked(IFillAudioBuffer &callback);
 	void AudioRead(const SoundDeviceSettings &settings, PVOID pData, ULONG NumSamples);
-	void AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples, ULONG SamplesLatency);
-	void AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples);
+	void AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples, int64 streamPosition);
 	
-	bool audioTryOpeningDevice(UINT channels, SampleFormat sampleFormat, UINT samplespersec);
+	bool audioTryOpeningDevice();
 	bool audioOpenDevice();
 	bool audioReopenDevice();
 	void audioCloseDevice();
 	bool IsAudioDeviceOpen() const;
-	BOOL DoNotification(uint32 samplerate, DWORD dwSamplesRead, DWORD SamplesLatency, bool hasSoundDeviceGetStreamPosition);
+	bool DoNotification(DWORD dwSamplesRead, int64 streamPosition);
 
 // Midi Input Functions
 public:

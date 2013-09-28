@@ -21,6 +21,7 @@
 
 class CModDoc;
 class CVstPluginManager;
+class SoundDevicesManager;
 class CDLSBank;
 class TrackerSettings;
 
@@ -119,6 +120,7 @@ protected:
 	IniFileSettingsContainer *m_pPluginCache;
 	CMultiDocTemplate *m_pModTemplate;
 	CVstPluginManager *m_pPluginManager;
+	SoundDevicesManager *m_pSoundDevicesManager;
 	BOOL m_bInitialized;
 	DWORD m_dwTimeStarted, m_dwLastPluginIdleCall;
 	// Default macro configuration
@@ -165,6 +167,7 @@ public:
 public:
 	CDocTemplate *GetModDocTemplate() const { return m_pModTemplate; }
 	CVstPluginManager *GetPluginManager() const { return m_pPluginManager; }
+	SoundDevicesManager *GetSoundDevicesManager() const { return m_pSoundDevicesManager; }
 	void GetDefaultMidiMacro(MIDIMacroConfig &cfg) const { cfg = m_MidiCfg; }
 	void SetDefaultMidiMacro(const MIDIMacroConfig &cfg) { m_MidiCfg = cfg; }
 	std::string GetConfigFileName() const { return m_szConfigFileName; }
