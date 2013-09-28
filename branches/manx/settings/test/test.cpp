@@ -586,7 +586,7 @@ struct CustomSettingsTestType
 {
 	float x;
 	float y;
-	CustomSettingsTestType(float x_, float y_) : x(x_), y(y_) { }
+	CustomSettingsTestType(float x_ = 0.0f, float y_ = 0.0f) : x(x_), y(y_) { }
 };
 
 } // namespace MptTest
