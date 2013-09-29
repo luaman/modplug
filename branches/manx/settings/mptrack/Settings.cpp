@@ -17,29 +17,32 @@
 #include "../common/StringFixer.h"
 #include "Mptrack.h"
 
+#include <algorithm>
+#include <fstream>
+#include <iterator>
 
 
-static const char EncodeNibble[16] = { '0', '1', '2', '3', '4', '5' ,'6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+static const wchar_t EncodeNibble[16] = { L'0', L'1', L'2', L'3', L'4', L'5', L'6', L'7', L'8', L'9', L'A', L'B', L'C', L'D', L'E', L'F' };
 
-static inline bool DecodeByte(uint8 &byte, char c1, char c2)
+static inline bool DecodeByte(uint8 &byte, wchar_t c1, wchar_t c2)
 {
 	byte = 0;
-	if('0' <= c1 && c1 <= '9')
+	if(L'0' <= c1 && c1 <= L'9')
 	{
-		byte += (c1 - '0') << 4;
-	} else if('A' <= c1 && c1 <= 'F')
+		byte += static_cast<uint8>((c1 - L'0') << 4);
+	} else if(L'A' <= c1 && c1 <= L'F')
 	{
-		byte += (c1 - 'A' + 10) << 4;
+		byte += static_cast<uint8>((c1 - L'A' + 10) << 4);
 	} else
 	{
 		return false;
 	}
-	if('0' <= c2 && c2 <= '9')
+	if(L'0' <= c2 && c2 <= L'9')
 	{
-		byte += c2 - '0';
-	} else if('A' <= c2 && c2 <= 'F')
+		byte += static_cast<uint8>(c2 - L'0');
+	} else if(L'A' <= c2 && c2 <= L'F')
 	{
-		byte += c2 - 'A' + 10;
+		byte += static_cast<uint8>(c2 - L'A' + 10);
 	} else
 	{
 		return false;
@@ -48,9 +51,9 @@ static inline bool DecodeByte(uint8 &byte, char c1, char c2)
 }
 
 
-std::string SettingBinToHex(const std::vector<char> &src)
+std::wstring SettingBinToHex(const std::vector<char> &src)
 {
-	std::string result;
+	std::wstring result;
 	for(std::size_t i = 0; i < src.size(); ++i)
 	{
 		uint8 byte = src[i];
@@ -60,7 +63,7 @@ std::string SettingBinToHex(const std::vector<char> &src)
 	return result;
 }
 
-std::vector<char> SettingHexToBin(const std::string &src)
+std::vector<char> SettingHexToBin(const std::wstring &src)
 {
 	std::vector<char> result;
 	for(std::size_t i = 0; i+1 < src.size(); i += 2)
@@ -239,14 +242,14 @@ void SettingsContainer::RemoveOldBackend()
 std::vector<char> IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const
 {
 	std::vector<char> result = def;
-	::GetPrivateProfileStruct(path.GetSection().c_str(), path.GetKey().c_str(), &result[0], result.size(), filename.c_str());
+	::GetPrivateProfileStructW(GetSection(path).c_str(), GetKey(path).c_str(), &result[0], result.size(), filename.c_str());
 	return result;
 }
 
-std::string IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, const std::string &def) const
+std::wstring IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, const std::wstring &def) const
 {
-	std::vector<CHAR> buf(128);
-	while(::GetPrivateProfileString(path.GetSection().c_str(), path.GetKey().c_str(), def.c_str(), &buf[0], buf.size(), filename.c_str()) == buf.size() - 1)
+	std::vector<WCHAR> buf(128);
+	while(::GetPrivateProfileStringW(GetSection(path).c_str(), GetKey(path).c_str(), def.c_str(), &buf[0], buf.size(), filename.c_str()) == buf.size() - 1)
 	{
 		buf.resize(buf.size() * 2);
 	}
@@ -255,66 +258,138 @@ std::string IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, cons
 
 double IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, double def) const
 {
-	std::vector<CHAR> buf(128);
-	while(::GetPrivateProfileString(path.GetSection().c_str(), path.GetKey().c_str(), Stringify(def).c_str(), &buf[0], buf.size(), filename.c_str()) == buf.size() - 1)
+	std::vector<WCHAR> buf(128);
+	while(::GetPrivateProfileStringW(GetSection(path).c_str(), GetKey(path).c_str(), StringifyW(def).c_str(), &buf[0], buf.size(), filename.c_str()) == buf.size() - 1)
 	{
 		buf.resize(buf.size() * 2);
 	}
-	return ConvertStrTo<double>(std::string(&buf[0]));
+	return ConvertStrTo<double>(std::wstring(&buf[0]));
 }
 
 int32 IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, int32 def) const
 {
-	return (int32)::GetPrivateProfileInt(path.GetSection().c_str(), path.GetKey().c_str(), (UINT)def, filename.c_str());
+	return (int32)::GetPrivateProfileIntW(GetSection(path).c_str(), GetKey(path).c_str(), (UINT)def, filename.c_str());
 }
 
 bool IniFileSettingsBackend::ReadSettingRaw(const SettingPath &path, bool def) const
 {
-	return ::GetPrivateProfileInt(path.GetSection().c_str(), path.GetKey().c_str(), def?1:0, filename.c_str()) ? true : false;
+	return ::GetPrivateProfileIntW(GetSection(path).c_str(), GetKey(path).c_str(), def?1:0, filename.c_str()) ? true : false;
 }
 
 
 void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, const std::vector<char> &val)
 {
-	::WritePrivateProfileStruct(path.GetSection().c_str(), path.GetKey().c_str(), (LPVOID)&val[0], val.size(), filename.c_str());
+	::WritePrivateProfileStructW(GetSection(path).c_str(), GetKey(path).c_str(), (LPVOID)&val[0], val.size(), filename.c_str());
 }
 
-void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, const std::string &val)
+void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, const std::wstring &val)
 {
-	::WritePrivateProfileString(path.GetSection().c_str(), path.GetKey().c_str(), val.c_str(), filename.c_str());
+	::WritePrivateProfileStringW(GetSection(path).c_str(), GetKey(path).c_str(), val.c_str(), filename.c_str());
 }
 
 void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, double val)
 {
-	::WritePrivateProfileString(path.GetSection().c_str(), path.GetKey().c_str(), Stringify(val).c_str(), filename.c_str());
+	::WritePrivateProfileStringW(GetSection(path).c_str(), GetKey(path).c_str(), StringifyW(val).c_str(), filename.c_str());
 }
 
 void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, int32 val)
 {
-	::WritePrivateProfileString(path.GetSection().c_str(), path.GetKey().c_str(), Stringify(val).c_str(), filename.c_str());
+	::WritePrivateProfileStringW(GetSection(path).c_str(), GetKey(path).c_str(), StringifyW(val).c_str(), filename.c_str());
 }
 
 void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, bool val)
 {
-	::WritePrivateProfileString(path.GetSection().c_str(), path.GetKey().c_str(), Stringify(val?1:0).c_str(), filename.c_str());
+	::WritePrivateProfileStringW(GetSection(path).c_str(), GetKey(path).c_str(), StringifyW(val?1:0).c_str(), filename.c_str());
 }
 
 void IniFileSettingsBackend::RemoveSettingRaw(const SettingPath &path)
 {
-	::WritePrivateProfileString(path.GetSection().c_str(), path.GetKey().c_str(), NULL, filename.c_str());
+	::WritePrivateProfileStringW(GetSection(path).c_str(), GetKey(path).c_str(), NULL, filename.c_str());
+}
+
+
+std::wstring IniFileSettingsBackend::GetSection(const SettingPath &path)
+{
+	return mpt::String::Decode(path.GetSection(), mpt::CharsetLocale);
+}
+std::wstring IniFileSettingsBackend::GetKey(const SettingPath &path)
+{
+	return mpt::String::Decode(path.GetKey(), mpt::CharsetLocale);
 }
 
 
 
-IniFileSettingsBackend::IniFileSettingsBackend(const std::string &filename_)
-	: filename(filename_)
+IniFileSettingsBackend::IniFileSettingsBackend(const mpt::PathString &filename, bool forceUnicode)
+	: filename(filename)
+	, forceUnicode(forceUnicode)
 {
-	return;
+	if(forceUnicode)
+	{
+		EnforceUnicode();
+	}
 }
 
 IniFileSettingsBackend::~IniFileSettingsBackend()
 {
-	return;
+	if(forceUnicode)
+	{
+		EnforceUnicode();
+	}
+}
+
+static std::string istreamToString(std::istream &s)
+{
+	std::string result;
+	while(s)
+	{
+		char buf[4096];
+		s.read(buf, 4096);
+		std::streamsize count = s.gcount();
+		std::copy(buf, buf + count, std::back_inserter(result));
+	}
+	return result;
+}
+
+static std::string ReadFile(const mpt::PathString &filename)
+{
+	std::ifstream stream(filename.c_str(), std::ios::binary);
+	return istreamToString(stream);
+}
+
+static void WriteFileUTF16LE(const mpt::PathString &filename, const std::wstring &str = std::wstring())
+{
+	std::ofstream inifile(filename.c_str(), std::ios::binary | std::ios::trunc);
+	const uint8 UTF16LE_BOM[] = { 0xff, 0xfe };
+	inifile.write(reinterpret_cast<const char*>(UTF16LE_BOM), 2);
+	inifile.write(reinterpret_cast<const char*>(str.c_str()), str.length() * sizeof(std::wstring::value_type));
+	inifile.flush();
+	inifile.close();
+}
+
+void IniFileSettingsBackend::EnforceUnicode()
+{
+	// Force ini file to be encoded in UTF16.
+	// This causes WINAPI ini file functions to keep it in UTF16 encoding
+	// and thus support storing unicode strings uncorrupted.
+	// This is backwards compatible because even ANSI WINAPI behaves the
+	// same way in this case.
+	if(!PathFileExistsW(filename.c_str()))
+	{
+		WriteFileUTF16LE(filename);
+		return;
+	}
+	std::string str_ansi = ReadFile(filename);
+	if(str_ansi.empty())
+	{
+		WriteFileUTF16LE(filename);
+		return;
+	}
+	if(IsTextUnicode(str_ansi.c_str(), str_ansi.length(), NULL))
+	{
+		return;
+	}
+	MoveFileExW(filename.c_str(), (filename + L".ansi.bak").c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH);
+	WriteFileUTF16LE(filename, mpt::String::Decode(str_ansi, mpt::CharsetLocale));
 }
 
 SettingValue IniFileSettingsBackend::ReadSetting(const SettingPath &path, const SettingValue &def) const
@@ -324,7 +399,7 @@ SettingValue IniFileSettingsBackend::ReadSetting(const SettingPath &path, const 
 	case SettingTypeBool: return SettingValue(ReadSettingRaw(path, def.as<bool>()), def.GetTypeTag()); break;
 	case SettingTypeInt: return SettingValue(ReadSettingRaw(path, def.as<int32>()), def.GetTypeTag()); break;
 	case SettingTypeFloat: return SettingValue(ReadSettingRaw(path, def.as<double>()), def.GetTypeTag()); break;
-	case SettingTypeString: return SettingValue(ReadSettingRaw(path, def.as<std::string>()), def.GetTypeTag()); break;
+	case SettingTypeString: return SettingValue(ReadSettingRaw(path, def.as<std::wstring>()), def.GetTypeTag()); break;
 	case SettingTypeBinary: return SettingValue(ReadSettingRaw(path, def.as<std::vector<char> >()), def.GetTypeTag()); break;
 	default: return SettingValue(); break;
 	}
@@ -338,7 +413,7 @@ void IniFileSettingsBackend::WriteSetting(const SettingPath &path, const Setting
 	case SettingTypeBool: WriteSettingRaw(path, val.as<bool>()); break;
 	case SettingTypeInt: WriteSettingRaw(path, val.as<int32>()); break;
 	case SettingTypeFloat: WriteSettingRaw(path, val.as<double>()); break;
-	case SettingTypeString: WriteSettingRaw(path, val.as<std::string>()); break;
+	case SettingTypeString: WriteSettingRaw(path, val.as<std::wstring>()); break;
 	case SettingTypeBinary: WriteSettingRaw(path, val.as<std::vector<char> >()); break;
 	default: break;
 	}
@@ -353,33 +428,33 @@ void IniFileSettingsBackend::RemoveSetting(const SettingPath &path)
 
 
 
-std::string RegistrySettingsBackend::BuildKeyName(const SettingPath &path) const
+std::wstring RegistrySettingsBackend::BuildKeyName(const SettingPath &path) const
 {
 	if((oldPaths?path.GetOldSection():path.GetSection()).empty())
 	{
 		return basePath;
 	} else
 	{
-		return basePath + "\\" + (oldPaths?path.GetOldSection():path.GetSection());
+		return basePath + L"\\" + mpt::String::Decode(oldPaths?path.GetOldSection():path.GetSection(), mpt::CharsetLocale);
 	}
 }
 
-std::string RegistrySettingsBackend::BuildValueName(const SettingPath &path) const
+std::wstring RegistrySettingsBackend::BuildValueName(const SettingPath &path) const
 {
-	return oldPaths?path.GetOldKey():path.GetKey();
+	return mpt::String::Decode(oldPaths?path.GetOldKey():path.GetKey(), mpt::CharsetLocale);
 }
 
 std::vector<char> RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const
 {
 	std::vector<char> val = def;
 	HKEY regKey = HKEY();
-	if(RegOpenKeyEx(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
+	if(RegOpenKeyExW(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
 	{
 		char v[4096];
 		MemsetZero(v);
 		DWORD type = REG_BINARY;
 		DWORD typesize = sizeof(v);
-		if(RegQueryValueEx(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
+		if(RegQueryValueExW(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
 		{
 			val.assign(v, v + typesize);
 		}
@@ -389,19 +464,19 @@ std::vector<char> RegistrySettingsBackend::ReadSettingRaw(const SettingPath &pat
 	return val;
 }
 
-std::string RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, const std::string &def) const
+std::wstring RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, const std::wstring &def) const
 {
-	std::string val = def;
+	std::wstring val = def;
 	HKEY regKey = HKEY();
-	if(RegOpenKeyEx(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
+	if(RegOpenKeyExW(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
 	{
-		CHAR v[1024];
+		WCHAR v[1024];
 		MemsetZero(v);
 		DWORD type = REG_SZ;
 		DWORD typesize = sizeof(v);
-		if(RegQueryValueEx(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
+		if(RegQueryValueExW(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
 		{
-			mpt::String::Copy(val, v);
+			val = v;
 		}
 		RegCloseKey(regKey);
 		regKey = HKEY();
@@ -411,19 +486,19 @@ std::string RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, con
 
 double RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, double def) const
 {
-	return ConvertStrTo<double>(ReadSettingRaw(path, Stringify(def)));
+	return ConvertStrTo<double>(ReadSettingRaw(path, StringifyW(def)));
 }
 
 int32 RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, int32 def) const
 {
 	int32 val = def;
 	HKEY regKey = HKEY();
-	if(RegOpenKeyEx(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
+	if(RegOpenKeyExW(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
 	{
 		DWORD v = val;
 		DWORD type = REG_DWORD;
 		DWORD typesize = sizeof(v);
-		if(RegQueryValueEx(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
+		if(RegQueryValueExW(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
 		{
 			val = v;
 		}
@@ -440,7 +515,7 @@ bool RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, bool def) 
 
 
 
-RegistrySettingsBackend::RegistrySettingsBackend(HKEY baseKey, const std::string &basePath, bool oldPaths)
+RegistrySettingsBackend::RegistrySettingsBackend(HKEY baseKey, const std::wstring &basePath, bool oldPaths)
 	: baseKey(baseKey)
 	, basePath(basePath)
 	, oldPaths(oldPaths)
@@ -460,7 +535,7 @@ SettingValue RegistrySettingsBackend::ReadSetting(const SettingPath &path, const
 	case SettingTypeBool: return SettingValue(ReadSettingRaw(path, def.as<bool>()), def.GetTypeTag()); break;
 	case SettingTypeInt: return SettingValue(ReadSettingRaw(path, def.as<int32>()), def.GetTypeTag()); break;
 	case SettingTypeFloat: return SettingValue(ReadSettingRaw(path, def.as<double>()), def.GetTypeTag()); break;
-	case SettingTypeString: return SettingValue(ReadSettingRaw(path, def.as<std::string>()), def.GetTypeTag()); break;
+	case SettingTypeString: return SettingValue(ReadSettingRaw(path, def.as<std::wstring>()), def.GetTypeTag()); break;
 	case SettingTypeBinary: return SettingValue(ReadSettingRaw(path, def.as<std::vector<char> >()), def.GetTypeTag()); break;
 	default: return SettingValue(); break;
 	}
@@ -481,8 +556,8 @@ void RegistrySettingsBackend::RemoveSetting(const SettingPath &path)
 
 
 
-IniFileSettingsContainer::IniFileSettingsContainer(const std::string &filename)
-	: IniFileSettingsBackend(filename)
+IniFileSettingsContainer::IniFileSettingsContainer(const mpt::PathString &filename, bool forceUnicode)
+	: IniFileSettingsBackend(filename, forceUnicode)
 	, SettingsContainer(this)
 {
 	return;
@@ -496,7 +571,7 @@ IniFileSettingsContainer::~IniFileSettingsContainer()
 
 
 DefaultSettingsContainer::DefaultSettingsContainer()
-	: IniFileSettingsContainer(theApp.GetConfigFileName())
+	: IniFileSettingsContainer(mpt::String::Decode(theApp.GetConfigFileName(), mpt::CharsetLocale), true)
 {
 	return;
 }
