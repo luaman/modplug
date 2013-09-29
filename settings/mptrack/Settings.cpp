@@ -337,9 +337,9 @@ IniFileSettingsBackend::~IniFileSettingsBackend()
 	}
 }
 
-static std::string istreamToString(std::istream &s)
+static std::vector<char> ReadStdIstream(std::istream &s)
 {
-	std::string result;
+	std::vector<char> result;
 	while(s)
 	{
 		char buf[4096];
@@ -350,10 +350,10 @@ static std::string istreamToString(std::istream &s)
 	return result;
 }
 
-static std::string ReadFile(const mpt::PathString &filename)
+static std::vector<char> ReadFile(const mpt::PathString &filename)
 {
 	std::ifstream stream(filename.c_str(), std::ios::binary);
-	return istreamToString(stream);
+	return ReadStdIstream(stream);
 }
 
 static void WriteFileUTF16LE(const mpt::PathString &filename, const std::wstring &str = std::wstring())
@@ -378,18 +378,18 @@ void IniFileSettingsBackend::EnforceUnicode()
 		WriteFileUTF16LE(filename);
 		return;
 	}
-	std::string str_ansi = ReadFile(filename);
-	if(str_ansi.empty())
+	const std::vector<char> data = ReadFile(filename);
+	if(data.empty())
 	{
 		WriteFileUTF16LE(filename);
 		return;
 	}
-	if(IsTextUnicode(str_ansi.c_str(), str_ansi.length(), NULL))
+	if(IsTextUnicode(&data[0], data.size(), NULL))
 	{
 		return;
 	}
 	MoveFileExW(filename.c_str(), (filename + L".ansi.bak").c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH);
-	WriteFileUTF16LE(filename, mpt::String::Decode(str_ansi, mpt::CharsetLocale));
+	WriteFileUTF16LE(filename, mpt::String::Decode(std::string(&data[0], &data[0] + data.size()), mpt::CharsetLocale));
 }
 
 SettingValue IniFileSettingsBackend::ReadSetting(const SettingPath &path, const SettingValue &def) const
