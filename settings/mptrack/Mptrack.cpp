@@ -350,7 +350,7 @@ BOOL CTrackApp::ImportMidiConfig(LPCSTR lpszConfigFile, BOOL bNoWarn)
 		return TRUE;
 	}
 
-	IniFileSettingsContainer file(lpszConfigFile);
+	IniFileSettingsContainer file(mpt::LocaleToPath(lpszConfigFile));
 	return ImportMidiConfig(file);
 }
 
@@ -417,7 +417,7 @@ BOOL CTrackApp::ExportMidiConfig(LPCSTR lpszConfigFile)
 //-----------------------------------------------------
 {
 	if ((!glpMidiLibrary) || (!lpszConfigFile) || (!lpszConfigFile[0])) return FALSE;
-	IniFileSettingsContainer file(lpszConfigFile);
+	IniFileSettingsContainer file(mpt::LocaleToPath(lpszConfigFile));
 	return ExportMidiConfig(file);
 }
 
@@ -840,14 +840,14 @@ BOOL CTrackApp::InitInstance()
 	// Construct auto saver instance, class TrackerSettings expects it being available.
 	CMainFrame::m_pAutoSaver = new CAutoSaver();
 
-	m_pSettingsIniFile = new IniFileSettingsBackend(m_szConfigFileName);
+	m_pSettingsIniFile = new IniFileSettingsBackend(mpt::LocaleToPath(m_szConfigFileName), true);
 	
 	// If version number stored in INI is 1.17.02.40 or later, always load setting from INI file.
 	// If it isn't, try loading from Registry first, then from the INI file.
 	const std::string storedVersion = m_pSettingsIniFile->ReadSetting(SettingPath("Version", "Version"), "");
 	if(storedVersion < "1.17.02.40")
 	{
-		m_pSettingsRegistry = new RegistrySettingsBackend(HKEY_CURRENT_USER, "Software\\Olivier Lapicque\\ModPlug Tracker", true);
+		m_pSettingsRegistry = new RegistrySettingsBackend(HKEY_CURRENT_USER, L"Software\\Olivier Lapicque\\ModPlug Tracker", true);
 	}
 	
 	m_pSettings = new SettingsContainer(m_pSettingsIniFile, m_pSettingsRegistry);
@@ -864,7 +864,7 @@ BOOL CTrackApp::InitInstance()
 		m_pSettingsRegistry = nullptr;
 	}
 
-	m_pPluginCache = new IniFileSettingsContainer(m_szPluginCacheFileName);
+	m_pPluginCache = new IniFileSettingsContainer(mpt::LocaleToPath(m_szPluginCacheFileName));
 
 	int mruListLength = GetSettings().Read<int32>("Misc", "MRUListLength", 10);
 	Limit(mruListLength, 0, 15);

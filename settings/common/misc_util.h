@@ -38,6 +38,18 @@ inline std::string Stringify(const T& x)
 template<> inline std::string Stringify(const signed char& x) { return Stringify((signed int)x); }
 template<> inline std::string Stringify(const unsigned char& x) { return Stringify((unsigned int)x); }
 
+template<class T>
+inline std::wstring StringifyW(const T& x)
+//----------------------------------------
+{
+	std::wostringstream o;
+	if(!(o << x)) return L"FAILURE";
+	else return o.str();
+}
+
+template<> inline std::wstring StringifyW(const signed char& x) { return StringifyW((signed int)x); }
+template<> inline std::wstring StringifyW(const unsigned char& x) { return StringifyW((unsigned int)x); }
+
 //Convert string to number.
 template<class T>
 inline T ConvertStrTo(const char *str)
@@ -77,6 +89,13 @@ template<> inline unsigned short     ConvertStrTo(const char *str) {return (unsi
 template<> inline unsigned int       ConvertStrTo(const char *str) {return (unsigned int)std::strtoul(str, nullptr, 10);}
 template<> inline unsigned long      ConvertStrTo(const char *str) {return std::strtoul(str, nullptr, 10);}
 template<> inline unsigned long long ConvertStrTo(const char *str) {return cxx11_strtoull(str, nullptr, 10);}
+
+template<class T>
+inline T ConvertStrTo(const std::wstring &str)
+//--------------------------------------------
+{
+	return ConvertStrTo<T>(mpt::String::Encode(str, mpt::CharsetLocale));
+}
 
 
 // Memset given object to zero.

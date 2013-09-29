@@ -34,8 +34,8 @@ enum SettingType
 	SettingTypeBinary,
 };
 
-std::string SettingBinToHex(const std::vector<char> &src);
-std::vector<char> SettingHexToBin(const std::string &src);
+std::wstring SettingBinToHex(const std::vector<char> &src);
+std::vector<char> SettingHexToBin(const std::wstring &src);
 
 class SettingValue
 {
@@ -43,7 +43,7 @@ private:
 	bool valueBool;
 	int32 valueInt;
 	double valueFloat;
-	std::string valueString;
+	std::wstring valueString;
 	std::vector<char> valueBinary;
 	SettingType type;
 	std::string typeTag;
@@ -52,7 +52,7 @@ private:
 		valueBool = false;
 		valueInt = 0;
 		valueFloat = 0.0;
-		valueString = std::string();
+		valueString = std::wstring();
 		valueBinary.clear();
 		type = SettingTypeNone;
 		typeTag = std::string();
@@ -120,9 +120,21 @@ public:
 	{
 		Init();
 		type = SettingTypeString;
-		valueString = val;
+		valueString = mpt::String::Decode(val, mpt::CharsetLocale);
 	}
 	SettingValue(const std::string &val)
+	{
+		Init();
+		type = SettingTypeString;
+		valueString = mpt::String::Decode(val, mpt::CharsetLocale);
+	}
+	SettingValue(const wchar_t *val)
+	{
+		Init();
+		type = SettingTypeString;
+		valueString = val;
+	}
+	SettingValue(const std::wstring &val)
 	{
 		Init();
 		type = SettingTypeString;
@@ -160,9 +172,23 @@ public:
 		Init();
 		type = SettingTypeString;
 		typeTag = typeTag_;
-		valueString = val;
+		valueString = mpt::String::Decode(val, mpt::CharsetLocale);
 	}
 	SettingValue(const std::string &val, const std::string &typeTag_)
+	{
+		Init();
+		type = SettingTypeString;
+		typeTag = typeTag_;
+		valueString = mpt::String::Decode(val, mpt::CharsetLocale);
+	}
+	SettingValue(const wchar_t *val, const std::string &typeTag_)
+	{
+		Init();
+		type = SettingTypeString;
+		typeTag = typeTag_;
+		valueString = val;
+	}
+	SettingValue(const std::wstring &val, const std::string &typeTag_)
 	{
 		Init();
 		type = SettingTypeString;
@@ -211,6 +237,11 @@ public:
 	operator std::string () const
 	{
 		ASSERT(type == SettingTypeString);
+		return mpt::String::Encode(valueString, mpt::CharsetLocale);
+	}
+	operator std::wstring () const
+	{
+		ASSERT(type == SettingTypeString);
 		return valueString;
 	}
 	operator std::vector<char> () const
@@ -218,53 +249,53 @@ public:
 		ASSERT(type == SettingTypeBinary);
 		return valueBinary;
 	}
-	std::string FormatTypeAsString() const
+	std::wstring FormatTypeAsString() const
 	{
 		if(GetType() == SettingTypeNone)
 		{
-			return "nil";
+			return L"nil";
 		}
-		std::string result;
+		std::wstring result;
 		switch(GetType())
 		{
 			case SettingTypeBool:
-				result += "bool";
+				result += L"bool";
 				break;
 			case SettingTypeInt:
-				result += "int";
+				result += L"int";
 				break;
 			case SettingTypeFloat:
-				result += "float";
+				result += L"float";
 				break;
 			case SettingTypeString:
-				result += "string";
+				result += L"string";
 				break;
 			case SettingTypeBinary:
-				result += "binary";
+				result += L"binary";
 				break;
 			case SettingTypeNone:
 			default:
-				result += "nil";
+				result += L"nil";
 				break;
 		}
 		if(HasTypeTag() && !GetTypeTag().empty())
 		{
-			result += ":" + GetTypeTag();
+			result += L":" + mpt::String::Decode(GetTypeTag(), mpt::CharsetUS_ASCII);
 		}
 		return result;
 	}
-	std::string FormatValueAsString() const
+	std::wstring FormatValueAsString() const
 	{
 		switch(GetType())
 		{
 			case SettingTypeBool:
-				return Stringify(valueBool);
+				return StringifyW(valueBool);
 				break;
 			case SettingTypeInt:
-				return Stringify(valueInt);
+				return StringifyW(valueInt);
 				break;
 			case SettingTypeFloat:
-				return Stringify(valueFloat);
+				return StringifyW(valueFloat);
 				break;
 			case SettingTypeString:
 				return valueString;
@@ -274,15 +305,15 @@ public:
 				break;
 			case SettingTypeNone:
 			default:
-				return "";
+				return std::wstring();
 				break;
 		}
 	}
-	std::string FormatAsString() const
+	std::wstring FormatAsString() const
 	{
-		return "(" + FormatTypeAsString() + ")" + FormatValueAsString();
+		return L"(" + FormatTypeAsString() + L")" + FormatValueAsString();
 	}
-	void SetFromString(const std::string &newVal)
+	void SetFromString(const std::wstring &newVal)
 	{
 		switch(GetType())
 		{
@@ -345,8 +376,8 @@ inline T FromSettingValue(const SettingValue &val)
 // You may use the SettingValue(value, typeTag) constructor in ToSettingValue
 // and check the typeTag FromSettingsValue to implement runtime type-checking for custom types.
 
-template<> inline SettingValue ToSettingValue(const CString &val) { return SettingValue(std::string(val.GetString())); }
-template<> inline CString FromSettingValue(const SettingValue &val) { return CString(val.as<std::string>().c_str()); }
+template<> inline SettingValue ToSettingValue(const CString &val) { return SettingValue(std::basic_string<TCHAR>(val.GetString())); }
+template<> inline CString FromSettingValue(const SettingValue &val) { return CString(val.as<std::basic_string<TCHAR> >().c_str()); }
 
 template<> inline SettingValue ToSettingValue(const uint32 &val) { return SettingValue(int32(val)); }
 template<> inline uint32 FromSettingValue(const SettingValue &val) { return uint32(val.as<int32>()); }
@@ -751,21 +782,25 @@ public:
 class IniFileSettingsBackend : public ISettingsBackend
 {
 private:
-	const std::string filename;
+	const mpt::PathString filename;
+	const bool forceUnicode;
 private:
 	std::vector<char> ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const;
-	std::string ReadSettingRaw(const SettingPath &path, const std::string &def) const;
+	std::wstring ReadSettingRaw(const SettingPath &path, const std::wstring &def) const;
 	double ReadSettingRaw(const SettingPath &path, double def) const;
 	int32 ReadSettingRaw(const SettingPath &path, int32 def) const;
 	bool ReadSettingRaw(const SettingPath &path, bool def) const;
 	void WriteSettingRaw(const SettingPath &path, const std::vector<char> &val);
-	void WriteSettingRaw(const SettingPath &path, const std::string &val);
+	void WriteSettingRaw(const SettingPath &path, const std::wstring &val);
 	void WriteSettingRaw(const SettingPath &path, double val);
 	void WriteSettingRaw(const SettingPath &path, int32 val);
 	void WriteSettingRaw(const SettingPath &path, bool val);
 	void RemoveSettingRaw(const SettingPath &path);
+	void EnforceUnicode();
+	static std::wstring GetSection(const SettingPath &path);
+	static std::wstring GetKey(const SettingPath &path);
 public:
-	IniFileSettingsBackend(const std::string &filename_);
+	IniFileSettingsBackend(const mpt::PathString &filename, bool forceUnicode = false);
 	~IniFileSettingsBackend();
 	virtual SettingValue ReadSetting(const SettingPath &path, const SettingValue &def) const;
 	virtual void WriteSetting(const SettingPath &path, const SettingValue &val);
@@ -776,18 +811,18 @@ class RegistrySettingsBackend : public ISettingsBackend
 {
 private:
 	const HKEY baseKey;
-	const std::string basePath;
+	const std::wstring basePath;
 	const bool oldPaths;
 private:
-	std::string BuildKeyName(const SettingPath &path) const;
-	std::string BuildValueName(const SettingPath &path) const;
+	std::wstring BuildKeyName(const SettingPath &path) const;
+	std::wstring BuildValueName(const SettingPath &path) const;
 	std::vector<char> ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const;
-	std::string ReadSettingRaw(const SettingPath &path, const std::string &def) const;
+	std::wstring ReadSettingRaw(const SettingPath &path, const std::wstring &def) const;
 	double ReadSettingRaw(const SettingPath &path, double def) const;
 	int32 ReadSettingRaw(const SettingPath &path, int32 def) const;
 	bool ReadSettingRaw(const SettingPath &path, bool def) const;
 public:
-	RegistrySettingsBackend(HKEY baseKey, const std::string &basePath, bool oldPaths = false);
+	RegistrySettingsBackend(HKEY baseKey, const std::wstring &basePath, bool oldPaths = false);
 	~RegistrySettingsBackend();
 	virtual SettingValue ReadSetting(const SettingPath &path, const SettingValue &def) const;
 	virtual void WriteSetting(const SettingPath &path, const SettingValue &val);
@@ -797,7 +832,7 @@ public:
 class IniFileSettingsContainer : private IniFileSettingsBackend, public SettingsContainer
 {
 public:
-	IniFileSettingsContainer(const std::string &filename);
+	IniFileSettingsContainer(const mpt::PathString &filename, bool forceUnicode = false);
 	~IniFileSettingsContainer();
 };
 

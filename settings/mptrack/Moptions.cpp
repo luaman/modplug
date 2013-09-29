@@ -495,7 +495,7 @@ void COptionsColors::OnLoadColorScheme()
 	// Ensure that all colours are reset (for outdated colour schemes)
 	OnPresetMPT();
 	{
-		IniFileSettingsContainer file(files.first_file);
+		IniFileSettingsContainer file(mpt::LocaleToPath(files.first_file));
 		for(int i = 0; i < MAX_MODCOLORS; i++)
 		{
 			TCHAR sKeyName[16];
@@ -515,7 +515,7 @@ void COptionsColors::OnSaveColorScheme()
 	if(files.abort)
 		return;
 	{
-		IniFileSettingsContainer file(files.first_file);
+		IniFileSettingsContainer file(mpt::LocaleToPath(files.first_file));
 		for(int i = 0; i < MAX_MODCOLORS; i++)
 		{
 			TCHAR sKeyName[16];
@@ -708,7 +708,7 @@ void COptionsAdvanced::DoDataExchange(CDataExchange* pDX)
 static std::string FormatSetting(const SettingPath &path, const SettingValue &val)
 //--------------------------------------------------------------------------------
 {
-	return path.FormatAsString() + " = " + val.FormatAsString();
+	return path.FormatAsString() + " = " + mpt::String::Encode(val.FormatAsString(), mpt::CharsetLocale);
 }
 
 
@@ -750,12 +750,12 @@ void COptionsAdvanced::OnOptionDblClick()
 	}
 	const SettingPath path = m_IndexToPath[index];
 	SettingValue val = theApp.GetSettings().GetMap().find(path)->second;
-	CInputDlg inputDlg(this, path.FormatAsString().c_str(), val.FormatValueAsString().c_str());
+	CInputDlg inputDlg(this, path.FormatAsString().c_str(), mpt::String::Encode(val.FormatValueAsString(), mpt::CharsetLocale).c_str());
 	if(inputDlg.DoModal() != IDOK)
 	{
 		return;
 	}
-	val.SetFromString(inputDlg.resultString.GetString());
+	val.SetFromString(mpt::String::Decode(inputDlg.resultString.GetString(), mpt::CharsetLocale));
 	theApp.GetSettings().Write(path, val);
 	m_List.DeleteString(index);
 	m_List.InsertString(index, FormatSetting(path, val).c_str());
