@@ -128,10 +128,11 @@ void SettingsContainer::WriteSetting(const SettingPath &path, const SettingValue
 		entry->second = val;
 	}
 	NotifyListeners(path);
-#if defined(MPT_SETTINGS_IMMEDIATE_FLUSH)
-	BackendsWriteSetting(path, val);
-	entry->second.Clean();
-#endif
+	if(immediateFlush)
+	{
+		BackendsWriteSetting(path, val);
+		entry->second.Clean();
+	}
 }
 
 void SettingsContainer::RemoveSetting(const SettingPath &path)
@@ -160,10 +161,8 @@ void SettingsContainer::WriteSettings()
 	{
 		if(i->second.IsDirty())
 		{
-#if !defined(MPT_SETTINGS_IMMEDIATE_FLUSH)
 			BackendsWriteSetting(i->first, i->second);
 			i->second.Clean();
-#endif
 		}
 	}
 }
@@ -171,6 +170,15 @@ void SettingsContainer::WriteSettings()
 void SettingsContainer::Flush()
 {
 	WriteSettings();
+}
+
+void SettingsContainer::SetImmediateFlush(bool newImmediateFlush)
+{
+	if(newImmediateFlush)
+	{
+		Flush();
+	}
+	immediateFlush = newImmediateFlush;
 }
 
 void SettingsContainer::Register(ISettingChanged *listener, const SettingPath &path)
@@ -208,6 +216,7 @@ void SettingsContainer::RemoveSetting(const SettingPath &path)
 SettingsContainer::SettingsContainer(ISettingsBackend *backend)
 	: backend(backend)
 	, oldBackend(nullptr)
+	, immediateFlush(false)
 {
 	ASSERT(backend);
 }

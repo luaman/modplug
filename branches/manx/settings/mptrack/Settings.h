@@ -21,7 +21,6 @@
 #define MPT_SETTINGS_CACHE
 #define MPT_SETTINGS_CACHE_STORE_DEFAULTS
 #define MPT_SETTINGS_PANEL
-//#define MPT_SETTINGS_IMMEDIATE_FLUSH
 
 
 enum SettingType
@@ -590,6 +589,8 @@ class SettingsContainer
 private:
 	ISettingsBackend *backend;
 	ISettingsBackend *oldBackend;
+private:
+	bool immediateFlush;
 	SettingValue BackendsReadSetting(const SettingPath &path, const SettingValue &def) const;
 	void BackendsWriteSetting(const SettingPath &path, const SettingValue &val);
 	void BackendsRemoveSetting(const SettingPath &path);
@@ -603,6 +604,7 @@ private:
 public:
 	SettingsContainer(ISettingsBackend *backend, ISettingsBackend *oldBackend = nullptr);
 	void RemoveOldBackend();
+	void SetImmediateFlush(bool newImmediateFlush);
 	template <typename T>
 	T Read(const SettingPath &path, const T &def = T(), const SettingMetadata &metadata = SettingMetadata()) const
 	{
