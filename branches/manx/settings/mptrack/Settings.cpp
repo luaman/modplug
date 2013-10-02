@@ -17,6 +17,8 @@
 #include "../common/StringFixer.h"
 #include "Mptrack.h"
 
+#include <shlwapi.h>
+
 #include <algorithm>
 #include <fstream>
 #include <iterator>
