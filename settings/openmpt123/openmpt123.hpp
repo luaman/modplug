@@ -26,7 +26,7 @@ struct show_help_exception {
 
 struct show_help_keyboard_exception { };
 
-#if defined(_MSC_VER)
+#if defined(WIN32)
 
 std::string wstring_to_utf8( const std::wstring & unicode_string ) {
 	int required_size = WideCharToMultiByte( CP_UTF8, 0, unicode_string.c_str(), -1, NULL, 0, NULL, NULL );
@@ -102,7 +102,7 @@ public:
 	}
 };
 
-#if defined(_MSC_VER)
+#if defined(WIN32)
 
 class textout_console : public textout {
 private:
@@ -127,7 +127,7 @@ public:
 	}
 };
 
-#endif // _MSC_VER
+#endif // WIN32
 
 static inline float mpt_round( float val ) {
 	if ( val >= 0.0f ) {
@@ -187,10 +187,8 @@ struct commandlineflags {
 	Mode mode;
 	bool canUI;
 	bool canProgress;
-#ifdef MPT_WITH_PORTAUDIO
 	int device;
 	std::int32_t buffer;
-#endif
 	std::int32_t samplerate;
 	std::int32_t channels;
 	std::int32_t gain;
@@ -213,17 +211,13 @@ struct commandlineflags {
 	bool use_float;
 	bool use_stdout;
 	std::vector<std::string> filenames;
-#if defined(MPT_WITH_FLAC) || defined(MPT_WITH_MMIO) || defined(MPT_WITH_SNDFILE)
 	std::string output_filename;
 	std::string output_extension;
 	bool force_overwrite;
-#endif
 	commandlineflags() {
 		mode = ModeUI;
-#ifdef MPT_WITH_PORTAUDIO
 		device = -1;
 		buffer = 250;
-#endif
 		samplerate = 48000;
 		channels = 2;
 		use_float = true;
@@ -237,13 +231,13 @@ struct commandlineflags {
 		verbose = false;
 		terminal_width = 72;
 		terminal_height = 23;
-#if defined(_MSC_VER)
+#if defined(WIN32)
 		CONSOLE_SCREEN_BUFFER_INFO csbi;
 		ZeroMemory( &csbi, sizeof( CONSOLE_SCREEN_BUFFER_INFO ) );
 		GetConsoleScreenBufferInfo( GetStdHandle( STD_OUTPUT_HANDLE ), &csbi );
 		terminal_width = csbi.dwSize.X - 1;
 		terminal_height = 23; //csbi.dwSize.Y - 1;
-#else // !_MSC_VER
+#else // WIN32
 		if ( isatty( STDERR_FILENO ) ) {
 			if ( std::getenv( "COLUMNS" ) ) {
 				std::istringstream istr( std::getenv( "COLUMNS" ) );
@@ -278,36 +272,32 @@ struct commandlineflags {
 #endif
 		show_details = true;
 		show_message = false;
-#if defined(_MSC_VER)
+#if defined(WIN32)
 		canUI = IsTerminal( 0 ) ? true : false;
 		canProgress = IsTerminal( 2 ) ? true : false;
-#else
+#else // !WIN32
 		canUI = isatty( STDIN_FILENO ) ? true : false;
 		canProgress = isatty( STDERR_FILENO ) ? true : false;
-#endif
+#endif // WIN32
 		show_ui = canUI;
 		show_progress = canProgress;
 		show_meters = canUI && canProgress;
 		show_channel_meters = false;
 		show_pattern = false;
 		use_stdout = false;
-#if defined(MPT_WITH_FLAC) || defined(MPT_WITH_MMIO) || defined(MPT_WITH_SNDFILE)
 		output_extension = "wav";
 		force_overwrite = false;
-#endif
 	}
 	void check_and_sanitize() {
 		if ( filenames.size() == 0 ) {
 			throw show_help_exception();
 		}
-#if defined(MPT_WITH_PORTAUDIO) && ( defined(MPT_WITH_FLAC) || defined(MPT_WITH_MMIO) || defined(MPT_WITH_SNDFILE) )
 		if ( use_stdout && ( device != commandlineflags().device || !output_filename.empty() ) ) {
 			throw show_help_exception();
 		}
 		if ( !output_filename.empty() && ( device != commandlineflags().device || use_stdout ) ) {
 			throw show_help_exception();
 		}
-#endif
 		for ( std::vector<std::string>::iterator i = filenames.begin(); i != filenames.end(); ++i ) {
 			if ( *i == "-" ) {
 				canUI = false;
