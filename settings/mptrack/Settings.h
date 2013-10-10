@@ -787,7 +787,6 @@ class IniFileSettingsBackend : public ISettingsBackend
 {
 private:
 	const mpt::PathString filename;
-	const bool forceUnicode;
 private:
 	std::vector<char> ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const;
 	std::wstring ReadSettingRaw(const SettingPath &path, const std::wstring &def) const;
@@ -800,12 +799,12 @@ private:
 	void WriteSettingRaw(const SettingPath &path, int32 val);
 	void WriteSettingRaw(const SettingPath &path, bool val);
 	void RemoveSettingRaw(const SettingPath &path);
-	void EnforceUnicode();
 	static std::wstring GetSection(const SettingPath &path);
 	static std::wstring GetKey(const SettingPath &path);
 public:
-	IniFileSettingsBackend(const mpt::PathString &filename, bool forceUnicode = false);
+	IniFileSettingsBackend(const mpt::PathString &filename);
 	~IniFileSettingsBackend();
+	void ConvertToUnicode(const std::wstring &backupTag = std::wstring());
 	virtual SettingValue ReadSetting(const SettingPath &path, const SettingValue &def) const;
 	virtual void WriteSetting(const SettingPath &path, const SettingValue &val);
 	virtual void RemoveSetting(const SettingPath &path);
@@ -836,7 +835,7 @@ public:
 class IniFileSettingsContainer : private IniFileSettingsBackend, public SettingsContainer
 {
 public:
-	IniFileSettingsContainer(const mpt::PathString &filename, bool forceUnicode = false);
+	IniFileSettingsContainer(const mpt::PathString &filename);
 	~IniFileSettingsContainer();
 };
 

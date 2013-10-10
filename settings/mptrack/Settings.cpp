@@ -296,6 +296,19 @@ void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, const std:
 void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, const std::wstring &val)
 {
 	::WritePrivateProfileStringW(GetSection(path).c_str(), GetKey(path).c_str(), val.c_str(), filename.c_str());
+
+	if(mpt::String::Decode(mpt::String::Encode(val, mpt::CharsetLocale), mpt::CharsetLocale) != val)
+	{
+		// Value is not representable in ANSI CP.
+		// Now check if the string got stored correctly.
+		if(ReadSettingRaw(path, std::wstring()) != val)
+		{
+			// The ini file is probably ANSI encoded.
+			ConvertToUnicode();
+			// Re-write non-ansi-representable value.
+			::WritePrivateProfileStringW(GetSection(path).c_str(), GetKey(path).c_str(), val.c_str(), filename.c_str());
+		}
+	}
 }
 
 void IniFileSettingsBackend::WriteSettingRaw(const SettingPath &path, double val)
@@ -330,26 +343,20 @@ std::wstring IniFileSettingsBackend::GetKey(const SettingPath &path)
 
 
 
-IniFileSettingsBackend::IniFileSettingsBackend(const mpt::PathString &filename, bool forceUnicode)
+IniFileSettingsBackend::IniFileSettingsBackend(const mpt::PathString &filename)
 	: filename(filename)
-	, forceUnicode(forceUnicode)
 {
-	if(forceUnicode)
-	{
-		EnforceUnicode();
-	}
+	return;
 }
 
 IniFileSettingsBackend::~IniFileSettingsBackend()
 {
-	if(forceUnicode)
-	{
-		EnforceUnicode();
-	}
+	return;
 }
 
-static std::vector<char> ReadStdIstream(std::istream &s)
+static std::vector<char> ReadFile(const mpt::PathString &filename)
 {
+	std::ifstream s(filename.c_str(), std::ios::binary);
 	std::vector<char> result;
 	while(s)
 	{
@@ -361,14 +368,9 @@ static std::vector<char> ReadStdIstream(std::istream &s)
 	return result;
 }
 
-static std::vector<char> ReadFile(const mpt::PathString &filename)
+static void WriteFileUTF16LE(const mpt::PathString &filename, const std::wstring &str)
 {
-	std::ifstream stream(filename.c_str(), std::ios::binary);
-	return ReadStdIstream(stream);
-}
-
-static void WriteFileUTF16LE(const mpt::PathString &filename, const std::wstring &str = std::wstring())
-{
+	STATIC_ASSERT(sizeof(wchar_t) == 2);
 	std::ofstream inifile(filename.c_str(), std::ios::binary | std::ios::trunc);
 	const uint8 UTF16LE_BOM[] = { 0xff, 0xfe };
 	inifile.write(reinterpret_cast<const char*>(UTF16LE_BOM), 2);
@@ -377,29 +379,23 @@ static void WriteFileUTF16LE(const mpt::PathString &filename, const std::wstring
 	inifile.close();
 }
 
-void IniFileSettingsBackend::EnforceUnicode()
+void IniFileSettingsBackend::ConvertToUnicode(const std::wstring &backupTag)
 {
 	// Force ini file to be encoded in UTF16.
 	// This causes WINAPI ini file functions to keep it in UTF16 encoding
 	// and thus support storing unicode strings uncorrupted.
 	// This is backwards compatible because even ANSI WINAPI behaves the
 	// same way in this case.
-	if(!PathFileExistsW(filename.c_str()))
-	{
-		WriteFileUTF16LE(filename);
-		return;
-	}
 	const std::vector<char> data = ReadFile(filename);
-	if(data.empty())
-	{
-		WriteFileUTF16LE(filename);
-		return;
-	}
-	if(IsTextUnicode(&data[0], data.size(), NULL))
+	if(!data.empty() && IsTextUnicode(&data[0], data.size(), NULL))
 	{
 		return;
 	}
-	MoveFileExW(filename.c_str(), (filename + L".ansi.bak").c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH);
+	const std::wstring backupFilename = backupTag.empty()
+		? filename + L".ansi.bak"
+		: filename + L".ansi." + backupTag + L".bak"
+		;
+	MoveFileExW(filename.c_str(), backupFilename.c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH);
 	WriteFileUTF16LE(filename, mpt::String::Decode(std::string(&data[0], &data[0] + data.size()), mpt::CharsetLocale));
 }
 
@@ -567,8 +563,8 @@ void RegistrySettingsBackend::RemoveSetting(const SettingPath &path)
 
 
 
-IniFileSettingsContainer::IniFileSettingsContainer(const mpt::PathString &filename, bool forceUnicode)
-	: IniFileSettingsBackend(filename, forceUnicode)
+IniFileSettingsContainer::IniFileSettingsContainer(const mpt::PathString &filename)
+	: IniFileSettingsBackend(filename)
 	, SettingsContainer(this)
 {
 	return;
@@ -582,7 +578,7 @@ IniFileSettingsContainer::~IniFileSettingsContainer()
 
 
 DefaultSettingsContainer::DefaultSettingsContainer()
-	: IniFileSettingsContainer(mpt::String::Decode(theApp.GetConfigFileName(), mpt::CharsetLocale), true)
+	: IniFileSettingsContainer(mpt::String::Decode(theApp.GetConfigFileName(), mpt::CharsetLocale))
 {
 	return;
 }
