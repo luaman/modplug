@@ -700,6 +700,7 @@ public:
 	template<typename Trhs> Setting & operator -= (const Trhs &rhs) { T tmp = *this; tmp -= rhs; *this = tmp; return *this; }
 	template<typename Trhs> Setting & operator *= (const Trhs &rhs) { T tmp = *this; tmp *= rhs; *this = tmp; return *this; }
 	template<typename Trhs> Setting & operator /= (const Trhs &rhs) { T tmp = *this; tmp /= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator %= (const Trhs &rhs) { T tmp = *this; tmp %= rhs; *this = tmp; return *this; }
 	template<typename Trhs> Setting & operator |= (const Trhs &rhs) { T tmp = *this; tmp |= rhs; *this = tmp; return *this; }
 	template<typename Trhs> Setting & operator &= (const Trhs &rhs) { T tmp = *this; tmp &= rhs; *this = tmp; return *this; }
 	template<typename Trhs> Setting & operator ^= (const Trhs &rhs) { T tmp = *this; tmp ^= rhs; *this = tmp; return *this; }
@@ -774,6 +775,7 @@ public:
 	template<typename Trhs> CachedSetting & operator -= (const Trhs &rhs) { T tmp = *this; tmp -= rhs; *this = tmp; return *this; }
 	template<typename Trhs> CachedSetting & operator *= (const Trhs &rhs) { T tmp = *this; tmp *= rhs; *this = tmp; return *this; }
 	template<typename Trhs> CachedSetting & operator /= (const Trhs &rhs) { T tmp = *this; tmp /= rhs; *this = tmp; return *this; }
+	template<typename Trhs> CachedSetting & operator %= (const Trhs &rhs) { T tmp = *this; tmp %= rhs; *this = tmp; return *this; }
 	template<typename Trhs> CachedSetting & operator |= (const Trhs &rhs) { T tmp = *this; tmp |= rhs; *this = tmp; return *this; }
 	template<typename Trhs> CachedSetting & operator &= (const Trhs &rhs) { T tmp = *this; tmp &= rhs; *this = tmp; return *this; }
 	template<typename Trhs> CachedSetting & operator ^= (const Trhs &rhs) { T tmp = *this; tmp ^= rhs; *this = tmp; return *this; }
