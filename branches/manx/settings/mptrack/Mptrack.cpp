@@ -840,7 +840,7 @@ BOOL CTrackApp::InitInstance()
 	// Construct auto saver instance, class TrackerSettings expects it being available.
 	CMainFrame::m_pAutoSaver = new CAutoSaver();
 
-	m_pSettingsIniFile = new IniFileSettingsBackend(mpt::LocaleToPath(m_szConfigFileName), true);
+	m_pSettingsIniFile = new IniFileSettingsBackend(mpt::LocaleToPath(m_szConfigFileName));
 	
 	// If version number stored in INI is 1.17.02.40 or later, always load setting from INI file.
 	// If it isn't, try loading from Registry first, then from the INI file.
