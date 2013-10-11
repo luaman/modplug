@@ -809,7 +809,7 @@ void CMainFrame::AudioRead(const SoundDeviceSettings &settings, PVOID pvData, UL
 void CMainFrame::AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples, int64 streamPosition)
 //-----------------------------------------------------------------------------------------------------
 {
-	UNREFERENCED_PARAMETER(settings);
+	MPT_UNREFERENCED_PARAMETER(settings);
 	OPENMPT_PROFILE_FUNCTION(Profiler::Notify);
 	DoNotification(NumSamples, streamPosition);
 }
