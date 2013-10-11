@@ -768,7 +768,7 @@ public:
 	}
 	void SettingChanged(const SettingPath &path)
 	{
-		UNREFERENCED_PARAMETER(path);
+		MPT_UNREFERENCED_PARAMETER(path);
 		Update();
 	}
 	template<typename Trhs> CachedSetting & operator += (const Trhs &rhs) { T tmp = *this; tmp += rhs; *this = tmp; return *this; }

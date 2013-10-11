@@ -550,14 +550,14 @@ SettingValue RegistrySettingsBackend::ReadSetting(const SettingPath &path, const
 
 void RegistrySettingsBackend::WriteSetting(const SettingPath &path, const SettingValue &val)
 {
-	UNREFERENCED_PARAMETER(path);
-	UNREFERENCED_PARAMETER(val);
+	MPT_UNREFERENCED_PARAMETER(path);
+	MPT_UNREFERENCED_PARAMETER(val);
 	// not needed in OpenMPT
 }
 
 void RegistrySettingsBackend::RemoveSetting(const SettingPath &path)
 {
-	UNREFERENCED_PARAMETER(path);
+	MPT_UNREFERENCED_PARAMETER(path);
 	// not needed in OpenMPT
 }
 
