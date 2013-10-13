@@ -278,11 +278,10 @@ public:
 	Setting<uint32> m_LatencyMS;
 	Setting<uint32> m_UpdateIntervalMS;
 	Setting<SampleFormat> m_SampleFormat;
-
 	Setting<bool> m_SoundDeviceExclusiveMode;
 	Setting<bool> m_SoundDeviceBoostThreadPriority;
-	DWORD GetSoundDeviceFlags() const;
-	void SetSoundDeviceFlags(DWORD flags);
+	SoundDeviceSettings GetSoundDeviceSettings() const;
+	void SetSoundDeviceSettings(const SoundDeviceSettings &settings);
 
 	Setting<uint32> MixerMaxChannels;
 	Setting<uint32> MixerDSPMask;
