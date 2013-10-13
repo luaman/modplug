@@ -17,6 +17,7 @@
 #include "../sounddsp/EQ.h"
 #include "../sounddsp/DSP.h"
 #include "../sounddsp/Reverb.h"
+#include "../sounddev/SoundDevice.h"
 #include "../common/version.h"
 #include "Settings.h"
 
@@ -197,6 +198,9 @@ template<> inline PLUGVOLUMEHANDLING FromSettingValue(const SettingValue &val)
 	return static_cast<PLUGVOLUMEHANDLING>(val.as<int32>());
 }
 
+template<> inline SettingValue ToSettingValue(const SoundDeviceID &val) { return SettingValue(int32(val.GetIdRaw())); }
+template<> inline SoundDeviceID FromSettingValue(const SettingValue &val) { return SoundDeviceID::FromIdRaw(val.as<int32>()); }
+
 template<> inline SettingValue ToSettingValue(const SampleFormat &val) { return SettingValue(int32(val.value)); }
 template<> inline SampleFormat FromSettingValue(const SettingValue &val) { return SampleFormatEnum(val.as<int32>()); }
 
@@ -267,7 +271,9 @@ public:
 	// Sound Settings
 	
 	Setting<bool> m_MorePortaudio;
-	Setting<LONG> m_nWaveDevice; // use the SNDDEV_GET_NUMBER and SNDDEV_GET_TYPE macros to decode
+	Setting<SoundDeviceID> m_nWaveDevice;
+	SoundDeviceID GetSoundDeviceID() const { return m_nWaveDevice; }
+	void SetSoundDeviceID(const SoundDeviceID &id) { m_nWaveDevice = id; }
 	Setting<uint32> m_BufferLength_DEPRECATED;
 	Setting<uint32> m_LatencyMS;
 	Setting<uint32> m_UpdateIntervalMS;
