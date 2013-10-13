@@ -277,7 +277,44 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 
 	// load old and messy stuff:
 
-	LoadSettings();
+	PatternClipboard::SetClipboardSize(conf.Read<int32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize()));
+
+	// Update
+	{
+		tm lastUpdate;
+		MemsetZero(lastUpdate);
+		CString s = conf.Read<CString>("Update", "LastUpdateCheck", "1970-01-01 00:00");
+		if(sscanf(s, "%04d-%02d-%02d %02d:%02d", &lastUpdate.tm_year, &lastUpdate.tm_mon, &lastUpdate.tm_mday, &lastUpdate.tm_hour, &lastUpdate.tm_min) == 5)
+		{
+			lastUpdate.tm_year -= 1900;
+			lastUpdate.tm_mon--;
+		}
+		time_t outTime = Util::sdTime::MakeGmTime(lastUpdate);
+		if(outTime < 0) outTime = 0;
+		CUpdateCheck::SetUpdateSettings
+			(
+			outTime,
+			conf.Read<int32>("Update", "UpdateCheckPeriod", CUpdateCheck::GetUpdateCheckPeriod()),
+			conf.Read<CString>("Update", "UpdateURL", CUpdateCheck::GetUpdateURL()),
+			conf.Read<int32>("Update", "SendGUID", CUpdateCheck::GetSendGUID() ? 1 : 0) != 0,
+			conf.Read<int32>("Update", "ShowUpdateHint", CUpdateCheck::GetShowUpdateHint() ? 1 : 0) != 0
+			);
+	}
+
+	// Chords
+	LoadChords(Chords);
+
+	// Zxx Macros
+	MIDIMacroConfig macros;
+	theApp.GetDefaultMidiMacro(macros);
+	for(int isfx = 0; isfx < 16; isfx++)
+	{
+		mpt::String::Copy(macros.szMidiSFXExt[isfx], conf.Read<std::string>("Zxx Macros", mpt::String::Format("SF%X", isfx), macros.szMidiSFXExt[isfx]));
+	}
+	for(int izxx = 0; izxx < 128; izxx++)
+	{
+		mpt::String::Copy(macros.szMidiZXXExt[izxx], conf.Read<std::string>("Zxx Macros", mpt::String::Format("Z%02X", izxx | 0x80), macros.szMidiZXXExt[izxx]));
+	}
 
 
 	// Fixups:
@@ -396,6 +433,14 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	FixupEQ(&CEQSetupDlg::gUserPresets[1]);
 	FixupEQ(&CEQSetupDlg::gUserPresets[2]);
 	FixupEQ(&CEQSetupDlg::gUserPresets[3]);
+
+	// Zxx Macros
+	if((MAKE_VERSION_NUMERIC(1,17,00,00) <= storedVersion) && (storedVersion < MAKE_VERSION_NUMERIC(1,20,00,00)))
+	{
+		// Fix old nasty broken (non-standard) MIDI configs in INI file.
+		macros.UpgradeMacros();
+	}
+	theApp.SetDefaultMidiMacro(macros);
 
 	// Paths
 	for(size_t i = 0; i < NUM_DIRS; i++)
@@ -518,69 +563,6 @@ void TrackerSettings::GetDefaultColourScheme(COLORREF (&colours)[MAX_MODCOLORS])
 }
 
 
-void TrackerSettings::LoadSettings()
-//----------------------------------
-{
-
-	CString storedVersion = IniVersion.Get().c_str();
-
-	// Internet Update
-	{
-		tm lastUpdate;
-		MemsetZero(lastUpdate);
-		CString s = conf.Read<CString>("Update", "LastUpdateCheck", "1970-01-01 00:00");
-		if(sscanf(s, "%04d-%02d-%02d %02d:%02d", &lastUpdate.tm_year, &lastUpdate.tm_mon, &lastUpdate.tm_mday, &lastUpdate.tm_hour, &lastUpdate.tm_min) == 5)
-		{
-			lastUpdate.tm_year -= 1900;
-			lastUpdate.tm_mon--;
-		}
-
-		time_t outTime = Util::sdTime::MakeGmTime(lastUpdate);
-
-		if(outTime < 0) outTime = 0;
-
-		CUpdateCheck::SetUpdateSettings
-			(
-			outTime,
-			conf.Read<int32>("Update", "UpdateCheckPeriod", CUpdateCheck::GetUpdateCheckPeriod()),
-			conf.Read<CString>("Update", "UpdateURL", CUpdateCheck::GetUpdateURL()),
-			conf.Read<int32>("Update", "SendGUID", CUpdateCheck::GetSendGUID() ? 1 : 0) != 0,
-			conf.Read<int32>("Update", "ShowUpdateHint", CUpdateCheck::GetShowUpdateHint() ? 1 : 0) != 0
-			);
-	}
-
-	PatternClipboard::SetClipboardSize(conf.Read<int32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize()));
-
-	// Load Chords
-	LoadChords(Chords);
-
-	// Load default macro configuration
-	MIDIMacroConfig macros;
-	theApp.GetDefaultMidiMacro(macros);
-	for(int isfx = 0; isfx < 16; isfx++)
-	{
-		CHAR snam[8];
-		wsprintf(snam, "SF%X", isfx);
-		mpt::String::Copy(macros.szMidiSFXExt[isfx], conf.Read<std::string>("Zxx Macros", snam, macros.szMidiSFXExt[isfx]));
-		mpt::String::SetNullTerminator(macros.szMidiSFXExt[isfx]);
-	}
-	for(int izxx = 0; izxx < 128; izxx++)
-	{
-		CHAR snam[8];
-		wsprintf(snam, "Z%02X", izxx | 0x80);
-		mpt::String::Copy(macros.szMidiZXXExt[izxx], conf.Read<std::string>("Zxx Macros", snam, macros.szMidiZXXExt[izxx]));
-		mpt::String::SetNullTerminator(macros.szMidiZXXExt[izxx]);
-	}
-	// Fix old nasty broken (non-standard) MIDI configs in INI file.
-	if(storedVersion >= "1.17" && storedVersion < "1.20")
-	{
-		macros.UpgradeMacros();
-	}
-	theApp.SetDefaultMidiMacro(macros);
-
-}
-
-
 void TrackerSettings::FixupEQ(EQPreset *pEqSettings)
 //--------------------------------------------------
 {
@@ -604,6 +586,8 @@ void TrackerSettings::SaveSettings()
 	CMainFrame::GetMainFrame()->GetWindowPlacement(&wpl);
 	conf.Write<WINDOWPLACEMENT>("Display", "WindowPlacement", wpl);
 
+	conf.Write<uint32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize());
+
 	// Internet Update
 	{
 		CString outDate;
@@ -619,9 +603,6 @@ void TrackerSettings::SaveSettings()
 		conf.Write<int32>("Update", "SendGUID", CUpdateCheck::GetSendGUID() ? 1 : 0);
 		conf.Write<int32>("Update", "ShowUpdateHint", CUpdateCheck::GetShowUpdateHint() ? 1 : 0);
 	}
-
-	conf.Write<uint32>("Pattern Editor", "NumClipboards", PatternClipboard::GetClipboardSize());
-
 
 	// Effects
 #ifndef NO_DSP
@@ -676,7 +657,7 @@ void TrackerSettings::SaveSettings()
 	// Older versions of OpenMPT 1.18+ will look for this file if this entry is missing, so removing this entry after having read it is kind of backwards compatible.
 	conf.Remove("Paths", "Key_Config_File");
 
-
+	// Chords
 	SaveChords(Chords);
 
 	// Save default macro configuration
@@ -684,15 +665,11 @@ void TrackerSettings::SaveSettings()
 	theApp.GetDefaultMidiMacro(macros);
 	for(int isfx = 0; isfx < 16; isfx++)
 	{
-		CHAR snam[8];
-		wsprintf(snam, "SF%X", isfx);
-		conf.Write<std::string>("Zxx Macros", snam, macros.szMidiSFXExt[isfx]);
+		conf.Write<std::string>("Zxx Macros", mpt::String::Format("SF%X", isfx), macros.szMidiSFXExt[isfx]);
 	}
 	for(int izxx = 0; izxx < 128; izxx++)
 	{
-		CHAR snam[8];
-		wsprintf(snam, "Z%02X", izxx | 0x80);
-		conf.Write<std::string>("Zxx Macros", snam, macros.szMidiZXXExt[izxx]);
+		conf.Write<std::string>("Zxx Macros", mpt::String::Format("Z%02X", izxx | 0x80), macros.szMidiZXXExt[izxx]);
 	}
 
 }
