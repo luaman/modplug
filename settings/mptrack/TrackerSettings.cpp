@@ -152,7 +152,7 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, autoApplySmoothFT2Ramping(conf, "Misc", "SmoothFT2Ramping", false)
 	// Sound Settings
 	, m_MorePortaudio(conf, "Sound Settings", "MorePortaudio", false)
-	, m_nWaveDevice(conf, "Sound Settings", "WaveDevice", SNDDEV_BUILD_ID(0, SNDDEV_WAVEOUT))
+	, m_nWaveDevice(conf, "Sound Settings", "WaveDevice", SoundDeviceID())
 	, m_BufferLength_DEPRECATED(conf, "Sound Settings", "BufferLength", OldSettingPath("", "BufferLength"), 50)
 	, m_LatencyMS(conf, "Sound Settings", "Latency", SNDDEV_DEFAULT_LATENCY_MS)
 	, m_UpdateIntervalMS(conf, "Sound Settings", "UpdateInterval", SNDDEV_DEFAULT_UPDATEINTERVAL_MS)
@@ -314,7 +314,7 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 		{
 			if(m_BufferLength_DEPRECATED < 1) m_BufferLength_DEPRECATED = 1; // 1ms
 			if(m_BufferLength_DEPRECATED > 1000) m_BufferLength_DEPRECATED = 1000; // 1sec
-			if(SNDDEV_GET_TYPE(m_nWaveDevice) == SNDDEV_ASIO)
+			if(GetSoundDeviceID().GetType() == SNDDEV_ASIO)
 			{
 				m_LatencyMS = m_BufferLength_DEPRECATED;
 				m_UpdateIntervalMS = m_BufferLength_DEPRECATED / 8;

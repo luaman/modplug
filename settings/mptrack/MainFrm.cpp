@@ -245,14 +245,14 @@ VOID CMainFrame::Initialize()
 	if(!theApp.GetSoundDevicesManager()->FindDeviceInfo(TrackerSettings::Instance().m_nWaveDevice))
 	{
 		// Fall back to default WaveOut device
-		TrackerSettings::Instance().m_nWaveDevice = SNDDEV_BUILD_ID(0, SNDDEV_WAVEOUT);
+		TrackerSettings::Instance().m_nWaveDevice = SoundDeviceID();
 	}
 	if(TrackerSettings::Instance().MixerSamplerate == 0)
 	{
 		TrackerSettings::Instance().MixerSamplerate = MixerSettings().gdwMixingFreq;
 		#ifndef NO_ASIO
 			// If no mixing rate is specified and we're using ASIO, get a mixing rate supported by the device.
-			if(SNDDEV_GET_TYPE(TrackerSettings::Instance().m_nWaveDevice) == SNDDEV_ASIO)
+			if(TrackerSettings::Instance().GetSoundDeviceID().GetType() == SNDDEV_ASIO)
 			{
 				ISoundDevice *dummy = theApp.GetSoundDevicesManager()->CreateSoundDevice(TrackerSettings::Instance().m_nWaveDevice);
 				if(dummy)
@@ -819,15 +819,15 @@ bool CMainFrame::audioTryOpeningDevice()
 //--------------------------------------
 {
 	Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
-	const UINT nDevID = TrackerSettings::Instance().m_nWaveDevice;
-	if(gpSoundDevice && (gpSoundDevice->GetDeviceID() != nDevID))
+	const SoundDeviceID deviceID = TrackerSettings::Instance().m_nWaveDevice;
+	if(gpSoundDevice && (gpSoundDevice->GetDeviceID() != deviceID))
 	{
 		delete gpSoundDevice;
 		gpSoundDevice = nullptr;
 	}
 	if(!gpSoundDevice)
 	{
-		gpSoundDevice = theApp.GetSoundDevicesManager()->CreateSoundDevice(nDevID);
+		gpSoundDevice = theApp.GetSoundDevicesManager()->CreateSoundDevice(deviceID);
 	}
 	if(!gpSoundDevice)
 	{
@@ -1653,13 +1653,13 @@ HWND CMainFrame::GetFollowSong() const
 }
 
 
-BOOL CMainFrame::SetupSoundCard(DWORD deviceflags, DWORD rate, SampleFormat sampleformat, UINT nChns, UINT latency_ms, UINT updateinterval_ms, LONG wd)
-//-----------------------------------------------------------------------------------------------------------------------------------------------------
+BOOL CMainFrame::SetupSoundCard(DWORD deviceflags, DWORD rate, SampleFormat sampleformat, UINT nChns, UINT latency_ms, UINT updateinterval_ms, SoundDeviceID deviceID)
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 {
 	const bool isPlaying = IsPlaying();
 	if ((TrackerSettings::Instance().GetSoundDeviceFlags() != deviceflags)
 	 || (TrackerSettings::Instance().MixerSamplerate != rate)
-	 || (TrackerSettings::Instance().m_nWaveDevice != wd)
+	 || (TrackerSettings::Instance().GetSoundDeviceID() != deviceID)
 	 || (TrackerSettings::Instance().m_LatencyMS != latency_ms)
 	 || (TrackerSettings::Instance().m_UpdateIntervalMS != updateinterval_ms)
 	 || (TrackerSettings::Instance().m_SampleFormat.Get() != sampleformat)
@@ -1671,7 +1671,7 @@ BOOL CMainFrame::SetupSoundCard(DWORD deviceflags, DWORD rate, SampleFormat samp
 			if ((m_pSndFile) && (!m_pSndFile->IsPaused())) pActiveMod = GetModPlaying();
 			PauseMod();
 		}
-		TrackerSettings::Instance().m_nWaveDevice = wd;
+		TrackerSettings::Instance().SetSoundDeviceID(deviceID);
 		TrackerSettings::Instance().MixerSamplerate = rate;
 		TrackerSettings::Instance().SetSoundDeviceFlags(deviceflags);
 		TrackerSettings::Instance().m_LatencyMS = latency_ms;
