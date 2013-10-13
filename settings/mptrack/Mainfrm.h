@@ -333,8 +333,8 @@ public:
 
 	// from ISoundSource
 	void FillAudioBufferLocked(IFillAudioBuffer &callback);
-	void AudioRead(const SoundDeviceSettings &settings, PVOID pData, ULONG NumSamples);
-	void AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples, int64 streamPosition);
+	void AudioRead(const SoundDeviceSettings &settings, std::size_t numFrames, void *buffer);
+	void AudioDone(const SoundDeviceSettings &settings, std::size_t numFrames, int64 streamPosition);
 	
 	bool audioTryOpeningDevice();
 	bool audioOpenDevice();
