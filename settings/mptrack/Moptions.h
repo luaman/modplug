@@ -57,7 +57,7 @@ protected:
 };
 
 
-#if defined(MPT_SETTINGS_CACHE) && defined(MPT_SETTINGS_PANEL)
+#if defined(MPT_SETTINGS_CACHE)
 
 //==========================================
 class COptionsAdvanced: public CPropertyPage
@@ -83,7 +83,7 @@ protected:
 	DECLARE_MESSAGE_MAP();
 };
 
-#endif // MPT_SETTINGS_CACHE && MPT_SETTINGS_PANEL
+#endif // MPT_SETTINGS_CACHE
 
 
 //========================================

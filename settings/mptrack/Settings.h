@@ -20,7 +20,6 @@
 
 #define MPT_SETTINGS_CACHE
 #define MPT_SETTINGS_CACHE_STORE_DEFAULTS
-#define MPT_SETTINGS_PANEL
 
 
 enum SettingType

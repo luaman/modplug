@@ -689,7 +689,7 @@ void COptionsGeneral::OnOptionSelChanged()
 
 
 
-#if defined(MPT_SETTINGS_CACHE) && defined(MPT_SETTINGS_PANEL)
+#if defined(MPT_SETTINGS_CACHE)
 
 BEGIN_MESSAGE_MAP(COptionsAdvanced, CPropertyPage)
 	ON_LBN_DBLCLK(IDC_LIST4,					OnOptionDblClick)
@@ -773,4 +773,4 @@ void COptionsAdvanced::OnOptionDblClick()
 	OnSettingsChanged();
 }
 
-#endif // MPT_SETTINGS_CACHE && MPT_SETTINGS_PANEL
+#endif // MPT_SETTINGS_CACHE

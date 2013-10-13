@@ -1855,9 +1855,9 @@ void CMainFrame::OnViewOptions()
 #endif
 	CAutoSaverGUI autosavedlg(m_pAutoSaver); //rewbs.AutoSaver
 	CUpdateSetupDlg updatedlg;
-#if defined(MPT_SETTINGS_CACHE) && defined(MPT_SETTINGS_PANEL)
+#if defined(MPT_SETTINGS_CACHE)
 	COptionsAdvanced advanced;
-#endif // MPT_SETTINGS_CACHE && MPT_SETTINGS_PANEL
+#endif // MPT_SETTINGS_CACHE
 	dlg.AddPage(&general);
 	dlg.AddPage(&sounddlg);
 	dlg.AddPage(&playerdlg);
@@ -1869,9 +1869,9 @@ void CMainFrame::OnViewOptions()
 	dlg.AddPage(&mididlg);
 	dlg.AddPage(&autosavedlg);
 	dlg.AddPage(&updatedlg);
-#if defined(MPT_SETTINGS_CACHE) && defined(MPT_SETTINGS_PANEL)
+#if defined(MPT_SETTINGS_CACHE)
 	dlg.AddPage(&advanced);
-#endif // MPT_SETTINGS_CACHE && MPT_SETTINGS_PANEL
+#endif // MPT_SETTINGS_CACHE
 	m_bOptionsLocked=true;	//rewbs.customKeys
 	m_SoundCardOptionsDialog = &sounddlg;
 	dlg.DoModal();
