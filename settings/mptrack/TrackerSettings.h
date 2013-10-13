@@ -381,8 +381,6 @@ public:
 
 protected:
 
-	void LoadSettings();
-
 	void FixupEQ(EQPreset *pEqSettings);
 
 	void LoadChords(MPTChords &chords);
