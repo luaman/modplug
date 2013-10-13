@@ -716,12 +716,21 @@ BOOL COptionsAdvanced::OnInitDialog()
 //-----------------------------------
 {
 	CPropertyPage::OnInitDialog();
+	ReInit();
+	return TRUE;
+}
+
+
+void COptionsAdvanced::ReInit()
+//-----------------------------
+{
+	m_List.ResetContent();
+	m_IndexToPath.clear();
 	for(SettingsContainer::SettingsMap::const_iterator it = theApp.GetSettings().begin(); it != theApp.GetSettings().end(); ++it)
 	{
 		int index = m_List.AddString(FormatSetting(it->first, it->second).c_str());
 		m_IndexToPath[index] = it->first;
 	}
-	return TRUE;
 }
 
 
@@ -735,6 +744,7 @@ void COptionsAdvanced::OnOK()
 BOOL COptionsAdvanced::OnSetActive()
 //----------------------------------
 {
+	ReInit();
 	CMainFrame::m_nLastOptionsPage = OPTIONS_PAGE_ADVANCED;
 	return CPropertyPage::OnSetActive();
 }

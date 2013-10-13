@@ -78,6 +78,8 @@ protected:
 	afx_msg void OnOptionDblClick();
 	afx_msg void OnSettingsChanged() { SetModified(TRUE); }
 
+	void ReInit();
+
 	DECLARE_MESSAGE_MAP();
 };
 
