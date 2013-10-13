@@ -148,7 +148,7 @@ struct SoundDeviceSettings
 		, Channels(2)
 		, sampleFormat(SampleFormatInt16)
 		, ExclusiveMode(false)
-		, BoostThreadPriority(false)
+		, BoostThreadPriority(true)
 	{
 		return;
 	}
