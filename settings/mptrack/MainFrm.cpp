@@ -834,15 +834,7 @@ bool CMainFrame::audioTryOpeningDevice()
 		return false;
 	}
 	gpSoundDevice->SetSource(this);
-	SoundDeviceSettings settings;
-	settings.hWnd = m_hWnd;
-	settings.LatencyMS = TrackerSettings::Instance().m_LatencyMS;
-	settings.UpdateIntervalMS = TrackerSettings::Instance().m_UpdateIntervalMS;
-	settings.fulCfgOptions = TrackerSettings::Instance().GetSoundDeviceFlags();
-	settings.Samplerate = TrackerSettings::Instance().MixerSamplerate;
-	settings.Channels = (uint8)TrackerSettings::Instance().MixerOutputChannels;
-	settings.sampleFormat = TrackerSettings::Instance().m_SampleFormat;
-	return gpSoundDevice->Open(settings);
+	return gpSoundDevice->Open(TrackerSettings::Instance().GetSoundDeviceSettings());
 }
 
 
@@ -1653,17 +1645,11 @@ HWND CMainFrame::GetFollowSong() const
 }
 
 
-BOOL CMainFrame::SetupSoundCard(DWORD deviceflags, DWORD rate, SampleFormat sampleformat, UINT nChns, UINT latency_ms, UINT updateinterval_ms, SoundDeviceID deviceID)
-//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+BOOL CMainFrame::SetupSoundCard(const SoundDeviceSettings &deviceSettings, SoundDeviceID deviceID)
+//------------------------------------------------------------------------------------------------
 {
 	const bool isPlaying = IsPlaying();
-	if ((TrackerSettings::Instance().GetSoundDeviceFlags() != deviceflags)
-	 || (TrackerSettings::Instance().MixerSamplerate != rate)
-	 || (TrackerSettings::Instance().GetSoundDeviceID() != deviceID)
-	 || (TrackerSettings::Instance().m_LatencyMS != latency_ms)
-	 || (TrackerSettings::Instance().m_UpdateIntervalMS != updateinterval_ms)
-	 || (TrackerSettings::Instance().m_SampleFormat.Get() != sampleformat)
-	 || (TrackerSettings::Instance().MixerOutputChannels != nChns))
+	if((TrackerSettings::Instance().GetSoundDeviceID() != deviceID) || (TrackerSettings::Instance().GetSoundDeviceSettings() != deviceSettings))
 	{
 		CModDoc *pActiveMod = NULL;
 		if (isPlaying)
@@ -1672,12 +1658,7 @@ BOOL CMainFrame::SetupSoundCard(DWORD deviceflags, DWORD rate, SampleFormat samp
 			PauseMod();
 		}
 		TrackerSettings::Instance().SetSoundDeviceID(deviceID);
-		TrackerSettings::Instance().MixerSamplerate = rate;
-		TrackerSettings::Instance().SetSoundDeviceFlags(deviceflags);
-		TrackerSettings::Instance().m_LatencyMS = latency_ms;
-		TrackerSettings::Instance().m_UpdateIntervalMS = updateinterval_ms;
-		TrackerSettings::Instance().m_SampleFormat = sampleformat;
-		TrackerSettings::Instance().MixerOutputChannels = nChns;
+		TrackerSettings::Instance().SetSoundDeviceSettings(deviceSettings);
 		{
 			CriticalSection cs;
 			if (pActiveMod) UpdateAudioParameters(pActiveMod->GetrSoundFile(), FALSE);
@@ -1845,7 +1826,7 @@ void CMainFrame::OnViewOptions()
 
 	CPropertySheet dlg("OpenMPT Setup", this, m_nLastOptionsPage);
 	COptionsGeneral general;
-	COptionsSoundcard sounddlg(TrackerSettings::Instance().MixerSamplerate, TrackerSettings::Instance().GetSoundDeviceFlags(), TrackerSettings::Instance().m_SampleFormat, TrackerSettings::Instance().MixerOutputChannels, TrackerSettings::Instance().m_LatencyMS, TrackerSettings::Instance().m_UpdateIntervalMS, TrackerSettings::Instance().m_nWaveDevice);
+	COptionsSoundcard sounddlg(TrackerSettings::Instance().GetSoundDeviceSettings(), TrackerSettings::Instance().m_nWaveDevice);
 	COptionsKeyboard keyboard;
 	COptionsColors colors;
 	COptionsPlayer playerdlg;
