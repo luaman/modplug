@@ -782,36 +782,36 @@ public:
 };
 
 
-void CMainFrame::AudioRead(const SoundDeviceSettings &settings, PVOID pvData, ULONG NumFrames)
-//--------------------------------------------------------------------------------------------
+void CMainFrame::AudioRead(const SoundDeviceSettings &settings, std::size_t numFrames, void *buffer)
+//--------------------------------------------------------------------------------------------------
 {
 	OPENMPT_PROFILE_FUNCTION(Profiler::Audio);
-	StereoVuMeterTargetWrapper target(settings.sampleFormat, m_Dither, pvData);
-	CSoundFile::samplecount_t renderedFrames = m_pSndFile->Read(NumFrames, target);
-	ASSERT(renderedFrames <= NumFrames);
-	CSoundFile::samplecount_t remainingFrames = NumFrames - renderedFrames;
+	StereoVuMeterTargetWrapper target(settings.sampleFormat, m_Dither, buffer);
+	CSoundFile::samplecount_t renderedFrames = m_pSndFile->Read(numFrames, target);
+	ASSERT(renderedFrames <= numFrames);
+	CSoundFile::samplecount_t remainingFrames = numFrames - renderedFrames;
 	if(remainingFrames > 0)
 	{
 		// The sound device interface expects the whole buffer to be filled, always.
 		// Clear remaining buffer if not enough samples got rendered.
-		std::size_t frameSize = m_pSndFile->m_MixerSettings.gnChannels * (settings.sampleFormat.GetBitsPerSample()/8);
+		std::size_t frameSize = settings.Channels * (settings.sampleFormat.GetBitsPerSample()/8);
 		if(settings.sampleFormat.IsUnsigned())
 		{
-			std::memset((char*)(pvData) + renderedFrames * frameSize, 0x80, remainingFrames * frameSize);
+			std::memset((char*)(buffer) + renderedFrames * frameSize, 0x80, remainingFrames * frameSize);
 		} else
 		{
-			std::memset((char*)(pvData) + renderedFrames * frameSize, 0, remainingFrames * frameSize);
+			std::memset((char*)(buffer) + renderedFrames * frameSize, 0, remainingFrames * frameSize);
 		}
 	}
 }
 
 
-void CMainFrame::AudioDone(const SoundDeviceSettings &settings, ULONG NumSamples, int64 streamPosition)
-//-----------------------------------------------------------------------------------------------------
+void CMainFrame::AudioDone(const SoundDeviceSettings &settings, std::size_t numFrames, int64 streamPosition)
+//----------------------------------------------------------------------------------------------------------
 {
 	MPT_UNREFERENCED_PARAMETER(settings);
 	OPENMPT_PROFILE_FUNCTION(Profiler::Notify);
-	DoNotification(NumSamples, streamPosition);
+	DoNotification(numFrames, streamPosition);
 }
 
 
