@@ -213,18 +213,23 @@ void SettingsContainer::RemoveSetting(const SettingPath &path)
 	backend->RemoveSetting(path);
 }
 
-SettingsContainer::SettingsContainer(ISettingsBackend *backend)
-	: backend(backend)
-	, oldBackend(nullptr)
-	, immediateFlush(false)
-{
-	ASSERT(backend);
-}
-
 void SettingsContainer::Flush()
 {
 	return;
 }
+
+void SettingsContainer::Register(ISettingChanged *listener, const SettingPath &path)
+{
+	MPT_UNREFERENCED_PARAMETER(listener);
+	MPT_UNREFERENCED_PARAMETER(path);
+}
+
+void SettingsContainer::UnRegister(ISettingChanged *listener, const SettingPath &path)
+{
+	MPT_UNREFERENCED_PARAMETER(listener);
+	MPT_UNREFERENCED_PARAMETER(path);
+}
+
 
 SettingsContainer::~SettingsContainer()
 {
@@ -237,6 +242,7 @@ SettingsContainer::~SettingsContainer()
 SettingsContainer::SettingsContainer(ISettingsBackend *backend, ISettingsBackend *oldBackend)
 	: backend(backend)
 	, oldBackend(oldBackend)
+	, immediateFlush(false)
 {
 	ASSERT(backend);
 }
