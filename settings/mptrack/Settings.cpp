@@ -81,6 +81,104 @@ std::vector<char> SettingHexToBin(const std::wstring &src)
 }
 
 
+
+std::wstring SettingValue::FormatTypeAsString() const
+{
+	if(GetType() == SettingTypeNone)
+	{
+		return L"nil";
+	}
+	std::wstring result;
+	switch(GetType())
+	{
+		case SettingTypeBool:
+			result += L"bool";
+			break;
+		case SettingTypeInt:
+			result += L"int";
+			break;
+		case SettingTypeFloat:
+			result += L"float";
+			break;
+		case SettingTypeString:
+			result += L"string";
+			break;
+		case SettingTypeBinary:
+			result += L"binary";
+			break;
+		case SettingTypeNone:
+		default:
+			result += L"nil";
+			break;
+	}
+	if(HasTypeTag() && !GetTypeTag().empty())
+	{
+		result += L":" + mpt::String::Decode(GetTypeTag(), mpt::CharsetUS_ASCII);
+	}
+	return result;
+}
+
+
+std::wstring SettingValue::FormatValueAsString() const
+{
+	switch(GetType())
+	{
+		case SettingTypeBool:
+			return StringifyW(valueBool);
+			break;
+		case SettingTypeInt:
+			return StringifyW(valueInt);
+			break;
+		case SettingTypeFloat:
+			return StringifyW(valueFloat);
+			break;
+		case SettingTypeString:
+			return valueString;
+			break;
+		case SettingTypeBinary:
+			return SettingBinToHex(valueBinary);
+			break;
+		case SettingTypeNone:
+		default:
+			return std::wstring();
+			break;
+	}
+}
+
+
+std::wstring SettingValue::FormatAsString() const
+{
+	return L"(" + FormatTypeAsString() + L")" + FormatValueAsString();
+}
+
+
+void SettingValue::SetFromString(const std::wstring &newVal)
+{
+	switch(GetType())
+	{
+		case SettingTypeBool:
+			valueBool = ConvertStrTo<bool>(newVal);
+			break;
+		case SettingTypeInt:
+			valueInt = ConvertStrTo<int32>(newVal);
+			break;
+		case SettingTypeFloat:
+			valueFloat = ConvertStrTo<double>(newVal);
+			break;
+		case SettingTypeString:
+			valueString = newVal;
+			break;
+		case SettingTypeBinary:
+			valueBinary = SettingHexToBin(newVal);
+			break;
+		case SettingTypeNone:
+		default:
+			break;
+	}
+}
+
+
+
 #if defined(MPT_SETTINGS_CACHE)
 
 
@@ -217,19 +315,6 @@ void SettingsContainer::Flush()
 {
 	return;
 }
-
-void SettingsContainer::Register(ISettingChanged *listener, const SettingPath &path)
-{
-	MPT_UNREFERENCED_PARAMETER(listener);
-	MPT_UNREFERENCED_PARAMETER(path);
-}
-
-void SettingsContainer::UnRegister(ISettingChanged *listener, const SettingPath &path)
-{
-	MPT_UNREFERENCED_PARAMETER(listener);
-	MPT_UNREFERENCED_PARAMETER(path);
-}
-
 
 SettingsContainer::~SettingsContainer()
 {

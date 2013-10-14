@@ -247,94 +247,10 @@ public:
 		ASSERT(type == SettingTypeBinary);
 		return valueBinary;
 	}
-	std::wstring FormatTypeAsString() const
-	{
-		if(GetType() == SettingTypeNone)
-		{
-			return L"nil";
-		}
-		std::wstring result;
-		switch(GetType())
-		{
-			case SettingTypeBool:
-				result += L"bool";
-				break;
-			case SettingTypeInt:
-				result += L"int";
-				break;
-			case SettingTypeFloat:
-				result += L"float";
-				break;
-			case SettingTypeString:
-				result += L"string";
-				break;
-			case SettingTypeBinary:
-				result += L"binary";
-				break;
-			case SettingTypeNone:
-			default:
-				result += L"nil";
-				break;
-		}
-		if(HasTypeTag() && !GetTypeTag().empty())
-		{
-			result += L":" + mpt::String::Decode(GetTypeTag(), mpt::CharsetUS_ASCII);
-		}
-		return result;
-	}
-	std::wstring FormatValueAsString() const
-	{
-		switch(GetType())
-		{
-			case SettingTypeBool:
-				return StringifyW(valueBool);
-				break;
-			case SettingTypeInt:
-				return StringifyW(valueInt);
-				break;
-			case SettingTypeFloat:
-				return StringifyW(valueFloat);
-				break;
-			case SettingTypeString:
-				return valueString;
-				break;
-			case SettingTypeBinary:
-				return SettingBinToHex(valueBinary);
-				break;
-			case SettingTypeNone:
-			default:
-				return std::wstring();
-				break;
-		}
-	}
-	std::wstring FormatAsString() const
-	{
-		return L"(" + FormatTypeAsString() + L")" + FormatValueAsString();
-	}
-	void SetFromString(const std::wstring &newVal)
-	{
-		switch(GetType())
-		{
-			case SettingTypeBool:
-				valueBool = ConvertStrTo<bool>(newVal);
-				break;
-			case SettingTypeInt:
-				valueInt = ConvertStrTo<int32>(newVal);
-				break;
-			case SettingTypeFloat:
-				valueFloat = ConvertStrTo<double>(newVal);
-				break;
-			case SettingTypeString:
-				valueString = newVal;
-				break;
-			case SettingTypeBinary:
-				valueBinary = SettingHexToBin(newVal);
-				break;
-			case SettingTypeNone:
-			default:
-				break;
-		}
-	}
+	std::wstring FormatTypeAsString() const;
+	std::wstring FormatValueAsString() const;
+	std::wstring FormatAsString() const;
+	void SetFromString(const std::wstring &newVal);
 };
 
 
@@ -638,13 +554,15 @@ public:
 		RemoveSetting(SettingPath(section, key));
 	}
 	void Flush();
-	void Register(ISettingChanged *listener, const SettingPath &path);
-	void UnRegister(ISettingChanged *listener, const SettingPath &path);
 	~SettingsContainer();
 
 	#if defined(MPT_SETTINGS_CACHE)
 
 		public:
+
+			void Register(ISettingChanged *listener, const SettingPath &path);
+			void UnRegister(ISettingChanged *listener, const SettingPath &path);
+
 			SettingsMap::const_iterator begin() const { return map.begin(); }
 			SettingsMap::const_iterator end() const { return map.end(); }
 			const SettingsMap &GetMap() const { return map; }
@@ -652,6 +570,8 @@ public:
 	#endif // MPT_SETTINGS_CACHE
 
 };
+
+#if defined(MPT_SETTINGS_CACHE)
 
 template <typename T>
 class Setting
@@ -780,6 +700,72 @@ public:
 	template<typename Trhs> CachedSetting & operator ^= (const Trhs &rhs) { T tmp = *this; tmp ^= rhs; *this = tmp; return *this; }
 };
 
+#else // !MPT_SETTINGS_CACHE
+
+template <typename T>
+class Setting
+{
+private:
+	T value;
+	SettingsContainer &conf;
+	const SettingPath path;
+public:
+	Setting(SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
+		: value(def)
+		, conf(conf_)
+		, path(section, key)
+	{
+		value = conf.Read(path, def, metadata);
+	}
+	Setting(SettingsContainer &conf_, const std::string &section, const std::string &key, const OldSettingPath &oldPath, const T&def, const SettingMetadata &metadata = SettingMetadata())
+		: value(def)
+		, conf(conf_)
+		, path(section, key, oldPath)
+	{
+		value = conf.Read(path, def, metadata);
+	}
+	Setting(SettingsContainer &conf_, const SettingPath &path_, const T&def, const SettingMetadata &metadata = SettingMetadata())
+		: value(def)
+		, conf(conf_)
+		, path(path_)
+	{
+		value = conf.Read(path, def, metadata);
+	}
+	~Setting()
+	{
+		return;
+	}
+	SettingPath GetPath() const
+	{
+		return path;
+	}
+	Setting & operator = (const T &val)
+	{
+		value = val;
+		conf.Write(path, val);
+		return *this;
+	}
+	operator const T & () const
+	{
+		return value;
+	}
+	const T & Get() const
+	{
+		return value;
+	}
+	template<typename Trhs> Setting & operator += (const Trhs &rhs) { T tmp = *this; tmp += rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator -= (const Trhs &rhs) { T tmp = *this; tmp -= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator *= (const Trhs &rhs) { T tmp = *this; tmp *= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator /= (const Trhs &rhs) { T tmp = *this; tmp /= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator %= (const Trhs &rhs) { T tmp = *this; tmp %= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator |= (const Trhs &rhs) { T tmp = *this; tmp |= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator &= (const Trhs &rhs) { T tmp = *this; tmp &= rhs; *this = tmp; return *this; }
+	template<typename Trhs> Setting & operator ^= (const Trhs &rhs) { T tmp = *this; tmp ^= rhs; *this = tmp; return *this; }
+};
+
+#define CachedSetting Setting
+
+#endif // MPT_SETTINGS_CACHE
 
 
 class IniFileSettingsBackend : public ISettingsBackend
