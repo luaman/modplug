@@ -257,6 +257,8 @@ VOID CMainFrame::Initialize()
 				ISoundDevice *dummy = theApp.GetSoundDevicesManager()->CreateSoundDevice(TrackerSettings::Instance().m_nWaveDevice);
 				if(dummy)
 				{
+					dummy->SetMessageReceiver(CMainFrame::GetMainFrame());
+					TrackerSettings::Instance().m_MixerSettings.gdwMixingFreq = dummy->GetCurrentSampleRate();
 					TrackerSettings::Instance().MixerSamplerate = dummy->GetCurrentSampleRate();
 					delete dummy;
 				}
@@ -702,6 +704,13 @@ LRESULT CMainFrame::OnNotification(WPARAM, LPARAM)
 }
 
 
+void CMainFrame::AudioMessage(const std::string &str)
+//---------------------------------------------------
+{
+	Reporting::Notification(str.c_str());
+}
+
+
 void CMainFrame::FillAudioBufferLocked(IFillAudioBuffer &callback)
 //----------------------------------------------------------------
 {
@@ -833,6 +842,7 @@ bool CMainFrame::audioTryOpeningDevice()
 	{
 		return false;
 	}
+	gpSoundDevice->SetMessageReceiver(this);
 	gpSoundDevice->SetSource(this);
 	return gpSoundDevice->Open(TrackerSettings::Instance().GetSoundDeviceSettings());
 }
