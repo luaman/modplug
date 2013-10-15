@@ -733,7 +733,7 @@ public:
 	}
 	~Setting()
 	{
-		return;
+		conf.Write(path, val);
 	}
 	SettingPath GetPath() const
 	{
@@ -742,7 +742,6 @@ public:
 	Setting & operator = (const T &val)
 	{
 		value = val;
-		conf.Write(path, val);
 		return *this;
 	}
 	operator const T & () const
