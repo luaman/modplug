@@ -258,7 +258,6 @@ VOID CMainFrame::Initialize()
 				if(dummy)
 				{
 					dummy->SetMessageReceiver(CMainFrame::GetMainFrame());
-					TrackerSettings::Instance().m_MixerSettings.gdwMixingFreq = dummy->GetCurrentSampleRate();
 					TrackerSettings::Instance().MixerSamplerate = dummy->GetCurrentSampleRate();
 					delete dummy;
 				}
