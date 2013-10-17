@@ -474,7 +474,9 @@ struct SettingMetadata
 
 #else // !MPT_SETTINGS_CACHE
 
-typedef bool SettingMetadata;
+struct SettingMetadata
+{
+};
 
 #endif // MPT_SETTINGS_CACHE
 
