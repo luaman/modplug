@@ -383,6 +383,7 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 		MixerVolumeRampDownSamples = MixerVolumeRampSamples_DEPRECATED.Get();
 		conf.Remove(MixerVolumeRampSamples_DEPRECATED.GetPath());
 	}
+	Limit(ResamplerCutoffPercent, 0, 100);
 #ifndef NO_ASIO
 	CASIODevice::baseChannel = conf.Read<int32>("Sound Settings", "ASIOBaseChannel", CASIODevice::baseChannel);
 #endif // NO_ASIO

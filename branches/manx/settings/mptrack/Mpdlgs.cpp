@@ -864,8 +864,17 @@ void COptionsPlayer::OnOK()
 	//rewbs.resamplerConf
 	CString s;
 	m_CEditWFIRCutoff.GetWindowText(s);
-	if (s != "")
-		TrackerSettings::Instance().ResamplerCutoffPercent = atoi(s);
+	if(s != "")
+	{
+		int newCutoff = atoi(s);
+		Limit(newCutoff, 0, 100);
+		TrackerSettings::Instance().ResamplerCutoffPercent = newCutoff;
+	}
+	{
+		CHAR s[64];
+		wsprintf(s, "%d", TrackerSettings::Instance().ResamplerCutoffPercent.Get());
+		m_CEditWFIRCutoff.SetWindowText(s);
+	}
 	//TrackerSettings::Instance().m_ResamplerSettings.gbWFIRType set in OnWFIRTypeChange
 
 	m_CEditRampUp.GetWindowText(s);
