@@ -35,6 +35,9 @@ enum SettingType
 std::wstring SettingBinToHex(const std::vector<char> &src);
 std::vector<char> SettingHexToBin(const std::wstring &src);
 
+// SettingValue is a variant type that stores any type that can natively be represented in a config backend.
+// Any other type that should be stored must provide a matching ToSettingValue and FromSettingValue.
+// Other types can optionally also set a type tag which would get checked in debug builds.
 class SettingValue
 {
 private:
@@ -86,7 +89,7 @@ public:
 		{
 			return *this;
 		}
-		ASSERT(type == SettingTypeNone || type == other.type);
+		ASSERT(type == SettingTypeNone || (type == other.type && typeTag == other.typeTag));
 		type = other.type;
 		valueBool = other.valueBool;
 		valueInt = other.valueInt;
@@ -309,6 +312,8 @@ template<> inline LONG FromSettingValue(const SettingValue &val) { return LONG(v
 #if defined(MPT_SETTINGS_CACHE)
 
 
+// An instance of SetttingState represents the cached on-disk state of a certain SettingPath.
+// The mapping is stored externally in SettingsContainer::map.
 class SettingState
 {
 private:
@@ -387,6 +392,8 @@ struct OldSettingPath
 };
 
 
+// SettingPath represents the path in a config backend to a certain setting.
+// An optional alternative old path is used for cases where the setting was named differently in the old registry based settings.
 class SettingPath
 {
 private:
@@ -486,6 +493,8 @@ public:
 	virtual void SettingChanged(const SettingPath &path) = 0;
 };
 
+// SettingContainer basically represents a frontend to 1 or 2 backends (e.g. ini files or registry subtrees) for a collection of configuration settings.
+// SettingContainer provides basic read/write access to individual setting. The values are cached and only flushed on destruction or explicit flushs.
 class SettingsContainer
 {
 
@@ -574,6 +583,20 @@ public:
 };
 
 #if defined(MPT_SETTINGS_CACHE)
+
+// Setting<T> and CachedSetting<T> are references to a SettingPath below a SettingConainer (both provided to the constructor).
+// They should mostly behave like normal non-reference variables of type T. I.e., they can be assigned to and read from.
+// As they have actual reference semantics, all Setting<T> or CachedSetting<T> that access the same path consistently have the same value.
+// The difference between the 2 lies in the way this consistency is achieved:
+//  Setting<T>: The actual value is not stored in an instance of Setting<T>.
+//   Instead, it is read/written and converted on every access from the SettingContainer.
+//   In the SettingContainer, each SettingPath is mapped to a single instance of SettingValue, so there cannot be any incoherence.
+//  CachedSetting<T>: The value, readily converted to T, is stored directly in each instance of CachedSetting<T>.
+//   A callback for its SettingPath is registered with SettingContainer, and on every change to this SettingPath, the value gets re-read and updated.
+// Setting<T> implies some overhead on every access but is generally simpler to understand.
+// CachedSetting<T> implies overhead in stored (the copy of T and the callback pointers).
+// Except for the difference in runtime/space characteristics, Setting<T> and CachedSetting<T> behave exactly the same way.
+// It is recommended to only use CachedSetting<T> for settings that get read frequently, i.e. during GUI updates (like in the pattern view).
 
 template <typename T>
 class Setting

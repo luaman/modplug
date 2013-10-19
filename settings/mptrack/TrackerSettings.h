@@ -237,6 +237,7 @@ public:
 	Setting<CString> gcsInstallGUID;
 
 	// Window
+
 	Setting<bool> WindowMaximized_DEPRECATED;
 
 	// Display
