@@ -114,7 +114,6 @@ public:
 protected:
 
 	IniFileSettingsBackend *m_pSettingsIniFile;
-	RegistrySettingsBackend *m_pSettingsRegistry;
 	SettingsContainer *m_pSettings;
 	TrackerSettings *m_pTrackerSettings;
 	IniFileSettingsContainer *m_pPluginCache;

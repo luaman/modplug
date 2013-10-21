@@ -231,14 +231,9 @@ public:
 
 	// Version
 
-	Setting<uint32> RegVersion;
 	Setting<std::string> IniVersion;
 	const MptVersion::VersionNum gcsPreviousVersion;
 	Setting<CString> gcsInstallGUID;
-
-	// Window
-
-	Setting<bool> WindowMaximized_DEPRECATED;
 
 	// Display
 
@@ -359,8 +354,6 @@ public:
 	MPTChords Chords;
 
 public:
-
-	static void SetupOldPathTranslations(SettingsContainer &conf);
 
 	TrackerSettings(SettingsContainer &conf);
 
