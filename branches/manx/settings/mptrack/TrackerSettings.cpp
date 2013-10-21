@@ -43,13 +43,13 @@ TrackerSettings &TrackerSettings::Instance()
 }
 
 
-static MptVersion::VersionNum GetStoredVersion(const std::string &iniVersion, uint32 regVersion = 0)
-//--------------------------------------------------------------------------------------------------
+static MptVersion::VersionNum GetStoredVersion(const std::string &iniVersion)
+//---------------------------------------------------------------------------
 {
-	MptVersion::VersionNum result = regVersion;
+	MptVersion::VersionNum result = MptVersion::num;
 	if(!iniVersion.empty())
 	{
-		result = std::max(result, MptVersion::ToNum(iniVersion));
+		result = MptVersion::ToNum(iniVersion);
 	}
 	return result;
 }
@@ -117,91 +117,13 @@ static uint32 GetDefaultUndoBufferSize()
 }
 
 
-void TrackerSettings::SetupOldPathTranslations(SettingsContainer &conf)
-//---------------------------------------------------------------------
-{
-	conf.AddOldPathTranslation(SettingPath("Display", "MDIMaximize"), SettingPath("Window", "MDIMaximize"));
-	conf.AddOldPathTranslation(SettingPath("Display", "MDITreeRatio"), SettingPath("Window", "MDITreeRatio"));
-	conf.AddOldPathTranslation(SettingPath("Display", "MDITreeWidth"), SettingPath("Window", "MDITreeWidth"));
-	conf.AddOldPathTranslation(SettingPath("Display", "MDIGeneralHeight"), SettingPath("Window", "MDIGeneralHeight"));
-	conf.AddOldPathTranslation(SettingPath("Display", "MDIPatternHeight"), SettingPath("Window", "MDIPatternHeight"));
-	conf.AddOldPathTranslation(SettingPath("Display", "MDISampleHeight"), SettingPath("Window", "MDISampleHeight"));
-	conf.AddOldPathTranslation(SettingPath("Display", "MDIInstrumentHeight"), SettingPath("Window", "MDIInstrumentHeight"));
-	conf.AddOldPathTranslation(SettingPath("Display", "MDICommentsHeight"), SettingPath("Window", "MDICommentsHeight"));
-	conf.AddOldPathTranslation(SettingPath("Display", "MDIGraphHeight"), SettingPath("Window", "MDIGraphHeight"));
-	conf.AddOldPathTranslation(SettingPath("Display", "PlugSelectWindowX"), SettingPath("", "PlugSelectWindowX"));
-	conf.AddOldPathTranslation(SettingPath("Display", "PlugSelectWindowY"), SettingPath("", "PlugSelectWindowY"));
-	conf.AddOldPathTranslation(SettingPath("Display", "PlugSelectWindowWidth"), SettingPath("", "PlugSelectWindowWidth"));
-	conf.AddOldPathTranslation(SettingPath("Display", "PlugSelectWindowHeight"), SettingPath("", "PlugSelectWindowHeight"));
-	conf.AddOldPathTranslation(SettingPath("Display", "PlugSelectWindowLast"), SettingPath("", "PlugSelectWindowLast"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "BufferLength"), SettingPath("", "BufferLength"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "BitsPerSample"), SettingPath("", "BitsPerSample"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "MixChannels"), SettingPath("", "MixChannels"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "Quality"), SettingPath("", "Quality"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "SoundSetup"), SettingPath("", "SoundSetup"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "Mixing_Rate"), SettingPath("", "Mixing_Rate"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "ChannelMode"), SettingPath("", "ChannelMode"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "PreAmp"), SettingPath("", "PreAmp"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "StereoSeparation"), SettingPath("", "StereoSeparation"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "VolumeRampUpSamples"), SettingPath("", "BitsPerSample"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "VolumeRampDownSamples"), SettingPath("", "BitsPerSample"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "VolumeRampSamples"), SettingPath("", "VolumeRampSamples"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "SrcMode"), SettingPath("", "SrcMode"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "XMMSModplugResamplerWFIRType"), SettingPath("", "XMMSModplugResamplerWFIRType"));
-	conf.AddOldPathTranslation(SettingPath("Sound Settings", "ResamplerWFIRCutoff"), SettingPath("", "ResamplerWFIRCutoff"));
-	conf.AddOldPathTranslation(SettingPath("MIDI Settings", "MidiDevice"), SettingPath("", "MidiDevice"));
-	conf.AddOldPathTranslation(SettingPath("MIDI Settings", "MidiSetup"), SettingPath("", "MidiSetup"));
-	conf.AddOldPathTranslation(SettingPath("MIDI Settings", "MidiImportSpeed"), SettingPath("", "MidiImportSpeed"));
-	conf.AddOldPathTranslation(SettingPath("MIDI Settings", "MidiImportPatLen"), SettingPath("", "MidiImportPatLen"));
-	conf.AddOldPathTranslation(SettingPath("Pattern Editor", "LoopSong"), SettingPath("", "LoopSong"));
-	conf.AddOldPathTranslation(SettingPath("Pattern Editor", "PatternSetup"), SettingPath("", "PatternSetup"));
-	conf.AddOldPathTranslation(SettingPath("Pattern Editor", "RowSpacing"), SettingPath("", "RowSpacing"));
-	conf.AddOldPathTranslation(SettingPath("Pattern Editor", "RowSpacing2"), SettingPath("", "RowSpacing2"));
-	conf.AddOldPathTranslation(SettingPath("Pattern Editor", "AutoChordWaitTime"), SettingPath("", "AutoChordWaitTime"));
-	conf.AddOldPathTranslation(SettingPath("Effects", "XBassDepth"), SettingPath("", "XBassDepth"));
-	conf.AddOldPathTranslation(SettingPath("Effects", "XBassRange"), SettingPath("", "XBassRange"));
-	conf.AddOldPathTranslation(SettingPath("Effects", "ReverbDepth"), SettingPath("", "ReverbDepth"));
-	conf.AddOldPathTranslation(SettingPath("Effects", "ReverbType"), SettingPath("", "ReverbType"));
-	conf.AddOldPathTranslation(SettingPath("Effects", "ProLogicDepth"), SettingPath("", "ProLogicDepth"));
-	conf.AddOldPathTranslation(SettingPath("Effects", "ProLogicDelay"), SettingPath("", "ProLogicDelay"));
-	conf.AddOldPathTranslation(SettingPath("Effects", "EQ_Settings"), SettingPath("", "EQ_Settings"));
-	conf.AddOldPathTranslation(SettingPath("Effects", "EQ_User1"), SettingPath("", "EQ_User1"));
-	conf.AddOldPathTranslation(SettingPath("Effects", "EQ_User2"), SettingPath("", "EQ_User2"));
-	conf.AddOldPathTranslation(SettingPath("Effects", "EQ_User3"), SettingPath("", "EQ_User3"));
-	conf.AddOldPathTranslation(SettingPath("Effects", "EQ_User4"), SettingPath("", "EQ_User4"));
-	conf.AddOldPathTranslation(SettingPath("AutoSave", "Enabled"), SettingPath("", "AutoSave_Enabled"));
-	conf.AddOldPathTranslation(SettingPath("AutoSave", "IntervalMinutes"), SettingPath("", "AutoSave_IntervalMinutes"));
-	conf.AddOldPathTranslation(SettingPath("AutoSave", "BackupHistory"), SettingPath("", "AutoSave_BackupHistory"));
-	conf.AddOldPathTranslation(SettingPath("AutoSave", "UseOriginalPath"), SettingPath("", "AutoSave_UseOriginalPath"));
-	conf.AddOldPathTranslation(SettingPath("AutoSave", "Path"), SettingPath("", "AutoSave_Path"));
-	conf.AddOldPathTranslation(SettingPath("AutoSave", "FileNameTemplate"), SettingPath("", "AutoSave_FileNameTemplate"));
-	for(int ncol = 0; ncol < MAX_MODCOLORS; ncol++)
-	{
-		const std::string colorName = mpt::String::Format("Color%02d", ncol);
-		conf.AddOldPathTranslation(SettingPath("Display", colorName), SettingPath("Window", colorName));
-	}
-	for(size_t i = 0; i < NUM_DIRS; i++)
-	{
-		if(TrackerDirectories::Instance().m_szDirectoryToSettingsName[i][0] == '\0')
-		{
-			continue;
-		}
-		const std::string settingKey = TrackerDirectories::Instance().m_szDirectoryToSettingsName[i];
-		conf.AddOldPathTranslation(SettingPath("Paths", settingKey), SettingPath("", settingKey));
-	}
-}
-
-
 TrackerSettings::TrackerSettings(SettingsContainer &conf)
 //-------------------------------------------------------
 	: conf(conf)
 	// Version
-	, RegVersion(conf, "Settings", "Version", 0)
 	, IniVersion(conf, "Version", "Version", "")
-	, gcsPreviousVersion(GetStoredVersion(IniVersion, RegVersion))
+	, gcsPreviousVersion(GetStoredVersion(IniVersion))
 	, gcsInstallGUID(conf, "Version", "InstallGUID", "")
-	// Window
-	, WindowMaximized_DEPRECATED(conf, "Window", "Maximized", false)
 	// Display
 	, m_ShowSplashScreen(conf, "Display", "ShowSplashScreen", true)
 	, gbMdiMaximize(conf, "Display", "MDIMaximize", true)
@@ -409,16 +331,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 		RpcStringFree(&Str);
 	}
 
-	// Window
-	if(storedVersion < MAKE_VERSION_NUMERIC(1,17,02,40))
-	{
-		if(WindowMaximized_DEPRECATED)
-		{
-			theApp.m_nCmdShow = SW_SHOWMAXIMIZED;
-		}
-	}
-	conf.Remove(WindowMaximized_DEPRECATED.GetPath());
-
 	// Sound Settings
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,21,01,26))
 	{
@@ -530,7 +442,6 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 
 	// Last fixup: update config version
 	IniVersion = MptVersion::str;
-	conf.Remove("Settings", "Version");
 
 	// Write updated settings
 	conf.Flush();

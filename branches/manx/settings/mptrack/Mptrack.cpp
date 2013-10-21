@@ -637,7 +637,6 @@ END_MESSAGE_MAP()
 CTrackApp::CTrackApp()
 //--------------------
 	: m_pSettingsIniFile(nullptr)
-	, m_pSettingsRegistry(nullptr)
 	, m_pSettings(nullptr)
 	, m_pTrackerSettings(nullptr)
 	, m_pPluginCache(nullptr)
@@ -842,32 +841,9 @@ BOOL CTrackApp::InitInstance()
 
 	m_pSettingsIniFile = new IniFileSettingsBackend(mpt::LocaleToPath(m_szConfigFileName));
 	
-	// If version number stored in INI is 1.17.02.40 or later, always load setting from INI file.
-	// If it isn't, try loading from Registry first, then from the INI file.
-	const std::string storedVersion = m_pSettingsIniFile->ReadSetting(SettingPath("Version", "Version"), "");
-	if(storedVersion < "1.17.02.40")
-	{
-		m_pSettingsRegistry = new RegistrySettingsBackend(HKEY_CURRENT_USER, L"Software\\Olivier Lapicque\\ModPlug Tracker");
-	}
-	
-	m_pSettings = new SettingsContainer(m_pSettingsIniFile, m_pSettingsRegistry);
-
-	if(storedVersion < "1.17.02.40")
-	{
-		TrackerSettings::SetupOldPathTranslations(*m_pSettings);
-	}
+	m_pSettings = new SettingsContainer(m_pSettingsIniFile);
 
 	m_pTrackerSettings = new TrackerSettings(*m_pSettings);
-
-	if(m_pSettingsRegistry)
-	{
-		// Registry backend is only needed while loading and importing old settings.
-		// Remove it here to avoid overhead.
-		m_pSettings->Flush();
-		m_pSettings->RemoveOldBackend();
-		delete m_pSettingsRegistry;
-		m_pSettingsRegistry = nullptr;
-	}
 
 	m_pPluginCache = new IniFileSettingsContainer(mpt::LocaleToPath(m_szPluginCacheFileName));
 
@@ -990,8 +966,6 @@ int CTrackApp::ExitInstance()
 	m_pTrackerSettings = nullptr;
 	delete m_pSettings;
 	m_pSettings = nullptr;
-	delete m_pSettingsRegistry;
-	m_pSettingsRegistry = nullptr;
 	delete m_pSettingsIniFile;
 	m_pSettingsIniFile = nullptr;
 

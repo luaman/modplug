@@ -184,15 +184,7 @@ void SettingValue::SetFromString(const std::wstring &newVal)
 
 SettingValue SettingsContainer::BackendsReadSetting(const SettingPath &path, const SettingValue &def) const
 {
-	SettingValue result = def;
-	if(oldBackend)
-	{
-		std::map<SettingPath,SettingPath>::const_iterator oldPathIt = OldPathMap.find(path);
-		const SettingPath oldPath = (oldPathIt != OldPathMap.end()) ? oldPathIt->second : path;
-		result = oldBackend->ReadSetting(oldPath, result);
-	}
-	result = backend->ReadSetting(path, result);
-	return result;
+	return backend->ReadSetting(path, def);
 }
 
 void SettingsContainer::BackendsWriteSetting(const SettingPath &path, const SettingValue &val)
@@ -326,25 +318,12 @@ SettingsContainer::~SettingsContainer()
 #endif // MPT_SETTINGS_CACHE
 
 
-SettingsContainer::SettingsContainer(ISettingsBackend *backend, ISettingsBackend *oldBackend)
+SettingsContainer::SettingsContainer(ISettingsBackend *backend)
 	: backend(backend)
-	, oldBackend(oldBackend)
 	, immediateFlush(false)
 {
 	ASSERT(backend);
 }
-
-void SettingsContainer::AddOldPathTranslation(const SettingPath &newPath, const SettingPath &oldPath)
-{
-	OldPathMap[newPath] = oldPath;
-}
-
-void SettingsContainer::RemoveOldBackend()
-{
-	oldBackend = nullptr;
-	OldPathMap.clear();
-}
-
 
 
 
@@ -531,133 +510,6 @@ void IniFileSettingsBackend::RemoveSetting(const SettingPath &path)
 }
 
 
-
-
-
-std::wstring RegistrySettingsBackend::BuildKeyName(const SettingPath &path) const
-{
-	if(path.GetSection().empty())
-	{
-		return basePath;
-	} else
-	{
-		return basePath + L"\\" + mpt::String::Decode(path.GetSection(), mpt::CharsetLocale);
-	}
-}
-
-std::wstring RegistrySettingsBackend::BuildValueName(const SettingPath &path) const
-{
-	return mpt::String::Decode(path.GetKey(), mpt::CharsetLocale);
-}
-
-std::vector<char> RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const
-{
-	std::vector<char> val = def;
-	HKEY regKey = HKEY();
-	if(RegOpenKeyExW(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
-	{
-		char v[4096];
-		MemsetZero(v);
-		DWORD type = REG_BINARY;
-		DWORD typesize = sizeof(v);
-		if(RegQueryValueExW(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
-		{
-			val.assign(v, v + typesize);
-		}
-		RegCloseKey(regKey);
-		regKey = HKEY();
-	}
-	return val;
-}
-
-std::wstring RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, const std::wstring &def) const
-{
-	std::wstring val = def;
-	HKEY regKey = HKEY();
-	if(RegOpenKeyExW(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
-	{
-		WCHAR v[1024];
-		MemsetZero(v);
-		DWORD type = REG_SZ;
-		DWORD typesize = sizeof(v);
-		if(RegQueryValueExW(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
-		{
-			val = v;
-		}
-		RegCloseKey(regKey);
-		regKey = HKEY();
-	}
-	return val;
-}
-
-double RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, double def) const
-{
-	return ConvertStrTo<double>(ReadSettingRaw(path, StringifyW(def)));
-}
-
-int32 RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, int32 def) const
-{
-	int32 val = def;
-	HKEY regKey = HKEY();
-	if(RegOpenKeyExW(baseKey, BuildKeyName(path).c_str(), 0, KEY_READ, &regKey) == ERROR_SUCCESS)
-	{
-		DWORD v = val;
-		DWORD type = REG_DWORD;
-		DWORD typesize = sizeof(v);
-		if(RegQueryValueExW(regKey, BuildValueName(path).c_str(), NULL, &type, (BYTE *)&v, &typesize) == ERROR_SUCCESS)
-		{
-			val = v;
-		}
-		RegCloseKey(regKey);
-		regKey = HKEY();
-	}
-	return val;
-}
-
-bool RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, bool def) const
-{
-	return ReadSettingRaw(path, def ? 1 : 0) ? true : false;
-}
-
-
-
-RegistrySettingsBackend::RegistrySettingsBackend(HKEY baseKey, const std::wstring &basePath)
-	: baseKey(baseKey)
-	, basePath(basePath)
-{
-	return;
-}
-
-RegistrySettingsBackend::~RegistrySettingsBackend()
-{
-	return;
-}
-
-SettingValue RegistrySettingsBackend::ReadSetting(const SettingPath &path, const SettingValue &def) const
-{
-	switch(def.GetType())
-	{
-	case SettingTypeBool: return SettingValue(ReadSettingRaw(path, def.as<bool>()), def.GetTypeTag()); break;
-	case SettingTypeInt: return SettingValue(ReadSettingRaw(path, def.as<int32>()), def.GetTypeTag()); break;
-	case SettingTypeFloat: return SettingValue(ReadSettingRaw(path, def.as<double>()), def.GetTypeTag()); break;
-	case SettingTypeString: return SettingValue(ReadSettingRaw(path, def.as<std::wstring>()), def.GetTypeTag()); break;
-	case SettingTypeBinary: return SettingValue(ReadSettingRaw(path, def.as<std::vector<char> >()), def.GetTypeTag()); break;
-	default: return SettingValue(); break;
-	}
-}
-
-void RegistrySettingsBackend::WriteSetting(const SettingPath &path, const SettingValue &val)
-{
-	MPT_UNREFERENCED_PARAMETER(path);
-	MPT_UNREFERENCED_PARAMETER(val);
-	// not needed in OpenMPT
-}
-
-void RegistrySettingsBackend::RemoveSetting(const SettingPath &path)
-{
-	MPT_UNREFERENCED_PARAMETER(path);
-	// not needed in OpenMPT
-}
 
 
 

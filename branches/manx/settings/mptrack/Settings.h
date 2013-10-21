@@ -484,8 +484,6 @@ class SettingsContainer
 
 private:
 	ISettingsBackend *backend;
-	ISettingsBackend *oldBackend;
-	std::map<SettingPath,SettingPath> OldPathMap;
 private:
 	bool immediateFlush;
 	SettingValue BackendsReadSetting(const SettingPath &path, const SettingValue &def) const;
@@ -499,9 +497,7 @@ private:
 	SettingsContainer(const SettingsContainer &other); // disable
 	SettingsContainer& operator = (const SettingsContainer &other); // disable
 public:
-	SettingsContainer(ISettingsBackend *backend, ISettingsBackend *oldBackend = nullptr);
-	void AddOldPathTranslation(const SettingPath &newPath, const SettingPath &oldPath);
-	void RemoveOldBackend();
+	SettingsContainer(ISettingsBackend *backend);
 	void SetImmediateFlush(bool newImmediateFlush);
 	template <typename T>
 	T Read(const SettingPath &path, const T &def = T(), const SettingMetadata &metadata = SettingMetadata()) const
@@ -760,27 +756,6 @@ public:
 	IniFileSettingsBackend(const mpt::PathString &filename);
 	~IniFileSettingsBackend();
 	void ConvertToUnicode(const std::wstring &backupTag = std::wstring());
-	virtual SettingValue ReadSetting(const SettingPath &path, const SettingValue &def) const;
-	virtual void WriteSetting(const SettingPath &path, const SettingValue &val);
-	virtual void RemoveSetting(const SettingPath &path);
-};
-
-class RegistrySettingsBackend : public ISettingsBackend
-{
-private:
-	const HKEY baseKey;
-	const std::wstring basePath;
-private:
-	std::wstring BuildKeyName(const SettingPath &path) const;
-	std::wstring BuildValueName(const SettingPath &path) const;
-	std::vector<char> ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const;
-	std::wstring ReadSettingRaw(const SettingPath &path, const std::wstring &def) const;
-	double ReadSettingRaw(const SettingPath &path, double def) const;
-	int32 ReadSettingRaw(const SettingPath &path, int32 def) const;
-	bool ReadSettingRaw(const SettingPath &path, bool def) const;
-public:
-	RegistrySettingsBackend(HKEY baseKey, const std::wstring &basePath);
-	~RegistrySettingsBackend();
 	virtual SettingValue ReadSetting(const SettingPath &path, const SettingValue &def) const;
 	virtual void WriteSetting(const SettingPath &path, const SettingValue &val);
 	virtual void RemoveSetting(const SettingPath &path);
