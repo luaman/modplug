@@ -183,8 +183,3 @@ static inline PathString WideToPath(const std::wstring &path)  { return mpt::Str
 
 } // namespace mpt
 
-
-#if MPT_COMPILER_MSVC
-#define snprintf _snprintf
-#endif
-
