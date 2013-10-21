@@ -378,20 +378,6 @@ public:
 #endif // MPT_SETTINGS_CACHE
 
 
-struct OldSettingPath
-{
-	std::string section;
-	std::string key;
-	OldSettingPath() {}
-	OldSettingPath(const std::string &section, const std::string &key)
-		: section(section)
-		, key(key)
-	{
-		return;
-	}
-};
-
-
 // SettingPath represents the path in a config backend to a certain setting.
 // An optional alternative old path is used for cases where the setting was named differently in the old registry based settings.
 class SettingPath
@@ -399,18 +385,14 @@ class SettingPath
 private:
 	std::string section;
 	std::string key;
-	std::string oldSection;
-	std::string oldKey;
 public:
 	SettingPath()
 	{
 		return;
 	}
-	SettingPath(const std::string &section_, const std::string &key_, const OldSettingPath &oldPath = OldSettingPath())
+	SettingPath(const std::string &section_, const std::string &key_)
 		: section(section_)
 		, key(key_)
-		, oldSection(oldPath.section)
-		, oldKey(oldPath.key)
 	{
 		return;
 	}
@@ -421,18 +403,6 @@ public:
 	std::string GetKey() const
 	{
 		return key;
-	}
-	bool HasOldPaths() const
-	{
-		return !oldSection.empty() || !oldKey.empty();
-	}
-	std::string GetOldSection() const
-	{
-		return HasOldPaths() ? oldSection : section;
-	}
-	std::string GetOldKey() const
-	{
-		return HasOldPaths() ? oldKey : key;
 	}
 	int compare(const SettingPath &other) const
 	{
@@ -515,6 +485,7 @@ class SettingsContainer
 private:
 	ISettingsBackend *backend;
 	ISettingsBackend *oldBackend;
+	std::map<SettingPath,SettingPath> OldPathMap;
 private:
 	bool immediateFlush;
 	SettingValue BackendsReadSetting(const SettingPath &path, const SettingValue &def) const;
@@ -529,6 +500,7 @@ private:
 	SettingsContainer& operator = (const SettingsContainer &other); // disable
 public:
 	SettingsContainer(ISettingsBackend *backend, ISettingsBackend *oldBackend = nullptr);
+	void AddOldPathTranslation(const SettingPath &newPath, const SettingPath &oldPath);
 	void RemoveOldBackend();
 	void SetImmediateFlush(bool newImmediateFlush);
 	template <typename T>
@@ -540,11 +512,6 @@ public:
 	T Read(const std::string &section, const std::string &key, const T &def = T(), const SettingMetadata &metadata = SettingMetadata()) const
 	{
 		return FromSettingValue<T>(ReadSetting(SettingPath(section, key), ToSettingValue<T>(def), metadata));
-	}
-	template <typename T>
-	T Read(const std::string &section, const std::string &key, const OldSettingPath &oldPath, const T &def = T(), const SettingMetadata &metadata = SettingMetadata()) const
-	{
-		return FromSettingValue<T>(ReadSetting(SettingPath(section, key, oldPath), ToSettingValue<T>(def), metadata));
 	}
 	template <typename T>
 	void Write(const SettingPath &path, const T &val)
@@ -611,12 +578,6 @@ public:
 	{
 		conf.Read(path, def, metadata); // set default value
 	}
-	Setting(SettingsContainer &conf_, const std::string &section, const std::string &key, const OldSettingPath &oldPath, const T&def, const SettingMetadata &metadata = SettingMetadata())
-		: conf(conf_)
-		, path(section, key, oldPath)
-	{
-		conf.Read(path, def, metadata); // set default value
-	}
 	Setting(SettingsContainer &conf_, const SettingPath &path_, const T&def, const SettingMetadata &metadata = SettingMetadata())
 		: conf(conf_)
 		, path(path_)
@@ -663,14 +624,6 @@ public:
 		: value(def)
 		, conf(conf_)
 		, path(section, key)
-	{
-		value = conf.Read(path, def, metadata);
-		conf.Register(this, path);
-	}
-	CachedSetting(SettingsContainer &conf_, const std::string &section, const std::string &key, const OldSettingPath &oldPath, const T&def, const SettingMetadata &metadata = SettingMetadata())
-		: value(def)
-		, conf(conf_)
-		, path(section, key, oldPath)
 	{
 		value = conf.Read(path, def, metadata);
 		conf.Register(this, path);
@@ -739,13 +692,6 @@ public:
 		: value(def)
 		, conf(conf_)
 		, path(section, key)
-	{
-		value = conf.Read(path, def, metadata);
-	}
-	Setting(SettingsContainer &conf_, const std::string &section, const std::string &key, const OldSettingPath &oldPath, const T&def, const SettingMetadata &metadata = SettingMetadata())
-		: value(def)
-		, conf(conf_)
-		, path(section, key, oldPath)
 	{
 		value = conf.Read(path, def, metadata);
 	}
@@ -824,7 +770,6 @@ class RegistrySettingsBackend : public ISettingsBackend
 private:
 	const HKEY baseKey;
 	const std::wstring basePath;
-	const bool oldPaths;
 private:
 	std::wstring BuildKeyName(const SettingPath &path) const;
 	std::wstring BuildValueName(const SettingPath &path) const;
@@ -834,7 +779,7 @@ private:
 	int32 ReadSettingRaw(const SettingPath &path, int32 def) const;
 	bool ReadSettingRaw(const SettingPath &path, bool def) const;
 public:
-	RegistrySettingsBackend(HKEY baseKey, const std::wstring &basePath, bool oldPaths = false);
+	RegistrySettingsBackend(HKEY baseKey, const std::wstring &basePath);
 	~RegistrySettingsBackend();
 	virtual SettingValue ReadSetting(const SettingPath &path, const SettingValue &def) const;
 	virtual void WriteSetting(const SettingPath &path, const SettingValue &val);

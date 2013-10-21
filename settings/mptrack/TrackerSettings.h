@@ -360,6 +360,8 @@ public:
 
 public:
 
+	static void SetupOldPathTranslations(SettingsContainer &conf);
+
 	TrackerSettings(SettingsContainer &conf);
 
 	void SaveSettings();
