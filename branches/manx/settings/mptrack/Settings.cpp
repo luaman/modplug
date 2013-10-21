@@ -187,7 +187,9 @@ SettingValue SettingsContainer::BackendsReadSetting(const SettingPath &path, con
 	SettingValue result = def;
 	if(oldBackend)
 	{
-		result = oldBackend->ReadSetting(path, result);
+		std::map<SettingPath,SettingPath>::const_iterator oldPathIt = OldPathMap.find(path);
+		const SettingPath oldPath = (oldPathIt != OldPathMap.end()) ? oldPathIt->second : path;
+		result = oldBackend->ReadSetting(oldPath, result);
 	}
 	result = backend->ReadSetting(path, result);
 	return result;
@@ -332,9 +334,15 @@ SettingsContainer::SettingsContainer(ISettingsBackend *backend, ISettingsBackend
 	ASSERT(backend);
 }
 
+void SettingsContainer::AddOldPathTranslation(const SettingPath &newPath, const SettingPath &oldPath)
+{
+	OldPathMap[newPath] = oldPath;
+}
+
 void SettingsContainer::RemoveOldBackend()
 {
 	oldBackend = nullptr;
+	OldPathMap.clear();
 }
 
 
@@ -528,18 +536,18 @@ void IniFileSettingsBackend::RemoveSetting(const SettingPath &path)
 
 std::wstring RegistrySettingsBackend::BuildKeyName(const SettingPath &path) const
 {
-	if((oldPaths?path.GetOldSection():path.GetSection()).empty())
+	if(path.GetSection().empty())
 	{
 		return basePath;
 	} else
 	{
-		return basePath + L"\\" + mpt::String::Decode(oldPaths?path.GetOldSection():path.GetSection(), mpt::CharsetLocale);
+		return basePath + L"\\" + mpt::String::Decode(path.GetSection(), mpt::CharsetLocale);
 	}
 }
 
 std::wstring RegistrySettingsBackend::BuildValueName(const SettingPath &path) const
 {
-	return mpt::String::Decode(oldPaths?path.GetOldKey():path.GetKey(), mpt::CharsetLocale);
+	return mpt::String::Decode(path.GetKey(), mpt::CharsetLocale);
 }
 
 std::vector<char> RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, const std::vector<char> &def) const
@@ -613,10 +621,9 @@ bool RegistrySettingsBackend::ReadSettingRaw(const SettingPath &path, bool def) 
 
 
 
-RegistrySettingsBackend::RegistrySettingsBackend(HKEY baseKey, const std::wstring &basePath, bool oldPaths)
+RegistrySettingsBackend::RegistrySettingsBackend(HKEY baseKey, const std::wstring &basePath)
 	: baseKey(baseKey)
 	, basePath(basePath)
-	, oldPaths(oldPaths)
 {
 	return;
 }
