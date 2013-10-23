@@ -296,6 +296,9 @@ inline T FromSettingValue(const SettingValue &val)
 template<> inline SettingValue ToSettingValue(const CString &val) { return SettingValue(std::basic_string<TCHAR>(val.GetString())); }
 template<> inline CString FromSettingValue(const SettingValue &val) { return CString(val.as<std::basic_string<TCHAR> >().c_str()); }
 
+template<> inline SettingValue ToSettingValue(const float &val) { return SettingValue(double(val)); }
+template<> inline float FromSettingValue(const SettingValue &val) { return float(val.as<double>()); }
+
 template<> inline SettingValue ToSettingValue(const uint32 &val) { return SettingValue(int32(val)); }
 template<> inline uint32 FromSettingValue(const SettingValue &val) { return uint32(val.as<int32>()); }
 
@@ -568,6 +571,13 @@ private:
 	SettingsContainer &conf;
 	const SettingPath path;
 public:
+	Setting(const Setting &other)
+		: conf(other.conf)
+		, path(other.path)
+	{
+		return;
+	}
+public:
 	Setting(SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
 		: conf(conf_)
 		, path(section, key)
@@ -615,6 +625,14 @@ private:
 	T value;
 	SettingsContainer &conf;
 	const SettingPath path;
+public:
+	CachedSetting(const CachedSetting &other)
+		: value(other.value)
+		, conf(other.conf)
+		, path(other.path)
+	{
+		conf.Register(this, path);
+	}
 public:
 	CachedSetting(SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
 		: value(def)
@@ -683,6 +701,14 @@ private:
 	T value;
 	SettingsContainer &conf;
 	const SettingPath path;
+public:
+	Setting(const Setting &other)
+		: value(other.value)
+		, conf(other.conf)
+		, path(other.path)
+	{
+		return;
+	}
 public:
 	Setting(SettingsContainer &conf_, const std::string &section, const std::string &key, const T&def, const SettingMetadata &metadata = SettingMetadata())
 		: value(def)
