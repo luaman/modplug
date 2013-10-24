@@ -89,7 +89,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_UPDATE_COMMAND_UI(ID_INDICATOR_XINFO,OnUpdateXInfo) //rewbs.xinfo
 	ON_UPDATE_COMMAND_UI(ID_INDICATOR_CPU,  OnUpdateCPU)
 	ON_UPDATE_COMMAND_UI(IDD_TREEVIEW,		OnUpdateControlBarMenu)
-	ON_MESSAGE(WM_MOD_NOTIFICATION,		OnNotification)
 	ON_MESSAGE(WM_MOD_UPDATEPOSITION,		OnUpdatePosition)
 	ON_MESSAGE(WM_MOD_INVALIDATEPATTERNS,	OnInvalidatePatterns)
 	ON_MESSAGE(WM_MOD_SPECIALKEY,			OnSpecialKey)
@@ -183,9 +182,7 @@ CMainFrame::CMainFrame()
 //----------------------
 {
 
-	m_hNotifyThread = NULL;
-	m_dwNotifyThreadId = 0;
-	m_hNotifyWakeUp = NULL;
+	m_NotifyTimer = 0;
 	gpSoundDevice = NULL;
 
 	m_bModTreeHasFocus = false;	//rewbs.customKeys
@@ -204,8 +201,6 @@ CMainFrame::CMainFrame()
 	m_szUserText[0] = 0;
 	m_szInfoText[0] = 0;
 	m_szXInfoText[0]= 0;	//rewbs.xinfo
-
-	m_PendingNotificationSempahore = NULL;
 
 	MemsetZero(gcolrefVuMeter);
 
@@ -259,13 +254,9 @@ VOID CMainFrame::Initialize()
 		#endif // NO_ASIO
 	}
 
-	// Create Notify Thread
-	m_PendingNotificationSempahore = CreateSemaphore(NULL, 0, 1, NULL);
-	m_hNotifyWakeUp = CreateEvent(NULL, FALSE, FALSE, NULL);
-	m_hNotifyThread = CreateThread(NULL, 0, NotifyThreadWrapper, NULL, 0, &m_dwNotifyThreadId);
 	// Setup timer
 	OnUpdateUser(NULL);
-	m_nTimer = SetTimer(1, MPTTIMER_PERIOD, NULL);
+	m_nTimer = SetTimer(TIMERID_GUI, MPTTIMER_PERIOD, NULL);
 
 	// Setup Keyboard Hook
 	ghKbdHook = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, AfxGetInstanceHandle(), GetCurrentThreadId());
@@ -389,23 +380,6 @@ BOOL CMainFrame::DestroyWindow()
 		m_nTimer = 0;
 	}
 	if (shMidiIn) midiCloseDevice();
-	if(m_hNotifyThread != NULL)
-	{
-		PostThreadMessage(m_dwNotifyThreadId, WM_QUIT, 0, 0);
-		WaitForSingleObject(m_hNotifyThread, INFINITE);
-		m_dwNotifyThreadId = 0;
-		m_hNotifyThread = NULL;
-	}
-	if(m_hNotifyWakeUp != NULL)
-	{
-		CloseHandle(m_hNotifyWakeUp);
-		m_hNotifyWakeUp = NULL;
-	}
-	if(m_PendingNotificationSempahore != NULL)
-	{
-		CloseHandle(m_PendingNotificationSempahore);
-		m_PendingNotificationSempahore = NULL;
-	}
 	// Delete bitmaps
 	if (bmpPatterns)
 	{
@@ -602,56 +576,9 @@ void CMainFrame::OnUpdateFrameTitle(BOOL bAddToTitle)
 /////////////////////////////////////////////////////////////////////////////
 // CMainFrame Sound Library
 
-// Notify thread
-DWORD WINAPI CMainFrame::NotifyThreadWrapper(LPVOID)
-//--------------------------------------------------
-{
-	return ((CMainFrame*)theApp.m_pMainWnd)->NotifyThread();
-}
 
-
-DWORD CMainFrame::NotifyThread()
+void CMainFrame::OnTimerNotify()
 //------------------------------
-{
-	MSG msg;
-	PeekMessage(&msg, NULL, WM_USER, WM_USER, PM_NOREMOVE);	// initialize thread message queue
-	bool terminate = false;
-	bool cansend = true;
-	while(!terminate)
-	{
-		HANDLE waitHandles[2];
-		waitHandles[0] = m_PendingNotificationSempahore;
-		waitHandles[1] = m_hNotifyWakeUp;
-		switch(MsgWaitForMultipleObjects(2, waitHandles, FALSE, 1000, QS_ALLEVENTS))
-		{
-			case WAIT_OBJECT_0 + 0:
-				// last notification has been handled by gui thread
-				cansend = true;
-			break;
-			case WAIT_OBJECT_0 + 1:
-				if(cansend)
-				{
-					if(PostMessage(WM_MOD_NOTIFICATION, 0, 0))
-					{
-						// message sent, do not send any more until it has been handled
-						cansend = false;
-					}
-				}
-			break;
-			case WAIT_OBJECT_0 + 2:
-				while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-				{
-					if(msg.message == WM_QUIT) terminate = true;
-				}
-			break;
-		}
-	}
-	return 0;
-}
-
-
-LRESULT CMainFrame::OnNotification(WPARAM, LPARAM)
-//------------------------------------------------
 {
 	Notification PendingNotification;
 	bool found = false;
@@ -683,7 +610,6 @@ LRESULT CMainFrame::OnNotification(WPARAM, LPARAM)
 			PendingNotification = *pnotify; // copy notification so that we can free the buffer
 			found = true;
 			{
-				Util::lock_guard<Util::mutex> lock(m_NotificationBufferMutex);
 				m_NotifyBuffer.pop();
 			}
 		}
@@ -692,8 +618,6 @@ LRESULT CMainFrame::OnNotification(WPARAM, LPARAM)
 	{
 		OnUpdatePosition(0, (LPARAM)&PendingNotification);
 	}
-	ReleaseSemaphore(m_PendingNotificationSempahore, 1, NULL);
-	return 0;
 }
 
 
@@ -830,7 +754,11 @@ bool CMainFrame::audioTryOpeningDevice()
 	}
 	gpSoundDevice->SetMessageReceiver(this);
 	gpSoundDevice->SetSource(this);
-	return gpSoundDevice->Open(TrackerSettings::Instance().GetSoundDeviceSettings());
+	if(!gpSoundDevice->Open(TrackerSettings::Instance().GetSoundDeviceSettings()))
+	{
+		return false;
+	}
+	return true;
 }
 
 
@@ -895,6 +823,11 @@ void CMainFrame::audioCloseDevice()
 		Util::lock_guard<Util::mutex> lock(m_NotificationBufferMutex);
 		m_NotifyBuffer.clear();
 	}
+	if(m_NotifyTimer)
+	{
+		KillTimer(m_NotifyTimer);
+		m_NotifyTimer = 0;
+	}
 }
 
 
@@ -944,9 +877,6 @@ bool CMainFrame::DoNotification(DWORD dwSamplesRead, int64 streamPosition)
 		notifyType = m_pSndFile->m_pModDoc->GetNotificationType();
 		notifyItem = m_pSndFile->m_pModDoc->GetNotificationItem();
 	}
-
-	// Notify Client
-	SetEvent(m_hNotifyWakeUp);
 
 	// Add an entry to the notification history
 
@@ -1054,8 +984,6 @@ bool CMainFrame::DoNotification(DWORD dwSamplesRead, int64 streamPosition)
 		if(m_NotifyBuffer.write_size() == 0) return FALSE; // drop notification
 		m_NotifyBuffer.push(notification);
 	}
-
-	SetEvent(m_hNotifyWakeUp);
 
 	return true;
 }
@@ -1247,6 +1175,10 @@ bool CMainFrame::StartPlayback()
 		Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
 		gpSoundDevice->Start();
 	}
+	if(!m_NotifyTimer)
+	{
+		m_NotifyTimer = SetTimer(TIMERID_NOTIFY, TrackerSettings::Instance().m_UpdateIntervalMS, NULL);
+	}
 	return true;
 }
 
@@ -1259,6 +1191,11 @@ void CMainFrame::StopPlayback()
 		Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
 		gpSoundDevice->Stop();
 	}
+	if(m_NotifyTimer)
+	{
+		KillTimer(m_NotifyTimer);
+		m_NotifyTimer = 0;
+	}
 	audioCloseDevice();
 }
 
@@ -1270,6 +1207,11 @@ bool CMainFrame::PausePlayback()
 	{
 		Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
 		gpSoundDevice->Stop();
+	}
+	if(m_NotifyTimer)
+	{
+		KillTimer(m_NotifyTimer);
+		m_NotifyTimer = 0;
 	}
 	return true;
 }
@@ -1964,8 +1906,23 @@ void CMainFrame::OnImportMidiLib()
 }
 
 
-void CMainFrame::OnTimer(UINT_PTR)
-//--------------------------------
+void CMainFrame::OnTimer(UINT_PTR timerID)
+//----------------------------------------
+{
+	switch(timerID)
+	{
+		case TIMERID_GUI:
+			OnTimerGUI();
+			break;
+		case TIMERID_NOTIFY:
+			OnTimerNotify();
+			break;
+	}
+}
+
+
+void CMainFrame::OnTimerGUI()
+//---------------------------
 {
 	// Display Time in status bar
 	CSoundFile::samplecount_t time = 0;
