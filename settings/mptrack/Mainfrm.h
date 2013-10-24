@@ -281,7 +281,6 @@ public:
 public:
 
 	// Low-Level Audio
-	mutable Util::mutex m_SoundDeviceMutex;
 	ISoundDevice *gpSoundDevice;
 	UINT_PTR m_NotifyTimer;
 	Dither m_Dither;

@@ -452,13 +452,10 @@ void CMainFrame::OnClose()
 	if (IsPlaying()) PauseMod();
 	if (pMDIActive) pMDIActive->SavePosition(TRUE);
 
+	if(gpSoundDevice)
 	{
-		Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
-		if(gpSoundDevice)
-		{
-			delete gpSoundDevice;
-			gpSoundDevice = nullptr;
-		}
+		delete gpSoundDevice;
+		gpSoundDevice = nullptr;
 	}
 
 	// Save Settings
@@ -583,12 +580,9 @@ void CMainFrame::OnTimerNotify()
 	Notification PendingNotification;
 	bool found = false;
 	int64 currenttotalsamples = 0;
+	if(gpSoundDevice)
 	{
-		Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
-		if(gpSoundDevice)
-		{
-			currenttotalsamples = gpSoundDevice->GetStreamPositionSamples(); 
-		}
+		currenttotalsamples = gpSoundDevice->GetStreamPositionSamples(); 
 	}
 	{
 		// advance to the newest notification, drop the obsolete ones
@@ -737,7 +731,6 @@ void CMainFrame::AudioDone(const SoundDeviceSettings &settings, std::size_t numF
 bool CMainFrame::audioTryOpeningDevice()
 //--------------------------------------
 {
-	Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
 	const SoundDeviceID deviceID = TrackerSettings::Instance().m_nWaveDevice;
 	if(gpSoundDevice && (gpSoundDevice->GetDeviceID() != deviceID))
 	{
@@ -765,7 +758,6 @@ bool CMainFrame::audioTryOpeningDevice()
 bool CMainFrame::IsAudioDeviceOpen() const
 //----------------------------------------
 {
-	Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
 	return gpSoundDevice && gpSoundDevice->IsOpen();
 }
 
@@ -781,11 +773,7 @@ bool CMainFrame::audioOpenDevice()
 	{
 		if(audioTryOpeningDevice())
 		{
-			SampleFormat actualSampleFormat = SampleFormatInvalid;
-			{
-				Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
-				actualSampleFormat = gpSoundDevice->GetActualSampleFormat();
-			}
+			SampleFormat actualSampleFormat = gpSoundDevice->GetActualSampleFormat();
 			if(actualSampleFormat.IsValid())
 			{
 				TrackerSettings::Instance().m_SampleFormat = actualSampleFormat;
@@ -811,7 +799,6 @@ bool CMainFrame::audioReopenDevice()
 void CMainFrame::audioCloseDevice()
 //---------------------------------
 {
-	Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
 	if(gpSoundDevice)
 	{
 		gpSoundDevice->Reset();
@@ -1171,10 +1158,7 @@ bool CMainFrame::StartPlayback()
 {
 	if(!m_pSndFile) return false; // nothing to play
 	if(!IsAudioDeviceOpen()) return false;
-	{
-		Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
-		gpSoundDevice->Start();
-	}
+	gpSoundDevice->Start();
 	if(!m_NotifyTimer)
 	{
 		m_NotifyTimer = SetTimer(TIMERID_NOTIFY, TrackerSettings::Instance().m_UpdateIntervalMS, NULL);
@@ -1187,10 +1171,7 @@ void CMainFrame::StopPlayback()
 //-----------------------------
 {
 	if(!IsAudioDeviceOpen()) return;
-	{
-		Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
-		gpSoundDevice->Stop();
-	}
+	gpSoundDevice->Stop();
 	if(m_NotifyTimer)
 	{
 		KillTimer(m_NotifyTimer);
@@ -1204,10 +1185,7 @@ bool CMainFrame::PausePlayback()
 //------------------------------
 {
 	if(!IsAudioDeviceOpen()) return false;
-	{
-		Util::lock_guard<Util::mutex> lock(m_SoundDeviceMutex);
-		gpSoundDevice->Stop();
-	}
+	gpSoundDevice->Stop();
 	if(m_NotifyTimer)
 	{
 		KillTimer(m_NotifyTimer);
