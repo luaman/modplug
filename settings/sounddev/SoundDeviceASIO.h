@@ -61,7 +61,7 @@ public:
 	void FillAudioBuffer();
 	void InternalStart();
 	void InternalStop();
-	bool IsOpen() const { return (m_pAsioDrv != NULL); }
+	bool IsOpen() const { return (m_pAsioDrv != nullptr); }
 	UINT GetNumBuffers() { return 2; }
 	float GetCurrentRealLatencyMS() { return m_nAsioBufferLen * 2 * 1000.0f / m_Settings.Samplerate; }
 
@@ -73,12 +73,12 @@ public:
 protected:
 	void OpenDevice();
 	void CloseDevice();
+	bool IsDeviceOpen() const { return (m_pAsioDrv != nullptr); }
 
 protected:
 	void BufferSwitch(long doubleBufferIndex);
 
 	static CASIODevice *gpCurrentAsio;
-	static LONG gnFillBuffers;
 	static void BufferSwitch(long doubleBufferIndex, ASIOBool directProcess);
 	static void SampleRateDidChange(ASIOSampleRate sRate);
 	static long AsioMessage(long selector, long value, void* message, double* opt);
