@@ -960,6 +960,9 @@
     <ClInclude Include="StreamEncoderFLAC.h">
       <Filter>Header Files\mptrack</Filter>
     </ClInclude>
+    <ClInclude Include="..\unarchiver\archive.h">
+      <Filter>Header Files\unarchiver</Filter>
+    </ClInclude>
     <ClInclude Include="Settings.h">
       <Filter>Header Files\mptrack</Filter>
     </ClInclude>
