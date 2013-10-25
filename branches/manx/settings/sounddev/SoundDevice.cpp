@@ -68,12 +68,11 @@ bool ISoundDevice::FillWaveFormatExtensible(WAVEFORMATEXTENSIBLE &WaveFormat)
 {
 	MemsetZero(WaveFormat);
 	if(!m_Settings.sampleFormat.IsValid()) return false;
-	UINT bytespersample = (m_Settings.sampleFormat.GetBitsPerSample()/8) * m_Settings.Channels;
 	WaveFormat.Format.wFormatTag = m_Settings.sampleFormat.IsFloat() ? WAVE_FORMAT_IEEE_FLOAT : WAVE_FORMAT_PCM;
 	WaveFormat.Format.nChannels = (WORD)m_Settings.Channels;
 	WaveFormat.Format.nSamplesPerSec = m_Settings.Samplerate;
-	WaveFormat.Format.nAvgBytesPerSec = m_Settings.Samplerate * bytespersample;
-	WaveFormat.Format.nBlockAlign = (WORD)bytespersample;
+	WaveFormat.Format.nAvgBytesPerSec = m_Settings.GetBytesPerSecond();
+	WaveFormat.Format.nBlockAlign = (WORD)m_Settings.GetBytesPerFrame();
 	WaveFormat.Format.wBitsPerSample = (WORD)m_Settings.sampleFormat.GetBitsPerSample();
 	WaveFormat.Format.cbSize = 0;
 	if((WaveFormat.Format.wBitsPerSample > 16 && m_Settings.sampleFormat.IsInt()) || (WaveFormat.Format.nChannels > 2))
@@ -100,7 +99,10 @@ bool ISoundDevice::FillWaveFormatExtensible(WAVEFORMATEXTENSIBLE &WaveFormat)
 bool ISoundDevice::Open(const SoundDeviceSettings &settings)
 //----------------------------------------------------------
 {
-	if(IsOpen()) return false;
+	if(IsOpen())
+	{
+		Close();
+	}
 	m_Settings = settings;
 	if(m_Settings.LatencyMS < SNDDEV_MINLATENCY_MS) m_Settings.LatencyMS = SNDDEV_MINLATENCY_MS;
 	if(m_Settings.LatencyMS > SNDDEV_MAXLATENCY_MS) m_Settings.LatencyMS = SNDDEV_MAXLATENCY_MS;
@@ -210,6 +212,7 @@ void ISoundDevice::Stop()
 int64 ISoundDevice::GetStreamPositionSamples() const
 //--------------------------------------------------
 {
+	if(!IsOpen()) return 0;
 	if(InternalHasGetStreamPosition())
 	{
 		return InternalGetStreamPositionSamples();
