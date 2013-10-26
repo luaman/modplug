@@ -42,8 +42,6 @@ enum
 	SNT_NOTE =			0x20000000, // = 1 << 29
 	SNT_WARNING =		0x10000000, // = 1 << 28
 	SNT_NONE = 0,
-	SNT_ALL_ENABLED = -1,
-	SNT_DEFAULT_MASK = SNT_FAILURE | SNT_WARNING,
 
 	SNRW_BADGIVEN_STREAM =								1	| SNT_FAILURE,
 
@@ -64,7 +62,6 @@ enum
 	// Write failures.
 	SNW_INSUFFICIENT_FIXEDSIZE =						(0x10)	| SNT_FAILURE,
 	SNW_CHANGING_IDSIZE_WITH_FIXED_IDSIZESETTING =		(0x11)	| SNT_FAILURE,
-	SNW_INSUFFICIENT_MAPSIZE =							(0x12)	| SNT_FAILURE,
 	SNW_DATASIZETYPE_OVERFLOW =							(0x13)	| SNT_FAILURE,
 	SNW_MAX_WRITE_COUNT_REACHED =						(0x14)	| SNT_FAILURE,
 	SNW_INSUFFICIENT_DATASIZETYPE =						(0x16)	| SNT_FAILURE
@@ -261,11 +258,58 @@ inline void ReadItem<std::string>(std::istream& iStrm, std::string& str, const D
 }
 
 
+
 class Ssb
-//=======
 {
+
+protected:
+
+	Ssb();
+
 public:
-	typedef void (*fpLogFunc_t)(const char*, ...);
+
+	// When writing, returns the number of entries written.
+	// When reading, returns the number of entries read not including unrecognized entries.
+	NumType GetCounter() const {return m_nCounter;}
+
+	void SetFlag(Rwf flag, bool val) {m_Flags.set(flag, val);}
+	bool GetFlag(Rwf flag) const {return m_Flags[flag];}
+
+	// Write given string to log if log func is defined.
+	void AddToLog(const char *psz);
+
+protected:
+
+	void AddNote(const SsbStatus s, const char* sz);
+
+public:
+
+	SsbStatus m_Status;
+	uint32 m_nFixedEntrySize;			// Read/write: If > 0, data entries have given fixed size.
+
+protected:
+
+	Postype m_posStart;					// Read/write: Stream position at the beginning of object.
+
+	uint16 m_nIdbytes;					// Read/Write: Tells map ID entry size in bytes. If size is variable, value is IdSizeVariable.
+	NumType m_nCounter;					// Read/write: Keeps count of entries written/read.
+
+	std::bitset<RwfNumFlags> m_Flags;	// Read/write: Various flags.
+
+public:
+
+	static const uint8 s_DefaultFlagbyte = 0;
+	static const char s_EntryID[3];
+
+};
+
+
+
+class SsbRead
+	: public Ssb
+{
+
+public:
 
 	enum ReadRv // Read return value.
 	{
@@ -278,26 +322,11 @@ public:
 	};
 	typedef std::vector<ReadEntry>::const_iterator ReadIterator;
 
-	Ssb(std::istream* pIstrm, std::ostream* pOstrm);
-	Ssb(std::iostream& ioStrm);
-	Ssb(std::ostream& oStrm);
-	Ssb(std::istream& iStrm);
+	SsbRead(std::istream& iStrm);
 
-	~Ssb() {}
-
-	// Sets map ID size in writing.
-	void SetIdSize(uint16 idSize);
-
-	// Write header
-	void BeginWrite(const char* pId, const size_t nIdSize, const uint64& nVersion);
-	void BeginWrite(const char* pszId, const uint64& nVersion) {BeginWrite(pszId, strlen(pszId), nVersion);}
-	
 	// Call this to begin reading: must be called before other read functions.
 	void BeginRead(const char* pId, const size_t nLength, const uint64& nVersion);
 	void BeginRead(const char* pszId, const uint64& nVersion) {return BeginRead(pszId, strlen(pszId), nVersion);}
-
-	// Reserves space for map to current position. Call after BeginWrite and before writing any entries.
-	void ReserveMapSize(uint32 nSize);
 
 	// After calling BeginRead(), this returns number of entries in the file.
 	NumType GetNumEntries() const {return m_nReadEntrycount;}
@@ -313,10 +342,6 @@ public:
 	// Compares given id with read entry id 
 	IdMatchStatus CompareId(const ReadIterator& iter, const char* pszId) {return CompareId(iter, pszId, strlen(pszId));}
 	IdMatchStatus CompareId(const ReadIterator& iter, const char* pId, const size_t nIdSize);
-
-	// When writing, returns the number of entries written.
-	// When reading, returns the number of entries read not including unrecognized entries.
-	NumType GetCounter() const {return m_nCounter;}
 
 	uint64 GetReadVersion() {return m_nReadVersion;}
 
@@ -337,27 +362,8 @@ public:
 	template <class T, class FuncObj>
 	ReadRv ReadItem(const ReadIterator& iter, T& obj, FuncObj func);
 
-	// Write item using default write implementation.
-	template <class T>
-	void WriteItem(const T& obj, const char* pszId) {WriteItem(obj, pszId, strlen(pszId), &srlztn::WriteItem<T>);}
-
-	template <class T>
-	void WriteItem(const T& obj, const char* pId, const size_t nIdSize) {WriteItem(obj, pId, nIdSize, &srlztn::WriteItem<T>);}
-
-	// Write item using given function.
-	template <class T, class FuncObj>
-	void WriteItem(const T& obj, const char* pId, const size_t nIdSize, FuncObj);
-
-	// Writes mapping.
-	void FinishWrite();
-
-	void SetFlag(Rwf flag, bool val) {m_Flags.set(flag, val);}
-	bool GetFlag(Rwf flag) const {return m_Flags[flag];}
-
-	// Write given string to log if log func is defined.
-	void AddToLog(const char *psz) {if (m_fpLogFunc) m_fpLogFunc(psz);}
-
 private:
+
 	// Reads map to cache.
 	void CacheMap();
 
@@ -372,31 +378,80 @@ private:
 	// Called after reading an object.
 	ReadRv OnReadEntry(const ReadEntry* pE, const char* pId, const size_t nIdSize, const Postype& posReadBegin);
 
-	// Called after writing an item.
-	void OnWroteItem(const char* pId, const size_t nIdSize, const Postype& posBeforeWrite);
-	
-	void AddNote(const SsbStatus s, const SsbStatus mask, const char* sz);
-
 	void AddReadNote(const SsbStatus s);
 
 	// Called after reading entry. pRe is a pointer to associated map entry if exists.
 	void AddReadNote(const ReadEntry* const pRe, const NumType nNum);
 
+	void ResetReadstatus();
+
+private:
+
+	std::istream* m_pIstrm;					// Read: Pointer to read stream.
+
+private:
+
+	std::vector<char> m_Idarray;		// Read: Holds entry ids.
+
+	std::vector<ReadEntry> mapData;		// Read: Contains map information.
+	uint64 m_nReadVersion;				// Read: Version is placed here when reading.
+	RposType m_rposMapBegin;			// Read: If map exists, rpos of map begin, else m_rposEndofHdrData.
+	Postype m_posMapEnd;				// Read: If map exists, map end position, else pos of end of hdrData.
+	Postype m_posDataBegin;				// Read: Data begin position.
+	RposType m_rposEndofHdrData;		// Read: rpos of end of header data.
+	NumType m_nReadEntrycount;			// Read: Number of entries.
+
+	NumType m_nNextReadHint;			// Read: Hint where to start looking for the next read entry.
+
+};
+
+
+
+class SsbWrite
+	: public Ssb
+{
+
+public:
+
+	SsbWrite(std::ostream& oStrm);
+
+	// Write header
+	void BeginWrite(const char* pId, const size_t nIdSize, const uint64& nVersion);
+	void BeginWrite(const char* pszId, const uint64& nVersion) {BeginWrite(pszId, strlen(pszId), nVersion);}
+
+	// Write item using default write implementation.
+	template <class T>
+	void WriteItem(const T& obj, const char* pszId) {WriteItem(obj, pszId, strlen(pszId), &srlztn::WriteItem<T>);}
+
+	template <class T>
+	void WriteItem(const T& obj, const char* pId, const size_t nIdSize) {WriteItem(obj, pId, nIdSize, &srlztn::WriteItem<T>);}
+
+	// Write item using given function.
+	template <class T, class FuncObj>
+	void WriteItem(const T& obj, const char* pId, const size_t nIdSize, FuncObj);
+
+	// Writes mapping.
+	void FinishWrite();
+
+private:
+
+	// Called after writing an item.
+	void OnWroteItem(const char* pId, const size_t nIdSize, const Postype& posBeforeWrite);
+
 	void AddWriteNote(const SsbStatus s);
 	void AddWriteNote(const char* pId,
-					  const size_t nIdLength,
-					  const NumType nEntryNum,
-					  const DataSize nBytecount,
-					  const RposType rposStart);
+		const size_t nIdLength,
+		const NumType nEntryNum,
+		const DataSize nBytecount,
+		const RposType rposStart);
 
 	// Writes mapping item to mapstream.
 	void WriteMapItem(const char* pId, 
-				  const size_t nIdSize,
-				  const RposType& rposDataStart,
-				  const DataSize& nDatasize,
-				  const char* pszDesc);
+		const size_t nIdSize,
+		const RposType& rposDataStart,
+		const DataSize& nDatasize,
+		const char* pszDesc);
 
-	void ResetReadstatus();
 	void ResetWritestatus() {m_Status = SNT_NONE;}
 
 	void IncrementWriteCounter();
@@ -404,52 +459,16 @@ private:
 private:
 
 	std::ostream* m_pOstrm;				// Write: Pointer to write stream.
-	std::istream* m_pIstrm;					// Read: Pointer to read stream.
-
-public:
-
-	SsbStatus m_Status;
-	uint32 m_nFixedEntrySize;			// Read/write: If > 0, data entries have given fixed size.
-	fpLogFunc_t m_fpLogFunc;			// Pointer to log function.
 
 private:
 
-	SsbStatus m_Readlogmask;			// Read: Controls which read messages will be written to log.
-	SsbStatus m_Writelogmask;			// Write: Controls which write messages will be written to log.
-	
-	std::vector<char> m_Idarray;		// Read: Holds entry ids.
-
-	Postype m_posStart;					// Read/write: Stream position at the beginning of object.
-	std::vector<ReadEntry> mapData;		// Read: Contains map information.
-	uint64 m_nReadVersion;				// Read: Version is placed here when reading.
-	NumType m_nMaxReadEntryCount;		// Read: Limits the number of entries allowed to be read.
-	RposType m_rposMapBegin;			// Read: If map exists, rpos of map begin, else m_rposEndofHdrData.
-	Postype m_posMapEnd;				// Read: If map exists, map end position, else pos of end of hdrData.
-	Postype m_posDataBegin;				// Read: Data begin position.
-	RposType m_rposEndofHdrData;		// Read: rpos of end of header data.
-	NumType m_nReadEntrycount;			// Read: Number of entries.
-
-	uint16 m_nIdbytes;					// Read/Write: Tells map ID entry size in bytes. If size is variable, value is IdSizeVariable.
-	NumType m_nCounter;					// Read/write: Keeps count of entries written/read.
-	NumType m_nNextReadHint;			// Read: Hint where to start looking for the next read entry.
-	std::bitset<RwfNumFlags> m_Flags;	// Read/write: Various flags.
-
-	uint32 m_nMapReserveSize;			// Write: Number of bytes to reserve for map if writing it before data.			
 	Postype m_posEntrycount;			// Write: Pos of entrycount field. 
 	Postype m_posMapPosField;			// Write: Pos of map position field.
-	Postype m_posMapStart;				// Write: Pos of map start.
 	std::ostringstream m_MapStream;				// Write: Map stream.
 
-public:
-	static const uint8 s_DefaultFlagbyte = 0;
-	static int32 s_DefaultReadLogMask;
-	static int32 s_DefaultWriteLogMask;
-	static fpLogFunc_t s_DefaultLogFunc;
-	static const char s_EntryID[3];
-	static const int32 s_DefaultFlags = (1 << RwfWMapStartPosEntry) +
-										 (1 << RwfWMapSizeEntry) + (1 << RwfWVersionNum) +
-										 (1 << RwfRPartialIdMatch);
 };
+
+
 
 template<typename T>
 struct IdLE
@@ -473,7 +492,7 @@ struct IdLE
 
 
 template <class T, class FuncObj>
-void Ssb::WriteItem(const T& obj, const char* pId, const size_t nIdSize, FuncObj Func)
+void SsbWrite::WriteItem(const T& obj, const char* pId, const size_t nIdSize, FuncObj Func)
 //------------------------------------------------------------------------------------
 {
 	const Postype pos = m_pOstrm->tellp();
@@ -482,7 +501,7 @@ void Ssb::WriteItem(const T& obj, const char* pId, const size_t nIdSize, FuncObj
 }
 
 template <class T, class FuncObj>
-Ssb::ReadRv Ssb::ReadItem(T& obj, const char* pId, const size_t nIdSize, FuncObj Func)
+SsbRead::ReadRv SsbRead::ReadItem(T& obj, const char* pId, const size_t nIdSize, FuncObj Func)
 //------------------------------------------------------------------------------------
 {
 	const ReadEntry* pE = Find(pId, nIdSize);
@@ -494,7 +513,7 @@ Ssb::ReadRv Ssb::ReadItem(T& obj, const char* pId, const size_t nIdSize, FuncObj
 
 
 template <class T, class FuncObj>
-Ssb::ReadRv Ssb::ReadItem(const ReadIterator& iter, T& obj, FuncObj func)
+SsbRead::ReadRv SsbRead::ReadItem(const ReadIterator& iter, T& obj, FuncObj func)
 //-----------------------------------------------------------------------
 {
 	m_pIstrm->clear();
@@ -506,7 +525,7 @@ Ssb::ReadRv Ssb::ReadItem(const ReadIterator& iter, T& obj, FuncObj func)
 }
 
 
-inline Ssb::IdMatchStatus Ssb::CompareId(const ReadIterator& iter, const char* pId, const size_t nIdSize)
+inline SsbRead::IdMatchStatus SsbRead::CompareId(const ReadIterator& iter, const char* pId, const size_t nIdSize)
 //-------------------------------------------------------------------------------------------------------
 {
 	if (nIdSize == iter->nIdLength && memcmp(&m_Idarray[iter->nIdpos], pId, iter->nIdLength) == 0)
@@ -516,7 +535,7 @@ inline Ssb::IdMatchStatus Ssb::CompareId(const ReadIterator& iter, const char* p
 }
 
 
-inline Ssb::ReadIterator Ssb::GetReadBegin()
+inline SsbRead::ReadIterator SsbRead::GetReadBegin()
 //------------------------------------------
 {
 	ASSERT(GetFlag(RwfRMapHasId) && (GetFlag(RwfRMapHasStartpos) || GetFlag(RwfRMapHasSize) || m_nFixedEntrySize > 0));
@@ -526,7 +545,7 @@ inline Ssb::ReadIterator Ssb::GetReadBegin()
 }
 
 
-inline Ssb::ReadIterator Ssb::GetReadEnd()
+inline SsbRead::ReadIterator SsbRead::GetReadEnd()
 //----------------------------------------
 {
 	if (GetFlag(RwfRMapCached) == false)
