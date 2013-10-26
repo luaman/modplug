@@ -23,7 +23,6 @@
 #include "TrackerSettings.h"
 #include "../common/misc_util.h"
 #include "PatternClipboard.h"
-#include "../sounddev/SoundDevice.h"
 
 
 #define OLD_SOUNDSETUP_REVERSESTEREO         0x20
