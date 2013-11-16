@@ -1,6 +1,0 @@
-
-include Makefile.config.defaults
-
-LDLIBS += -liconv
-
-DYNLINK=0
