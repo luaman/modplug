@@ -566,7 +566,7 @@ CTuningCollection* CSoundFile::s_pTuningsSharedLocal(0);
 #if MPT_COMPILER_MSVC
 #pragma warning(disable : 4355) // "'this' : used in base member initializer list"
 #endif
-CSoundFile::CSoundFile() :
+CSoundFile::CSoundFile(ILoadSaveSettings * loadSaveSettings) :
 	m_pTuningsTuneSpecific(nullptr),
 	m_pModSpecs(&ModSpecs::itEx),
 	Patterns(*this),
@@ -575,6 +575,7 @@ CSoundFile::CSoundFile() :
 	m_MIDIMapper(*this),
 #endif
 	visitedSongRows(*this),
+	m_pLoadSaveSettings(loadSaveSettings),
 	m_pCustomLog(nullptr)
 #if MPT_COMPILER_MSVC
 #pragma warning(default : 4355) // "'this' : used in base member initializer list"
@@ -2078,18 +2079,21 @@ void CSoundFile::PrecomputeSampleLoops(bool updateChannels)
 
 
 // Set up channel panning and volume suitable for MOD + similar files.
-void CSoundFile::SetupMODPanning(bool maxPanning)
-//-----------------------------------------------
+void CSoundFile::SetupMODPanning()
+//--------------------------------
 {
 	// Setup LRRL panning, max channel volume
 	for(CHANNELINDEX nChn = 0; nChn < MAX_BASECHANNELS; nChn++)
 	{
 		ChnSettings[nChn].nVolume = 64;
 		ChnSettings[nChn].dwFlags.reset(CHN_SURROUND);
-		if(maxPanning)
+		if(m_pLoadSaveSettings->LoadMODMaxPanning())
+		{
 			ChnSettings[nChn].nPan = (((nChn & 3) == 1) || ((nChn & 3) == 2)) ? 256 : 0;
-		else
+		} else
+		{
 			ChnSettings[nChn].nPan = (((nChn & 3) == 1) || ((nChn & 3) == 2)) ? 0xC0 : 0x40;
+		}
 	}
 }
 

@@ -184,6 +184,7 @@ static UINT indicators[] =
 // CMainFrame construction/destruction
 CMainFrame::CMainFrame()
 //----------------------
+	: m_WaveFile(&TrackerSettings::Instance())
 {
 	m_NotifyTimer = 0;
 	gpSoundDevice = NULL;

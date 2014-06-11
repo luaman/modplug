@@ -61,8 +61,6 @@ enum WFIRType
 	WFIR_BLACKMAN4T74	= 6,
 	WFIR_KAISER4T		= 7,
 };
-//int WFIR_TYPE				= WFIR_KAISER4T;//WFIR_BLACKMANEXACT;
-//int WFIR_TYPE				= TrackerSettings::Instance().gbWFIRType;
 // wfir help
 #ifndef M_zPI
 #define M_zPI				3.1415926535897932384626433832795

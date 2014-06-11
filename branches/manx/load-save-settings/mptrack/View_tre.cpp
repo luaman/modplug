@@ -373,7 +373,7 @@ bool CModTree::InsLibSetFullPath(const mpt::PathString &libPath, const mpt::Path
 					m_SongFile->Destroy();
 				} else
 				{
-					m_SongFile = new (std::nothrow) CSoundFile;
+					m_SongFile = new (std::nothrow) CSoundFile(&TrackerSettings::Instance());
 				}
 				if(m_SongFile != nullptr)
 				{

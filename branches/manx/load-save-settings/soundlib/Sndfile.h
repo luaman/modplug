@@ -507,11 +507,14 @@ public:
 	TimingInfo m_TimingInfo; // only valid if !m_bIsRendering
 
 private:
+	ILoadSaveSettings * const m_pLoadSaveSettings;
+
+private:
 	// logging and user interaction
 	ILog *m_pCustomLog;
 
 public:
-	CSoundFile();
+	CSoundFile(ILoadSaveSettings * loadSaveSettings);
 	~CSoundFile();
 
 public:
@@ -693,7 +696,7 @@ public:
 	void ModSaveCommand(uint8 &command, uint8 &param, const bool toXM, const bool compatibilityExport = false) const;
 	void ReadMODPatternEntry(FileReader &file, ModCommand &m) const;
 
-	void SetupMODPanning(bool maxPanning = false); // Setup LRRL panning, max channel volume
+	void SetupMODPanning(); // Setup LRRL panning, max channel volume
 
 public:
 	// Real-time sound functions

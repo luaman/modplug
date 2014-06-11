@@ -135,8 +135,12 @@ void CModDoc::Dump(CDumpContext& dc) const
 /////////////////////////////////////////////////////////////////////////////
 // CModDoc construction/destruction
 
-CModDoc::CModDoc() : m_LogMode(LogModeInstantReporting), m_PatternUndo(*this), m_SampleUndo(*this)
-//------------------------------------------------------------------------------------------------
+CModDoc::CModDoc()
+//----------------
+	: m_LogMode(LogModeInstantReporting)
+	, m_SndFile(&TrackerSettings::Instance())
+	, m_PatternUndo(*this)
+	, m_SampleUndo(*this)
 {
 	m_bHasValidPath = false;
 	m_hWndFollow = NULL;
@@ -681,7 +685,7 @@ void CModDoc::OnAppendModule()
 	FileDialog::PathList files;
 	CTrackApp::OpenModulesDialog(files);
 
-	CSoundFile source;
+	CSoundFile source(&TrackerSettings::Instance());
 	ScopedLogCapturer logcapture(*this, "Append Failures");
 
 	for(size_t counter = 0; counter < files.size(); counter++)

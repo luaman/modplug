@@ -13,7 +13,6 @@
 #include "Sndfile.h"
 #ifdef MODPLUG_TRACKER
 #include "../mptrack/Moddoc.h"
-#include "../mptrack/TrackerSettings.h"
 #endif //MODPLUG_TRACKER
 #include "../common/AudioCriticalSection.h"
 #include "Wav.h"
@@ -2202,9 +2201,7 @@ bool CSoundFile::SaveFLACSample(SAMPLEINDEX nSample, const mpt::PathString &file
 	FLAC__stream_encoder_set_sample_rate(encoder, sample.GetSampleRate(GetType()));
 	FLAC__stream_encoder_set_total_samples_estimate(encoder, sample.nLength);
 	FLAC__stream_encoder_set_metadata(encoder, metadata, writeLoopData ? 3 : 2);
-#ifdef MODPLUG_TRACKER
-	FLAC__stream_encoder_set_compression_level(encoder, TrackerSettings::Instance().m_FLACCompressionLevel);
-#endif // MODPLUG_TRACKER
+	FLAC__stream_encoder_set_compression_level(encoder, m_pLoadSaveSettings->SaveFLACCompressionLevel());
 
 	encoder.f = mpt_fopen(filename, "wb");
 	if(encoder.f == nullptr || FLAC__stream_encoder_init_FILE(encoder, encoder.f, nullptr, nullptr) != FLAC__STREAM_ENCODER_INIT_STATUS_OK)

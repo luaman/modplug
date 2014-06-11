@@ -320,6 +320,7 @@ template<> inline SoundDeviceStopMode FromSettingValue(const SettingValue &val)
 //===================
 class TrackerSettings
 //===================
+	: public ILoadSaveSettings
 {
 
 private:
@@ -364,6 +365,7 @@ public:
 	Setting<bool> autoApplySmoothFT2Ramping;
 	Setting<uint32> MiscITCompressionStereo; // Mask: bit0: IT, bit1: Compat IT, bit2: MPTM
 	Setting<uint32> MiscITCompressionMono;   // Mask: bit0: IT, bit1: Compat IT, bit2: MPTM
+	Setting<bool> MODMaxPanning;
 
 	// Sound Settings
 	
@@ -481,6 +483,7 @@ public:
 public:
 
 	TrackerSettings(SettingsContainer &conf);
+	virtual ~TrackerSettings() {}
 
 	void SaveSettings();
 
@@ -501,6 +504,23 @@ protected:
 
 	void LoadChords(MPTChords &chords);
 	void SaveChords(MPTChords &chords);
+
+public:
+
+	// ILoadSaveSettings
+
+	virtual bool LoadXMApplySmoothFT2VolumeRamping() { return autoApplySmoothFT2Ramping; }
+	virtual bool LoadMODMaxPanning() { return MODMaxPanning; }
+	virtual int32 LoadMIDISpeed() { return midiImportSpeed; }
+	virtual int32 LoadMIDIPatternLength() { return midiImportPatternLen; }
+
+	virtual int SaveFLACCompressionLevel() { return m_FLACCompressionLevel; }
+	virtual bool SaveITCompatibleCompressStereoSamples() { return GetITCompatibleCompressionFromMask(MiscITCompressionStereo); }
+	virtual bool SaveITCompatibleCompressMonoSamples() { return GetITCompatibleCompressionFromMask(MiscITCompressionMono); }
+	virtual bool SaveITCompressStereoSamples() { return GetITCompressionFromMask(MiscITCompressionStereo); }
+	virtual bool SaveITCompressMonoSamples() { return GetITCompressionFromMask(MiscITCompressionMono); }
+	virtual bool SaveMPTMCompressStereoSamples() { return GetMPTMCompressionFromMask(MiscITCompressionStereo); }
+	virtual bool SaveMPTMCompressMonoSamples() { return GetMPTMCompressionFromMask(MiscITCompressionMono); }
 
 };
 
