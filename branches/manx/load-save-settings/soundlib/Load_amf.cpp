@@ -395,7 +395,7 @@ bool CSoundFile::ReadAMF_DSMI(FileReader &file, ModLoadingFlags loadFlags)
 		// Old format revisions are fixed to 4 channels
 		m_nChannels = 4;
 		file.SkipBack(1);
-		SetupMODPanning(true);
+		SetupMODPanning();
 	}
 
 	// Setup Channel Pan Positions

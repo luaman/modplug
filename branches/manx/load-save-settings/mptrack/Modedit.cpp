@@ -233,8 +233,11 @@ CHANNELINDEX CModDoc::ReArrangeChannels(const std::vector<CHANNELINDEX> &newOrde
 			m_SndFile.InitChannel(nChn);
 		}
 	}
-	// Reset MOD panning (won't affect other module formats)
-	m_SndFile.SetupMODPanning();
+	// Reset MOD panning
+	if(m_SndFile.GetType() & MOD_TYPE_MOD)
+	{
+		m_SndFile.SetupMODPanning();
+	}
 
 	m_SndFile.m_nChannels = nRemainingChannels;
 
