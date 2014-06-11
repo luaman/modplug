@@ -763,8 +763,11 @@ BOOL CModDoc::InitializeMod()
 			m_SndFile.ChnSettings[nChn].nPan = 128;
 			m_SndFile.m_PlayState.Chn[nChn].nGlobalVol = 64;
 		}
-		// Setup LRRL panning scheme for MODs
-		m_SndFile.SetupMODPanning();
+		if(m_SndFile.GetType() & MOD_TYPE_MOD)
+		{
+			// Setup LRRL panning scheme for MODs
+			m_SndFile.SetupMODPanning();
+		}
 	}
 	if (!m_SndFile.m_nSamples)
 	{

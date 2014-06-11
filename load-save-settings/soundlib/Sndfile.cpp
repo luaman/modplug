@@ -2077,13 +2077,11 @@ void CSoundFile::PrecomputeSampleLoops(bool updateChannels)
 }
 
 
-// Set up channel panning and volume suitable for MOD + similar files. If the current mod type is not MOD, bForceSetup has to be set to true.
-void CSoundFile::SetupMODPanning(bool bForceSetup)
-//------------------------------------------------
+// Set up channel panning and volume suitable for MOD + similar files.
+void CSoundFile::SetupMODPanning()
+//--------------------------------
 {
 	// Setup LRRL panning, max channel volume
-	if((GetType() & MOD_TYPE_MOD) == 0 && bForceSetup == false) return;
-
 	for(CHANNELINDEX nChn = 0; nChn < MAX_BASECHANNELS; nChn++)
 	{
 		ChnSettings[nChn].nVolume = 64;

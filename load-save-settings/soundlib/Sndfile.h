@@ -693,7 +693,7 @@ public:
 	void ModSaveCommand(uint8 &command, uint8 &param, const bool toXM, const bool compatibilityExport = false) const;
 	void ReadMODPatternEntry(FileReader &file, ModCommand &m) const;
 
-	void SetupMODPanning(bool bForceSetup = false); // Setup LRRL panning, max channel volume
+	void SetupMODPanning(); // Setup LRRL panning, max channel volume
 
 public:
 	// Real-time sound functions
