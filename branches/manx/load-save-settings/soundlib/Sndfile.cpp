@@ -2078,15 +2078,15 @@ void CSoundFile::PrecomputeSampleLoops(bool updateChannels)
 
 
 // Set up channel panning and volume suitable for MOD + similar files.
-void CSoundFile::SetupMODPanning()
-//--------------------------------
+void CSoundFile::SetupMODPanning(bool maxPanning)
+//-----------------------------------------------
 {
 	// Setup LRRL panning, max channel volume
 	for(CHANNELINDEX nChn = 0; nChn < MAX_BASECHANNELS; nChn++)
 	{
 		ChnSettings[nChn].nVolume = 64;
 		ChnSettings[nChn].dwFlags.reset(CHN_SURROUND);
-		if(m_MixerSettings.MixerFlags & SNDMIX_MAXDEFAULTPAN)
+		if(maxPanning)
 			ChnSettings[nChn].nPan = (((nChn & 3) == 1) || ((nChn & 3) == 2)) ? 256 : 0;
 		else
 			ChnSettings[nChn].nPan = (((nChn & 3) == 1) || ((nChn & 3) == 2)) ? 0xC0 : 0x40;
