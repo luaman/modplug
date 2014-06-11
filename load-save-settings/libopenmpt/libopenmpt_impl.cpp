@@ -294,7 +294,8 @@ void module_impl::apply_libopenmpt_defaults() {
 	set_render_param( module::RENDER_STEREOSEPARATION_PERCENT, 100 );
 }
 void module_impl::init( const std::map< std::string, std::string > & ctls ) {
-	m_sndFile = std::unique_ptr<CSoundFile>(new CSoundFile());
+	m_LoadSaveSettings = std::unique_ptr<ILoadSaveSettings>(new LoadSaveSettingsDefaults());
+	m_sndFile = std::unique_ptr<CSoundFile>(new CSoundFile( m_LoadSaveSettings.get() ));
 	m_Dither = std::unique_ptr<Dither>(new Dither());
 	m_LogForwarder = std::unique_ptr<log_forwarder>(new log_forwarder(m_Log));
 	m_sndFile->SetCustomLog( m_LogForwarder.get() );
@@ -413,7 +414,8 @@ bool module_impl::is_extension_supported( const std::string & extension ) {
 	return std::find( extensions.begin(), extensions.end(), lowercase_ext ) != extensions.end();
 }
 double module_impl::could_open_propability( std::istream & stream, double effort, std::shared_ptr<log_interface> log ) {
-	std::unique_ptr<CSoundFile> sndFile( new CSoundFile() );
+	LoadSaveSettingsDefaults loadSaveSettings;
+	std::unique_ptr<CSoundFile> sndFile( new CSoundFile( &loadSaveSettings ) );
 	std::unique_ptr<log_forwarder> logForwarder( new log_forwarder( log ) );
 	sndFile->SetCustomLog( logForwarder.get() );
 

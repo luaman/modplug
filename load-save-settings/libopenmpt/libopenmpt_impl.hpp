@@ -19,6 +19,7 @@
 // forward declarations
 namespace OpenMPT {
 class FileReader;
+class ILoadSaveSettings;
 class CSoundFile;
 class Dither;
 } // namespace OpenMPT
@@ -57,6 +58,7 @@ protected:
 	std::shared_ptr<log_interface> m_Log;
 	std::unique_ptr<log_forwarder> m_LogForwarder;
 	double m_currentPositionSeconds;
+	std::unique_ptr<OpenMPT::ILoadSaveSettings> m_LoadSaveSettings;
 	std::unique_ptr<OpenMPT::CSoundFile> m_sndFile;
 	std::unique_ptr<OpenMPT::Dither> m_Dither;
 	float m_Gain;

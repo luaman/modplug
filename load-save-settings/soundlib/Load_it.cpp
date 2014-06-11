@@ -14,7 +14,6 @@
 #include "tuningcollection.h"
 #ifdef MODPLUG_TRACKER
 #include "../mptrack/moddoc.h"
-#include "../mptrack/TrackerSettings.h"
 #endif
 #include "../common/serialization_utils.h"
 #include "../common/mptFstream.h"
@@ -1557,13 +1556,17 @@ bool CSoundFile::SaveIT(const mpt::PathString &filename, bool compatibilityExpor
 	// Writing Sample Data
 	for(SAMPLEINDEX nsmp = 1; nsmp <= itHeader.smpnum; nsmp++)
 	{
-#ifdef MODPLUG_TRACKER
-		int type = GetType() == MOD_TYPE_IT ? 1 : 4;
-		if(compatibilityExport) type = 2;
-		bool compress = ((((Samples[nsmp].GetNumChannels() > 1) ? TrackerSettings::Instance().MiscITCompressionStereo : TrackerSettings::Instance().MiscITCompressionMono) & type) != 0);
-#else
 		bool compress = false;
-#endif // MODPLUG_TRACKER
+		if(compatibilityExport)
+		{
+			compress = (Samples[nsmp].GetNumChannels() > 1) ? m_pLoadSaveSettings->SaveITCompatibleCompressStereoSamples() : m_pLoadSaveSettings->SaveITCompatibleCompressMonoSamples();
+		} else if(GetType() == MOD_TYPE_IT)
+		{
+			compress = (Samples[nsmp].GetNumChannels() > 1) ? m_pLoadSaveSettings->SaveITCompressStereoSamples() : m_pLoadSaveSettings->SaveITCompressMonoSamples();
+		} else
+		{
+			compress = (Samples[nsmp].GetNumChannels() > 1) ? m_pLoadSaveSettings->SaveMPTMCompressStereoSamples() : m_pLoadSaveSettings->SaveMPTMCompressMonoSamples();
+		}
 		// Old MPT, DUMB and probably other libraries will only consider the IT2.15 compression flag if the header version also indicates IT2.15.
 		// MilkyTracker <= 0.90.85 will only assume IT2.15 compression with cmwt == 0x215, ignoring the delta flag completely.
 		itss.ConvertToIT(Samples[nsmp], GetType(), compress, itHeader.cmwt >= 0x215);

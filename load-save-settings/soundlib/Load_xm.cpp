@@ -16,9 +16,6 @@
 #include "../common/misc_util.h"
 #include "XMTools.h"
 #include <algorithm>
-#ifdef MODPLUG_TRACKER
-#include "../mptrack/TrackerSettings.h"	// For super smooth ramping option
-#endif // MODPLUG_TRACKER
 
 
 OPENMPT_NAMESPACE_BEGIN
@@ -590,9 +587,7 @@ bool CSoundFile::ReadXM(FileReader &file, ModLoadingFlags loadFlags)
 
 	if(madeWith[verFT2Generic]
 		&& fileHeader.version >= 0x0104	// Old versions of FT2 didn't have (smooth) ramping. Disable it for those versions where we can be sure that there should be no ramping.
-#ifdef MODPLUG_TRACKER
-		&& TrackerSettings::Instance().autoApplySmoothFT2Ramping
-#endif // MODPLUG_TRACKER
+		&& m_pLoadSaveSettings->LoadXMApplySmoothFT2VolumeRamping()
 		)
 	{
 		// apply FT2-style super-soft volume ramping

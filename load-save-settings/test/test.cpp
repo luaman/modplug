@@ -1392,20 +1392,27 @@ static mpt::PathString GetTestFilenameBase()
 	return MPT_PATHSTRING("./test/test.");
 }
 
-typedef std::shared_ptr<CSoundFile> TSoundFileContainer;
+struct SoundFileWithDefaultSettings
+{
+	LoadSaveSettingsDefaults defaultSettings;
+	std::shared_ptr<CSoundFile> impl;
+	SoundFileWithDefaultSettings() : impl(new CSoundFile(&defaultSettings)) {}
+};
+
+typedef std::shared_ptr<SoundFileWithDefaultSettings> TSoundFileContainer;
 
 static CSoundFile &GetrSoundFile(TSoundFileContainer &sndFile)
 {
-	return *sndFile.get();
+	return *sndFile->impl.get();
 }
 
 static TSoundFileContainer CreateSoundFileContainer(const mpt::PathString &filename)
 {
 	mpt::ifstream stream(filename, std::ios::binary);
 	FileReader file(&stream);
-	std::shared_ptr<CSoundFile> pSndFile(new CSoundFile());
-	pSndFile->Create(file, CSoundFile::loadCompleteModule);
-	return pSndFile;
+	std::shared_ptr<SoundFileWithDefaultSettings> sndFile(new SoundFileWithDefaultSettings());
+	sndFile->impl->Create(file, CSoundFile::loadCompleteModule);
+	return sndFile;
 }
 
 static void DestroySoundFileContainer(TSoundFileContainer & /* sndFile */ )
@@ -1417,17 +1424,17 @@ static void DestroySoundFileContainer(TSoundFileContainer & /* sndFile */ )
 
 static void SaveIT(const TSoundFileContainer &sndFile, const mpt::PathString &filename)
 {
-	sndFile->SaveIT(filename, false);
+	sndFile->impl->SaveIT(filename, false);
 }
 
 static void SaveXM(const TSoundFileContainer &sndFile, const mpt::PathString &filename)
 {
-	sndFile->SaveXM(filename, false);
+	sndFile->impl->SaveXM(filename, false);
 }
 
 static void SaveS3M(const TSoundFileContainer &sndFile, const mpt::PathString &filename)
 {
-	sndFile->SaveS3M(filename);
+	sndFile->impl->SaveS3M(filename);
 }
 
 #endif
@@ -1644,7 +1651,12 @@ static noinline void TestPCnoteSerialization()
 //--------------------------------------------
 {
 	FileReader file;
-	MPT_SHARED_PTR<CSoundFile> pSndFile(new CSoundFile());
+#ifdef MODPLUG_TRACKER
+	MPT_SHARED_PTR<CSoundFile> pSndFile(new CSoundFile(&TrackerSettings::Instance()));
+#else
+	LoadSaveSettingsDefaults defaultSettings;
+	MPT_SHARED_PTR<CSoundFile> pSndFile(new CSoundFile(&defaultSettings));
+#endif
 	CSoundFile &sndFile = *pSndFile.get();
 	sndFile.ChangeModTypeTo(MOD_TYPE_MPT);
 	sndFile.Patterns.DestroyPatterns();

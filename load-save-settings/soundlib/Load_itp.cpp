@@ -19,7 +19,6 @@
 #include "Loaders.h"
 #include "ITTools.h"
 #ifdef MODPLUG_TRACKER
-#include "../mptrack/TrackerSettings.h"
 #include "../mptrack/MemoryMappedFile.h"
 #include "../mptrack/Moddoc.h"
 #endif
@@ -257,7 +256,7 @@ bool CSoundFile::ReadITProject(FileReader &file, ModLoadingFlags loadFlags)
 
 		FileReader file = f.GetFile();
 		if(file.IsValid())
-			ReadInstrumentFromFile(ins + 1, file, TrackerSettings::Instance().m_MayNormalizeSamplesOnLoad);
+			ReadInstrumentFromFile(ins + 1, file, false);
 		f.Close();
 	}
 
