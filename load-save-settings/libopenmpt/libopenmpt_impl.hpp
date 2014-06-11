@@ -19,10 +19,12 @@
 // forward declarations
 namespace OpenMPT {
 class FileReader;
-class ILoadSaveSettings;
 class CSoundFile;
 class Dither;
 } // namespace OpenMPT
+namespace openmpt {
+class LoadSaveSettings;
+} // namespace openmpt
 
 namespace openmpt {
 
@@ -58,12 +60,14 @@ protected:
 	std::shared_ptr<log_interface> m_Log;
 	std::unique_ptr<log_forwarder> m_LogForwarder;
 	double m_currentPositionSeconds;
-	std::unique_ptr<OpenMPT::ILoadSaveSettings> m_LoadSaveSettings;
+	std::unique_ptr<LoadSaveSettings> m_LoadSaveSettings;
 	std::unique_ptr<OpenMPT::CSoundFile> m_sndFile;
 	std::unique_ptr<OpenMPT::Dither> m_Dither;
 	float m_Gain;
 	bool m_ctl_load_skip_samples;
 	bool m_ctl_load_skip_patterns;
+	bool m_ctl_load_mod_max_panning;
+	bool m_ctl_load_xm_ft2_smooth_volume_ramping;
 	std::vector<std::string> m_loaderMessages;
 public:
 	void PushToCSoundFileLog( const std::string & text ) const;
