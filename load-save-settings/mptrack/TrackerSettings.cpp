@@ -32,6 +32,7 @@ OPENMPT_NAMESPACE_BEGIN
 #define OLD_SOUNDSETUP_REVERSESTEREO         0x20
 #define OLD_SOUNDSETUP_SECONDARY             0x40
 #define OLD_SOUNDSETUP_NOBOOSTTHREADPRIORITY 0x80
+#define OLD_SNDMIX_MAXDEFAULTPAN             0x80000    // Used by the MOD loader (currently unused)
 
 
 TrackerDirectories &TrackerDirectories::Instance()
@@ -462,6 +463,10 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,22,01,03))
 	{
 		MixerFlags &= ~OLD_SOUNDSETUP_NOBOOSTTHREADPRIORITY;
+	}
+	if(storedVersion < MAKE_VERSION_NUMERIC(1,24,00,00))
+	{
+		MixerFlags &= ~OLD_SNDMIX_MAXDEFAULTPAN;
 	}
 	if(storedVersion < MAKE_VERSION_NUMERIC(1,20,00,22))
 	{
