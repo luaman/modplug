@@ -26,6 +26,7 @@
 #include "common/version.h"
 #include "common/misc_util.h"
 #include "soundlib/Sndfile.h"
+#include "soundlib/LoadSaveSettings.h"
 #include "soundlib/AudioReadTarget.h"
 #include "soundlib/FileReader.h"
 

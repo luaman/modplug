@@ -55,6 +55,8 @@
 OPENMPT_NAMESPACE_BEGIN
 
 
+class ILoadSaveSettings;
+
 class FileReader;
 // -----------------------------------------------------------------------------------------
 // MODULAR ModInstrument FIELD ACCESS : body content at the (near) top of Sndfile.cpp !!!

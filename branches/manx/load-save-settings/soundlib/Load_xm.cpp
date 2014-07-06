@@ -12,6 +12,7 @@
 
 #include "stdafx.h"
 #include "Loaders.h"
+#include "LoadSaveSettings.h"
 #include "../common/version.h"
 #include "../common/misc_util.h"
 #include "XMTools.h"

@@ -15,6 +15,7 @@
 #include "../mptrack/Moddoc.h"
 #endif //MODPLUG_TRACKER
 #include "../common/AudioCriticalSection.h"
+#include "LoadSaveSettings.h"
 #include "Wav.h"
 #include "Tagging.h"
 #include "ITTools.h"

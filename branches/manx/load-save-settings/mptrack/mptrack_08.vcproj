@@ -1246,6 +1246,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\soundlib\LoadSaveSettings.h"
+				>
+			</File>
+			<File
 				RelativePath="..\common\Logging.h"
 				>
 			</File>

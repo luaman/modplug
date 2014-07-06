@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include "../soundlib/LoadSaveSettings.h"
 #include "../soundlib/MixerSettings.h"
 #include "../soundlib/Resampler.h"
 #include "../soundlib/SampleFormat.h"
