@@ -25,6 +25,7 @@
 #include "../soundlib/MIDIMacros.h"
 #include "../soundlib/SampleFormatConverters.h"
 #include "../soundlib/ITCompression.h"
+#include "../soundlib/LoadSaveSettings.h"
 #ifdef MODPLUG_TRACKER
 #include "../mptrack/mptrack.h"
 #include "../mptrack/moddoc.h"

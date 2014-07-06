@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "Loaders.h"
+#include "LoadSaveSettings.h"
 #include "Dlsbank.h"
 #include "Wav.h"
 

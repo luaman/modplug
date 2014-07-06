@@ -20,6 +20,7 @@
 #include "../common/AudioCriticalSection.h"
 #include "../common/serialization_utils.h"
 #include "Sndfile.h"
+#include "LoadSaveSettings.h"
 #include "tuningcollection.h"
 #include "../common/StringFixer.h"
 #include "FileReader.h"

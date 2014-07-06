@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "Loaders.h"
+#include "LoadSaveSettings.h"
 #include "tuningcollection.h"
 #ifdef MODPLUG_TRACKER
 #include "../mptrack/moddoc.h"
