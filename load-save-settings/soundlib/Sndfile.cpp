@@ -2088,10 +2088,13 @@ void CSoundFile::SetupMODPanning()
 	{
 		ChnSettings[nChn].nVolume = 64;
 		ChnSettings[nChn].dwFlags.reset(CHN_SURROUND);
-		if(m_pLoadSaveSettings->LoadMODMaxPanning())
+		if(m_pLoadSaveSettings->LoadMODPanning() == LoadPanningMax)
 		{
 			ChnSettings[nChn].nPan = (((nChn & 3) == 1) || ((nChn & 3) == 2)) ? 256 : 0;
-		} else
+		} else if(m_pLoadSaveSettings->LoadMODPanning() == LoadPanningNone)
+		{
+			ChnSettings[nChn].nPan = 128;
+		} else /* if(m_pLoadSaveSettings->LoadMODPanning() == LoadPanningAuto || m_pLoadSaveSettings->LoadMODPanning() == LoadPanningNormal) */
 		{
 			ChnSettings[nChn].nPan = (((nChn & 3) == 1) || ((nChn & 3) == 2)) ? 0xC0 : 0x40;
 		}

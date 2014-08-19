@@ -165,7 +165,7 @@ TrackerSettings::TrackerSettings(SettingsContainer &conf)
 	, autoApplySmoothFT2Ramping(conf, "Misc", "SmoothFT2Ramping", LoadSaveSettingsDefaults().LoadXMApplySmoothFT2VolumeRamping())
 	, MiscITCompressionStereo(conf, "Misc", "ITCompressionStereo", LoadSaveSettingsDefaults().GetITCompressionStereoMask())
 	, MiscITCompressionMono(conf, "Misc", "ITCompressionMono", LoadSaveSettingsDefaults().GetITCompressionMonoMask())
-	, MODMaxPanning(conf, "Misc", "MODMaxPanning", LoadSaveSettingsDefaults().LoadMODMaxPanning())
+	, MODPanning(conf, "Misc", "MODPanning", LoadSaveSettingsDefaults().LoadMODPanning())
 	// Sound Settings
 	, m_SoundSampleRates(conf, "Sound Settings", "SampleRates", GetDefaultSampleRates())
 	, m_MorePortaudio(conf, "Sound Settings", "MorePortaudio", false)

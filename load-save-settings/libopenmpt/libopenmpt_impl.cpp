@@ -205,11 +205,11 @@ void loader_log::AddToLog( LogLevel level, const std::string & text ) const {
 
 class LoadSaveSettings : public LoadSaveSettingsDefaults {
 public:
-	bool load_mod_max_panning;
+	LoadPanningMode load_mod_panning;
 	bool load_xm_ft2_smooth_volume_ramping;
 public:
 	LoadSaveSettings()
-		: load_mod_max_panning(LoadSaveSettingsDefaults().LoadMODMaxPanning())
+		: load_mod_panning(LoadSaveSettingsDefaults().LoadMODPanning())
 		, load_xm_ft2_smooth_volume_ramping(LoadSaveSettingsDefaults().LoadXMApplySmoothFT2VolumeRamping())
 	{
 		return;
@@ -220,8 +220,8 @@ public:
 	virtual bool LoadXMApplySmoothFT2VolumeRamping() {
 		return load_xm_ft2_smooth_volume_ramping;
 	}
-	virtual bool LoadMODMaxPanning() {
-		return load_mod_max_panning;
+	virtual LoadPanningMode LoadMODPanning() {
+		return load_mod_panning;
 	}
 };
 
@@ -326,7 +326,7 @@ void module_impl::init( const std::map< std::string, std::string > & ctls ) {
 	m_Gain = 1.0f;
 	m_ctl_load_skip_samples = false;
 	m_ctl_load_skip_patterns = false;
-	m_ctl_load_mod_max_panning = false;
+	m_ctl_load_mod_panning = LoadPanningAuto;
 	m_ctl_load_xm_ft2_smooth_volume_ramping = true;
 	for ( std::map< std::string, std::string >::const_iterator i = ctls.begin(); i != ctls.end(); ++i ) {
 		ctl_set( i->first, i->second );
@@ -340,7 +340,7 @@ void module_impl::load( CSoundFile & sndFile, const FileReader & file ) {
 	if ( m_ctl_load_skip_patterns ) {
 		load_flags &= ~CSoundFile::loadPatternData;
 	}
-	m_LoadSaveSettings->load_mod_max_panning = m_ctl_load_mod_max_panning;
+	m_LoadSaveSettings->load_mod_panning = static_cast<LoadPanningMode>(m_ctl_load_mod_panning);
 	m_LoadSaveSettings->load_xm_ft2_smooth_volume_ramping = m_ctl_load_xm_ft2_smooth_volume_ramping;
 	if ( !sndFile.Create( file, static_cast<CSoundFile::ModLoadingFlags>( load_flags ) ) ) {
 		throw openmpt::exception("error loading file");
@@ -1104,7 +1104,7 @@ std::vector<std::string> module_impl::get_ctls() const {
 	std::vector<std::string> retval;
 	retval.push_back( "load_skip_samples" );
 	retval.push_back( "load_skip_patterns" );
-	retval.push_back( "load_mod_max_panning" );
+	retval.push_back( "load_mod_panning" );
 	retval.push_back( "load_xm_ft2_smooth_volume_ramping" );
 	retval.push_back( "dither" );
 	return retval;
@@ -1116,8 +1116,8 @@ std::string module_impl::ctl_get( const std::string & ctl ) const {
 		return mpt::ToString( m_ctl_load_skip_samples );
 	} else if ( ctl == "load_skip_patterns" ) {
 		return mpt::ToString( m_ctl_load_skip_patterns );
-	} else if ( ctl == "load_mod_max_panning" ) {
-		return mpt::ToString( m_ctl_load_mod_max_panning );
+	} else if ( ctl == "load_mod_panning" ) {
+		return mpt::ToString( m_ctl_load_mod_panning );
 	} else if ( ctl == "load_xm_ft2_smooth_volume_ramping" ) {
 		return mpt::ToString( m_ctl_load_xm_ft2_smooth_volume_ramping );
 	} else if ( ctl == "dither" ) {
@@ -1133,8 +1133,8 @@ void module_impl::ctl_set( const std::string & ctl, const std::string & value ) 
 		m_ctl_load_skip_samples = ConvertStrTo<bool>( value );
 	} else if ( ctl == "load_skip_patterns" ) {
 		m_ctl_load_skip_patterns = ConvertStrTo<bool>( value );
-	} else if ( ctl == "load_mod_max_panning" ) {
-		m_ctl_load_mod_max_panning = ConvertStrTo<bool>( value );
+	} else if ( ctl == "load_mod_panning" ) {
+		m_ctl_load_mod_panning = ConvertStrTo<std::int32_t>( value );
 	} else if ( ctl == "load_xm_ft2_smooth_volume_ramping" ) {
 		m_ctl_load_xm_ft2_smooth_volume_ramping = ConvertStrTo<bool>( value );
 	} else if ( ctl == "dither" ) {
