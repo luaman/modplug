@@ -317,6 +317,15 @@ template<> inline SoundDeviceStopMode FromSettingValue(const SettingValue &val)
 	return static_cast<SoundDeviceStopMode>(static_cast<int32>(val));
 }
 
+template<> inline SettingValue ToSettingValue(const LoadPanningMode &val)
+{
+	return SettingValue(static_cast<int32>(val));
+}
+template<> inline LoadPanningMode FromSettingValue(const SettingValue &val)
+{
+	return static_cast<LoadPanningMode>(static_cast<int32>(val));
+}
+
 
 //===================
 class TrackerSettings
@@ -366,7 +375,7 @@ public:
 	Setting<bool> autoApplySmoothFT2Ramping;
 	Setting<uint32> MiscITCompressionStereo; // Mask: bit0: IT, bit1: Compat IT, bit2: MPTM
 	Setting<uint32> MiscITCompressionMono;   // Mask: bit0: IT, bit1: Compat IT, bit2: MPTM
-	Setting<bool> MODMaxPanning;
+	Setting<LoadPanningMode> MODPanning;
 
 	// Sound Settings
 	
@@ -511,7 +520,7 @@ public:
 	// ILoadSaveSettings
 
 	virtual bool LoadXMApplySmoothFT2VolumeRamping() { return autoApplySmoothFT2Ramping; }
-	virtual bool LoadMODMaxPanning() { return MODMaxPanning; }
+	virtual LoadPanningMode LoadMODPanning() { return MODPanning; }
 	virtual int32 LoadMIDISpeed() { return midiImportSpeed; }
 	virtual int32 LoadMIDIPatternLength() { return midiImportPatternLen; }
 

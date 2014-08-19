@@ -66,7 +66,7 @@ protected:
 	float m_Gain;
 	bool m_ctl_load_skip_samples;
 	bool m_ctl_load_skip_patterns;
-	bool m_ctl_load_mod_max_panning;
+	std::int32_t m_ctl_load_mod_panning;
 	bool m_ctl_load_xm_ft2_smooth_volume_ramping;
 	std::vector<std::string> m_loaderMessages;
 public:

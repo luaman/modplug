@@ -12,6 +12,14 @@
 
 OPENMPT_NAMESPACE_BEGIN
 
+enum LoadPanningMode
+{
+	LoadPanningAuto = -1,
+	LoadPanningNone = 0,
+	LoadPanningNormal = 1,
+	LoadPanningMax = 2
+};
+
 
 //=====================
 class ILoadSaveSettings
@@ -21,7 +29,7 @@ public:
 	virtual ~ILoadSaveSettings() {}
 
 	virtual bool LoadXMApplySmoothFT2VolumeRamping() = 0;
-	virtual bool LoadMODMaxPanning() = 0;
+	virtual LoadPanningMode LoadMODPanning() = 0;
 	virtual int32 LoadMIDISpeed() = 0;
 	virtual int32 LoadMIDIPatternLength() = 0;
 
@@ -78,7 +86,7 @@ public:
 	virtual ~LoadSaveSettingsDefaults() {}
 
 	virtual bool LoadXMApplySmoothFT2VolumeRamping() { return false; }
-	virtual bool LoadMODMaxPanning() { return false; }
+	virtual LoadPanningMode LoadMODPanning() { return LoadPanningAuto; }
 	virtual int32 LoadMIDISpeed() { return 3; }
 	virtual int32 LoadMIDIPatternLength() { return 128; }
 
